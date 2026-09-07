@@ -148,6 +148,7 @@ function MainApp() {
   const [selectedDeptFilter, setSelectedDeptFilter] = useState<string>('ALL');
   const [selectedDistrictFilter, setSelectedDistrictFilter] = useState<string>('ALL');
   const [selectedPlateForJourney, setSelectedPlateForJourney] = useState<string>('GJ01AB1234');
+  const [selectedConfigCamCode, setSelectedConfigCamCode] = useState<string>('CAM-001');
 
   // Master State Store (Model 1 + Model 2 + Model 3)
   const [cameras, setCameras] = useState<Camera[]>(INITIAL_CAMERAS);
@@ -663,6 +664,14 @@ function MainApp() {
             onNavigateToGis={(cam) => {
               setActiveTab('gis');
             }}
+            onConfigureRoi={(cam) => {
+              setSelectedConfigCamCode(cam.cameraCode);
+              setActiveTab('detection-area');
+            }}
+            onConfigureAi={(cam) => {
+              setSelectedConfigCamCode(cam.cameraCode);
+              setActiveTab('ai-models');
+            }}
             onMarkMaintenance={handleMarkMaintenance}
             onArchiveCamera={handleArchiveCamera}
             onRestoreCamera={handleRestoreCamera}
@@ -699,7 +708,12 @@ function MainApp() {
           <DetectionAreaView
             cameras={cameras}
             currentLang={currentLang}
-            onNavigateToAiModels={() => setActiveTab('ai-models')}
+            initialCameraCode={selectedConfigCamCode}
+            onSelectCameraCode={(code) => setSelectedConfigCamCode(code)}
+            onNavigateToAiModels={(code) => {
+              if (code) setSelectedConfigCamCode(code);
+              setActiveTab('ai-models');
+            }}
           />
         )}
 
@@ -708,7 +722,12 @@ function MainApp() {
           <AiModelsView
             cameras={cameras}
             currentLang={currentLang}
-            onNavigateToDetectionArea={() => setActiveTab('detection-area')}
+            initialCameraCode={selectedConfigCamCode}
+            onSelectCameraCode={(code) => setSelectedConfigCamCode(code)}
+            onNavigateToDetectionArea={(code) => {
+              if (code) setSelectedConfigCamCode(code);
+              setActiveTab('detection-area');
+            }}
           />
         )}
 

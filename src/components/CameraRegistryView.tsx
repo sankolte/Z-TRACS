@@ -15,7 +15,9 @@ import {
   RotateCcw,
   SlidersHorizontal,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Layers,
+  Cpu
 } from 'lucide-react';
 import { ArchiveConfirmModal } from './ArchiveConfirmModal';
 
@@ -24,6 +26,8 @@ interface CameraRegistryViewProps {
   currentLang?: string;
   onSelectCamera: (camera: Camera) => void;
   onNavigateToGis: (camera: Camera) => void;
+  onConfigureRoi?: (camera: Camera) => void;
+  onConfigureAi?: (camera: Camera) => void;
   onOpenOnboarding: () => void;
   onMarkMaintenance: (cameraId: string) => void;
   onArchiveCamera: (cameraId: string) => void;
@@ -36,6 +40,8 @@ export const CameraRegistryView: React.FC<CameraRegistryViewProps> = ({
   cameras,
   onSelectCamera,
   onNavigateToGis,
+  onConfigureRoi,
+  onConfigureAi,
   onOpenOnboarding,
   onMarkMaintenance,
   onArchiveCamera,
@@ -410,6 +416,24 @@ export const CameraRegistryView: React.FC<CameraRegistryViewProps> = ({
                     {/* Actions */}
                     <td className="py-3 px-4 text-right" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-end space-x-1.5">
+                        {onConfigureRoi && (
+                          <button
+                            title="Configure Detection Area & Polygon ROIs"
+                            onClick={() => onConfigureRoi(camera)}
+                            className="p-1.5 rounded text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 transition"
+                          >
+                            <Layers className="w-4 h-4 text-emerald-600" />
+                          </button>
+                        )}
+                        {onConfigureAi && (
+                          <button
+                            title="Configure AI Vision Models (ANPR, FRS, PPE, Footfall)"
+                            onClick={() => onConfigureAi(camera)}
+                            className="p-1.5 rounded text-slate-500 hover:text-indigo-700 hover:bg-indigo-50 transition"
+                          >
+                            <Cpu className="w-4 h-4 text-indigo-600" />
+                          </button>
+                        )}
                         <button
                           title="View on GIS Viewport"
                           onClick={() => onNavigateToGis(camera)}

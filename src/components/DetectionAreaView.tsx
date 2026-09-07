@@ -54,6 +54,8 @@ interface DetectionZone {
 interface DetectionAreaViewProps {
   cameras?: Camera[];
   currentLang?: Language;
+  initialCameraCode?: string;
+  onSelectCameraCode?: (cameraCode: string) => void;
   onNavigateToAiModels?: (cameraCode?: string) => void;
 }
 
@@ -122,69 +124,28 @@ const isPointInPolygon = (pt: Point, poly: Point[]) => {
   return inside;
 };
 
-// Gujarat Statewide 33 Surveillance Cameras Dataset
-const ALL_33_GUJARAT_CAMERAS: Camera[] = [
-  { cameraUuid: 'cam-033-uuid', cameraCode: 'CAM-033', name: 'SG Highway - Junction 33 (ANPR Primary)', type: 'ANPR', district: 'Ahmedabad', resolution: '1920x1080', healthStatus: 'ONLINE', ipAddress: '103.250.160.189', rtspUrl: 'rtsp://103.250.160.189:8554/stream/cam33', lastPingTimestamp: 'Just now' },
-  { cameraUuid: 'cam-001-uuid', cameraCode: 'CAM-001', name: 'Chiman Bhai Bridge (Cam 1)', type: 'ANPR', district: 'Ahmedabad', resolution: '1920x1080', healthStatus: 'ONLINE', ipAddress: '103.250.160.189', rtspUrl: 'rtsp://103.250.160.189:8554/stream/cam01', lastPingTimestamp: 'Just now' },
-  { cameraUuid: 'cam-002-uuid', cameraCode: 'CAM-002', name: 'Janpath Road (Cam 2)', type: 'PTZ', district: 'Ahmedabad', resolution: '1920x1080', healthStatus: 'ONLINE', ipAddress: '103.250.160.189', rtspUrl: 'rtsp://103.250.160.189:8554/stream/cam02', lastPingTimestamp: 'Just now' },
-  { cameraUuid: 'cam-003-uuid', cameraCode: 'CAM-003', name: 'O.N.G.C. Office Complex (Cam 3)', type: 'ANPR', district: 'Ahmedabad', resolution: '1920x1080', healthStatus: 'ONLINE', ipAddress: '103.250.160.189', rtspUrl: 'rtsp://103.250.160.189:8554/stream/cam03', lastPingTimestamp: 'Just now' },
-  { cameraUuid: 'cam-004-uuid', cameraCode: 'CAM-004', name: 'Paldi Circle Junction (Cam 4)', type: 'PTZ', district: 'Ahmedabad', resolution: '1920x1080', healthStatus: 'ONLINE', ipAddress: '103.250.160.189', rtspUrl: 'rtsp://103.250.160.189:8554/stream/cam04', lastPingTimestamp: 'Just now' },
-  { cameraUuid: 'cam-005-uuid', cameraCode: 'CAM-005', name: 'Visat Teen Rasta (Cam 5)', type: 'ANPR', district: 'Gandhinagar', resolution: '1920x1080', healthStatus: 'ONLINE', ipAddress: '103.250.160.189', rtspUrl: 'rtsp://103.250.160.189:8554/stream/cam05', lastPingTimestamp: 'Just now' },
-  { cameraUuid: 'cam-006-uuid', cameraCode: 'CAM-006', name: 'Timbavadi Gate (Cam 6)', type: 'ANPR', district: 'Junagadh', resolution: '1920x1080', healthStatus: 'ONLINE', ipAddress: '103.250.160.189', rtspUrl: 'rtsp://103.250.160.189:8554/stream/cam06', lastPingTimestamp: 'Just now' },
-  { cameraUuid: 'cam-007-uuid', cameraCode: 'CAM-007', name: 'Hero Showroom Highway (Cam 7)', type: 'ANPR', district: 'Gir Somnath', resolution: '1920x1080', healthStatus: 'ONLINE', ipAddress: '103.250.160.189', rtspUrl: 'rtsp://103.250.160.189:8554/stream/cam07', lastPingTimestamp: 'Just now' },
-  { cameraUuid: 'cam-008-uuid', cameraCode: 'CAM-008', name: 'Majewadi Gate (Cam 8)', type: 'PTZ', district: 'Junagadh', resolution: '1920x1080', healthStatus: 'ONLINE', ipAddress: '103.250.160.189', rtspUrl: 'rtsp://103.250.160.189:8554/stream/cam08', lastPingTimestamp: 'Just now' },
-  { cameraUuid: 'cam-009-uuid', cameraCode: 'CAM-009', name: 'New Bypass Circle (Cam 9)', type: 'ANPR', district: 'Junagadh', resolution: '1920x1080', healthStatus: 'ONLINE', ipAddress: '103.250.160.189', rtspUrl: 'rtsp://103.250.160.189:8554/stream/cam09', lastPingTimestamp: 'Just now' },
-  { cameraUuid: 'cam-010-uuid', cameraCode: 'CAM-010', name: 'Char Chowk Road (Cam 10)', type: 'PTZ', district: 'Junagadh', resolution: '1920x1080', healthStatus: 'ONLINE', ipAddress: '103.250.160.189', rtspUrl: 'rtsp://103.250.160.189:8554/stream/cam10', lastPingTimestamp: 'Just now' },
-  { cameraUuid: 'cam-011-uuid', cameraCode: 'CAM-011', name: 'Dolatpara Junction (Cam 11)', type: 'ANPR', district: 'Junagadh', resolution: '1920x1080', healthStatus: 'ONLINE', ipAddress: '103.250.160.189', rtspUrl: 'rtsp://103.250.160.189:8554/stream/cam11', lastPingTimestamp: 'Just now' },
-  { cameraUuid: 'cam-012-uuid', cameraCode: 'CAM-012', name: 'Tri Mandir Adalaj Tollnaka (Cam 12)', type: 'ANPR', district: 'Gandhinagar', resolution: '1920x1080', healthStatus: 'ONLINE', ipAddress: '103.250.160.189', rtspUrl: 'rtsp://103.250.160.189:8554/stream/cam12', lastPingTimestamp: 'Just now' },
-  { cameraUuid: 'cam-013-uuid', cameraCode: 'CAM-013', name: 'CN Vidhyalaya Campus (Cam 13)', type: 'PTZ', district: 'Ahmedabad', resolution: '1920x1080', healthStatus: 'ONLINE', ipAddress: '103.250.160.189', rtspUrl: 'rtsp://103.250.160.189:8554/stream/cam13', lastPingTimestamp: 'Just now' },
-  { cameraUuid: 'cam-014-uuid', cameraCode: 'CAM-014', name: 'Delight Cross Road (Cam 14)', type: 'ANPR', district: 'Surat', resolution: '1920x1080', healthStatus: 'ONLINE', ipAddress: '103.250.160.189', rtspUrl: 'rtsp://103.250.160.189:8554/stream/cam14', lastPingTimestamp: 'Just now' },
-  { cameraUuid: 'cam-015-uuid', cameraCode: 'CAM-015', name: 'Suvidha Park Circle (Cam 15)', type: 'PTZ', district: 'Surat', resolution: '1920x1080', healthStatus: 'ONLINE', ipAddress: '103.250.160.189', rtspUrl: 'rtsp://103.250.160.189:8554/stream/cam15', lastPingTimestamp: 'Just now' },
-  { cameraUuid: 'cam-016-uuid', cameraCode: 'CAM-016', name: 'Visat P2 Checkpoint (Cam 16)', type: 'ANPR', district: 'Gandhinagar', resolution: '1920x1080', healthStatus: 'ONLINE', ipAddress: '103.250.160.189', rtspUrl: 'rtsp://103.250.160.189:8554/stream/cam16', lastPingTimestamp: 'Just now' },
-  { cameraUuid: 'cam-017-uuid', cameraCode: 'CAM-017', name: 'Rajkot Bus Port Terminal (Cam 17)', type: 'ANPR', district: 'Rajkot', resolution: '1920x1080', healthStatus: 'ONLINE', ipAddress: '103.250.160.189', rtspUrl: 'rtsp://103.250.160.189:8554/stream/cam17', lastPingTimestamp: 'Just now' },
-  { cameraUuid: 'cam-018-uuid', cameraCode: 'CAM-018', name: 'Rajkot Central Square (Cam 18)', type: 'PTZ', district: 'Rajkot', resolution: '1920x1080', healthStatus: 'ONLINE', ipAddress: '103.250.160.189', rtspUrl: 'rtsp://103.250.160.189:8554/stream/cam18', lastPingTimestamp: 'Just now' },
-  { cameraUuid: 'cam-019-uuid', cameraCode: 'CAM-019', name: 'Khaparia Gram Panchayat (Cam 19)', type: 'ANPR', district: 'Navsari', resolution: '1920x1080', healthStatus: 'ONLINE', ipAddress: '103.250.160.189', rtspUrl: 'rtsp://103.250.160.189:8554/stream/cam19', lastPingTimestamp: 'Just now' },
-  { cameraUuid: 'cam-020-uuid', cameraCode: 'CAM-020', name: 'Mohanpura Chowk (Cam 20)', type: 'PTZ', district: 'Navsari', resolution: '1920x1080', healthStatus: 'ONLINE', ipAddress: '103.250.160.189', rtspUrl: 'rtsp://103.250.160.189:8554/stream/cam20', lastPingTimestamp: 'Just now' },
-  { cameraUuid: 'cam-021-uuid', cameraCode: 'CAM-021', name: 'Patan Dethali Char Rasta (Cam 21)', type: 'ANPR', district: 'Patan', resolution: '1920x1080', healthStatus: 'ONLINE', ipAddress: '103.250.160.189', rtspUrl: 'rtsp://103.250.160.189:8554/stream/cam21', lastPingTimestamp: 'Just now' },
-  { cameraUuid: 'cam-022-uuid', cameraCode: 'CAM-022', name: 'BK Mervada Tran Rasta (Cam 22)', type: 'ANPR', district: 'Patan', resolution: '1920x1080', healthStatus: 'ONLINE', ipAddress: '103.250.160.189', rtspUrl: 'rtsp://103.250.160.189:8554/stream/cam22', lastPingTimestamp: 'Just now' },
-  { cameraUuid: 'cam-023-uuid', cameraCode: 'CAM-023', name: 'Kheram Junction (Cam 23)', type: 'PTZ', district: 'Patan', resolution: '1280x720', healthStatus: 'ONLINE', ipAddress: '103.250.160.189', rtspUrl: 'rtsp://103.250.160.189:8554/stream/cam23', lastPingTimestamp: 'Just now' },
-  { cameraUuid: 'cam-024-uuid', cameraCode: 'CAM-024', name: 'Dehgam Circle (Cam 24)', type: 'ANPR', district: 'Gandhinagar', resolution: '1920x1080', healthStatus: 'ONLINE', ipAddress: '103.250.160.189', rtspUrl: 'rtsp://103.250.160.189:8554/stream/cam24', lastPingTimestamp: 'Just now' },
-  { cameraUuid: 'cam-025-uuid', cameraCode: 'CAM-025', name: 'Dhanori Main Road (Cam 25)', type: 'ANPR', district: 'Navsari', resolution: '1920x1080', healthStatus: 'ONLINE', ipAddress: '103.250.160.189', rtspUrl: 'rtsp://103.250.160.189:8554/stream/cam25', lastPingTimestamp: 'Just now' },
-  { cameraUuid: 'cam-026-uuid', cameraCode: 'CAM-026', name: 'Tankal Highway Entry (Cam 26)', type: 'ANPR', district: 'Navsari', resolution: '2560x1440', healthStatus: 'ONLINE', ipAddress: '103.250.160.189', rtspUrl: 'rtsp://103.250.160.189:8554/stream/cam26', lastPingTimestamp: 'Just now' },
-  { cameraUuid: 'cam-027-uuid', cameraCode: 'CAM-027', name: 'Bilimora Coastal — Site A (Cam 27)', type: 'ANPR', district: 'Navsari', resolution: '1280x960', healthStatus: 'ONLINE', ipAddress: '103.250.160.189', rtspUrl: 'rtsp://103.250.160.189:8554/stream/cam27', lastPingTimestamp: 'Just now' },
-  { cameraUuid: 'cam-028-uuid', cameraCode: 'CAM-028', name: 'Bilimora Coastal — Site B (Cam 28)', type: 'PTZ', district: 'Navsari', resolution: '1920x1080', healthStatus: 'ONLINE', ipAddress: '103.250.160.189', rtspUrl: 'rtsp://103.250.160.189:8554/stream/cam28', lastPingTimestamp: 'Just now' },
-  { cameraUuid: 'cam-029-uuid', cameraCode: 'CAM-029', name: 'Bilimora Harbor — Site C (Cam 29)', type: 'ANPR', district: 'Navsari', resolution: '1280x960', healthStatus: 'ONLINE', ipAddress: '103.250.160.189', rtspUrl: 'rtsp://103.250.160.189:8554/stream/cam29', lastPingTimestamp: 'Just now' },
-  { cameraUuid: 'cam-030-uuid', cameraCode: 'CAM-030', name: 'Gandhidham Rambaugh P2 (Cam 30)', type: 'ANPR', district: 'Kutch', resolution: '1920x1080', healthStatus: 'ONLINE', ipAddress: '103.250.160.189', rtspUrl: 'rtsp://103.250.160.189:8554/stream/cam30', lastPingTimestamp: 'Just now' },
-  { cameraUuid: 'cam-031-uuid', cameraCode: 'CAM-031', name: 'Gandhidham Complex Outer Gate (Cam 31)', type: 'PTZ', district: 'Kutch', resolution: '1920x1080', healthStatus: 'ONLINE', ipAddress: '103.250.160.189', rtspUrl: 'rtsp://103.250.160.189:8554/stream/cam31', lastPingTimestamp: 'Just now' },
-  { cameraUuid: 'cam-032-uuid', cameraCode: 'CAM-032', name: 'Live RTSP Stream 1 (65.1.214.31)', type: 'ANPR', district: 'Ahmedabad', resolution: '1920x1080', healthStatus: 'ONLINE', ipAddress: '65.1.214.31', rtspUrl: 'rtsp://65.1.214.31:8554/gj/cam1', lastPingTimestamp: 'Just now' }
-];
-
-// Sample snapshots fallback
-const SAMPLE_SNAPSHOTS: Record<string, string> = {
-  'CAM-033': 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=1920&q=80&auto=format&fit=crop',
-  'DEFAULT_HIGHWAY': 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=1920&q=80&auto=format&fit=crop',
-};
-
 export const DetectionAreaView: React.FC<DetectionAreaViewProps> = ({ 
   cameras: propCameras,
+  initialCameraCode,
+  onSelectCameraCode,
   onNavigateToAiModels 
 }) => {
-  // Combine propCameras and ALL_33_GUJARAT_CAMERAS into a unique master list
+  // Use master propCameras directly
   const masterCameraList = React.useMemo(() => {
-    const map = new Map<string, Camera>();
-    ALL_33_GUJARAT_CAMERAS.forEach(c => map.set(c.cameraCode, c));
-    if (propCameras) {
-      propCameras.forEach(c => {
-        if (!map.has(c.cameraCode)) {
-          map.set(c.cameraCode, c);
-        }
-      });
-    }
-    return Array.from(map.values());
+    return propCameras && propCameras.length > 0 ? propCameras : [];
   }, [propCameras]);
 
-  // Currently Selected Camera (default to CAM-033)
-  const [selectedCamCode, setSelectedCamCode] = useState<string>('CAM-033');
+  // Currently Selected Camera (defaults to initialCameraCode or first master camera)
+  const [selectedCamCode, setSelectedCamCode] = useState<string>(() => {
+    return initialCameraCode || (propCameras && propCameras[0]?.cameraCode) || 'CAM-001';
+  });
+
+  // Sync when initialCameraCode changes from outside navigation
+  useEffect(() => {
+    if (initialCameraCode && initialCameraCode !== selectedCamCode) {
+      setSelectedCamCode(initialCameraCode);
+    }
+  }, [initialCameraCode]);
   const [activeZoneId, setActiveZoneId] = useState<string>('zone-1');
 
   const [isSaving, setIsSaving] = useState(false);
@@ -804,15 +765,12 @@ export const DetectionAreaView: React.FC<DetectionAreaViewProps> = ({
                   value={selectedCamCode}
                   onChange={(e) => {
                     setSelectedCamCode(e.target.value);
+                    onSelectCameraCode?.(e.target.value);
                     setFeedMode('live');
                   }}
                   className="w-full bg-[#0b1b36] border border-[#1d3b6a] rounded-xl px-3 py-2 text-xs font-bold text-white focus:ring-2 focus:ring-[#0072CE] focus:outline-none cursor-pointer"
                 >
-                  <optgroup label="Primary ANPR Ingest Target">
-                    <option value="CAM-033">CAM-033 — SG Highway - Junction 33 (ANPR Primary)</option>
-                  </optgroup>
-
-                  <optgroup label={`All 33 Gujarat Surveillance Cameras (${masterCameraList.length} Nodes)`}>
+                  <optgroup label={`Gujarat Statewide Cameras (${masterCameraList.length} Nodes)`}>
                     {masterCameraList.map(c => (
                       <option key={c.cameraCode} value={c.cameraCode}>
                         {c.cameraCode} — {c.name} ({c.district})

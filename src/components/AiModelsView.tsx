@@ -390,14 +390,28 @@ export const AiModelCardsSection: React.FC<AiModelCardsSectionProps> = ({
 interface AiModelsViewProps {
   cameras: Camera[];
   currentLang?: Language;
+  initialCameraCode?: string;
+  onSelectCameraCode?: (cameraCode: string) => void;
   onNavigateToDetectionArea?: (cameraCode: string) => void;
 }
 
 export const AiModelsView: React.FC<AiModelsViewProps> = ({
   cameras,
+  initialCameraCode,
+  onSelectCameraCode,
   onNavigateToDetectionArea
 }) => {
-  const [selectedCamCode, setSelectedCamCode] = useState<string>('CAM-GJ-AHM-SNTL-000006');
+  const [selectedCamCode, setSelectedCamCode] = useState<string>(() => {
+    return initialCameraCode || (cameras && cameras[0]?.cameraCode) || 'CAM-001';
+  });
+
+  // Sync when initialCameraCode changes from outside navigation
+  useEffect(() => {
+    if (initialCameraCode && initialCameraCode !== selectedCamCode) {
+      setSelectedCamCode(initialCameraCode);
+    }
+  }, [initialCameraCode]);
+
   const [allAiConfigs, setAllAiConfigs] = useState<Record<string, any>>(() => ({ ...GLOBAL_AI_CONFIG_CACHE }));
   const [searchFilter, setSearchFilter] = useState<string>('');
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
@@ -605,7 +619,10 @@ export const AiModelsView: React.FC<AiModelsViewProps> = ({
             <span className="text-xs font-bold text-slate-300 whitespace-nowrap">Configure Camera Node:</span>
             <select
               value={selectedCamCode}
-              onChange={(e) => setSelectedCamCode(e.target.value)}
+              onChange={(e) => {
+                setSelectedCamCode(e.target.value);
+                onSelectCameraCode?.(e.target.value);
+              }}
               className="flex-1 bg-[#0b1b36] border border-[#1d3b6a] rounded-xl px-3.5 py-2 text-xs font-bold text-white focus:ring-2 focus:ring-[#0072CE] focus:outline-none cursor-pointer"
             >
               {cameras.map(c => (
