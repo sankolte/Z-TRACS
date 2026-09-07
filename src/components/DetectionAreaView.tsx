@@ -192,9 +192,18 @@ export const DetectionAreaView: React.FC<DetectionAreaViewProps> = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
-  const imgRef = useRef<HTMLImageElement>(null);
-
-  const selectedCamera = masterCameraList.find(c => c.cameraCode === selectedCamCode) || ALL_33_GUJARAT_CAMERAS[0];
+  const selectedCamera = masterCameraList.find(c => c.cameraCode === selectedCamCode) || masterCameraList[0] || ({
+    cameraUuid: 'uuid-cam-1',
+    cameraCode: 'CAM-001',
+    name: 'Camera 1 (Chiman Bhai Bridge)',
+    type: 'ANPR',
+    district: 'Ahmedabad',
+    resolution: '1920x1080',
+    healthStatus: 'ONLINE',
+    ipAddress: '103.250.160.189',
+    rtspUrl: 'rtsp://103.250.160.189:8554/stream/cam01',
+    lastPingTimestamp: 'Just now'
+  } as any);
 
   // Zones for current selected camera (Ensures Default 80% Polygon is ALWAYS initialized instead of empty blank screen)
   const zonesForCurrentCam = React.useMemo(() => {
