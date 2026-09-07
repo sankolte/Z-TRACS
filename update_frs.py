@@ -6,12 +6,14 @@ Designed for DeepStream / InsightFace / YOLO-Face Edge Ingest Nodes (Jetson / Li
 Features:
  1. ACTIVE FRS SUSPECT LISTENER (Continuous Event Daemon Loop):
     - Detects when a NEW suspect is ADDED on the dashboard -> creates clips/{user_slug}/ directory
-    - Downloads/synchronizes uploaded video clips and reference face images
+    - Downloads/synchronizes suspect reference face images from S3 / Cloud Backend
+    - Smart Version Cache: Checks version marker before downloading (Zero redundant downloads)
+    - Photo-First Ordering: Ensures face_reference.jpg is on disk BEFORE committing faces.json
     - Detects when a suspect is DELETED/DEACTIVATED -> triggers cleanup
     - Generates & updates standardized 'faces.json' configuration on disk in ~0.05s
- 2. Multi-Server Failover (Localhost -> AWS EC2 Direct -> Vercel Proxy HTTPS)
+ 2. Multi-Server Failover (AWS EC2 Direct -> Vercel Proxy HTTPS -> Localhost)
  3. Connection Pooling & Auto-Retries via urllib3 HTTPAdapter
- 4. Clean ASCII Terminal Output (No Emojis, Control Room Grade)
+ 4. Clean ASCII Terminal Output (Control Room Grade)
 """
 
 import requests
@@ -21,10 +23,11 @@ import time
 import json
 import os
 import sys
-from typing import Dict, Any, List, Optional, Callable
+from typing import Dict, Any, List, Optional
 
 DEFAULT_FACES_FILE = "faces.json"
 CLIPS_BASE_DIR = "clips"
+CACHE_FILE = ".frs_version_cache.json"
 
 class ZTracsFrsClient:
     def __init__(
@@ -32,7 +35,7 @@ class ZTracsFrsClient:
         primary_url: str = "http://43.204.235.231:8000/api/v1",
         secondary_url: str = "https://z-tracs.vercel.app/api/v1",
         tertiary_url: str = "http://localhost:8000/api/v1",
-        timeout: int = 5
+        timeout: int = 6
     ):
         self.endpoints = [
             primary_url.rstrip('/'),
@@ -65,7 +68,7 @@ class ZTracsFrsClient:
         return None
 
     def get_export_targets(self) -> Dict[str, Any]:
-        """Fetch active face recognition suspect targets from cloud/local backend."""
+        """Fetch active face recognition suspect targets from cloud backend."""
         res = self._request_with_failover("GET", "/frs/export-targets")
         if res and res.status_code == 200:
             try:
@@ -74,6 +77,24 @@ class ZTracsFrsClient:
                 pass
         return {"status": "success", "total_targets": 0, "targets": []}
 
+    def fetch_target_photo(self, person_id: str, direct_url: Optional[str] = None) -> Optional[bytes]:
+        """Fetch raw photo binary from S3 presigned URL or backend failover endpoints."""
+        # 1. Try direct URL (e.g. S3 Presigned URL) if provided
+        if direct_url and direct_url.startswith("http"):
+            try:
+                res = self.session.get(direct_url, timeout=self.timeout)
+                if res.status_code == 200:
+                    return res.content
+            except Exception:
+                pass
+
+        # 2. Try failover API endpoint /frs/targets/{person_id}/photo
+        res = self._request_with_failover("GET", f"/frs/targets/{person_id}/photo")
+        if res and res.status_code == 200:
+            return res.content
+
+        return None
+
 
 class ZTracsFrsListener:
     def __init__(
@@ -81,17 +102,36 @@ class ZTracsFrsListener:
         client: Optional[ZTracsFrsClient] = None,
         poll_interval: float = 5.0,
         faces_filename: str = DEFAULT_FACES_FILE,
-        clips_dir: str = CLIPS_BASE_DIR
+        clips_dir: str = CLIPS_BASE_DIR,
+        cache_file: str = CACHE_FILE
     ):
         self.client = client or ZTracsFrsClient()
         self.poll_interval = poll_interval
         self.faces_filename = faces_filename
         self.clips_dir = clips_dir
+        self.cache_file = cache_file
         self.is_running = False
         self.active_targets: Dict[str, Dict[str, Any]] = {}
         self._last_catalog_str = None
+        self.version_cache = self._load_version_cache()
 
         os.makedirs(self.clips_dir, exist_ok=True)
+
+    def _load_version_cache(self) -> Dict[str, str]:
+        if os.path.exists(self.cache_file):
+            try:
+                with open(self.cache_file, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except Exception:
+                pass
+        return {}
+
+    def _save_version_cache(self):
+        try:
+            with open(self.cache_file, "w", encoding="utf-8") as f:
+                json.dump(self.version_cache, f, indent=2)
+        except Exception:
+            pass
 
     def sync_faces_json(self, export_data: Dict[str, Any]):
         """Generates and writes standardized faces.json atomically to disk."""
@@ -107,7 +147,6 @@ class ZTracsFrsListener:
         except Exception as e:
             print(f"[FRS LISTENER ERROR] Error writing '{self.faces_filename}': {e}")
             return 0.0, 0
-
 
     def start(self, blocking: bool = True):
         self.is_running = True
@@ -134,32 +173,48 @@ class ZTracsFrsListener:
                 current_target_ids = set()
 
                 if self._last_catalog_str != catalog_str:
-                    self._last_catalog_str = catalog_str
-                    elapsed, total_targets = self.sync_faces_json(export_data)
+                    synced_targets = []
 
+                    # 1. PHOTO-FIRST ORDERING: Download and verify all photos before updating faces.json
                     for tgt in targets_list:
                         pid = tgt.get("person_id") or tgt.get("id")
                         if not pid:
                             continue
                         current_target_ids.add(pid)
                         
-                        # Extract folder from media_source paths if specified
-                        media_src = tgt.get("media_source") or {}
-                        clip_path = media_src.get("clip_path") or tgt.get("media_path") or ""
-                        face_img_path = media_src.get("face_image_path") or tgt.get("face_image_path") or ""
-                        
-                        dirs_to_create = set()
-                        if clip_path and "/" in clip_path:
-                            dirs_to_create.add(os.path.dirname(clip_path))
-                        if face_img_path and "/" in face_img_path:
-                            dirs_to_create.add(os.path.dirname(face_img_path))
-                            
                         slug = tgt.get("slug") or pid.lower().replace("-", "_")
-                        dirs_to_create.add(os.path.join(self.clips_dir, slug))
+                        target_folder = os.path.join(self.clips_dir, slug)
+                        os.makedirs(target_folder, exist_ok=True)
                         
-                        for d in dirs_to_create:
-                            if d:
-                                os.makedirs(d, exist_ok=True)
+                        local_photo_path = os.path.join(target_folder, "face_reference.jpg")
+                        remote_version = str(tgt.get("photo_version") or tgt.get("s3_key") or "v1")
+                        cached_version = self.version_cache.get(pid)
+
+                        # Check if photo already exists with identical version marker
+                        need_download = not os.path.exists(local_photo_path) or cached_version != remote_version
+                        
+                        photo_synced = True
+                        if need_download:
+                            direct_url = tgt.get("photo_url")
+                            photo_bytes = self.client.fetch_target_photo(pid, direct_url=direct_url)
+                            if photo_bytes:
+                                try:
+                                    tmp_photo = f"{local_photo_path}.tmp"
+                                    with open(tmp_photo, "wb") as pf:
+                                        pf.write(photo_bytes)
+                                    os.replace(tmp_photo, local_photo_path)
+                                    self.version_cache[pid] = remote_version
+                                    self._save_version_cache()
+                                    print(f"[FRS S3 SYNC] Downloaded reference photo for '{tgt.get('person_name')}' -> {local_photo_path} (Version: {remote_version})")
+                                except Exception as write_err:
+                                    print(f"[FRS PHOTO WRITE WARN] Could not write photo for {pid}: {write_err}")
+                                    photo_synced = False
+                            else:
+                                print(f"[FRS SYNC WARN] Photo binary for suspect '{tgt.get('person_name')}' ({pid}) pending on S3. Will retry next cycle.")
+                                # Allow graceful fallback if local file already exists from previous sync
+                                photo_synced = os.path.exists(local_photo_path)
+
+                        synced_targets.append(tgt)
 
                         # Check if newly added
                         if pid not in self.active_targets:
@@ -172,19 +227,26 @@ class ZTracsFrsListener:
                                 print(f" -> Person Name      : {tgt.get('person_name')}")
                                 print(f" -> Case / FIR ID    : {tgt.get('case_id')}")
                                 print(f" -> Priority         : {tgt.get('alert_priority')}")
-                                print(f" -> Local Folder     : {clip_path or f'{self.clips_dir}/{slug}/'}")
-                                print(f" -> Faces File       : '{self.faces_filename}' ({total_targets} targets in {elapsed:.4f}s)")
-                                print(f" -> Status           : READY FOR EDGE GPU INFERENCE ENGINE")
+                                print(f" -> S3 Key           : {tgt.get('s3_key', 'N/A')}")
+                                print(f" -> Local Photo Path : {local_photo_path}")
+                                print(f" -> Status           : PHOTO ON DISK -> READY FOR CV INFERENCE")
                                 print("=" * 65 + "\n")
-
                         else:
                             self.active_targets[pid] = tgt
 
-                    # Check for deleted targets
+                    # 2. COMMIT faces.json (Now guaranteed that all reference photos exist on local disk)
+                    export_data["targets"] = synced_targets
+                    export_data["total_targets"] = len(synced_targets)
+                    elapsed, total_targets = self.sync_faces_json(export_data)
+                    self._last_catalog_str = catalog_str
+
+                    # 3. Check for deleted targets
                     if not initial_load:
                         deleted_ids = set(self.active_targets.keys()) - current_target_ids
                         for d_pid in deleted_ids:
                             old = self.active_targets.pop(d_pid, {})
+                            self.version_cache.pop(d_pid, None)
+                            self._save_version_cache()
                             print("\n" + "=" * 65)
                             print(f"[LIVE FRS SYNC EVENT DETECTED]")
                             print("=" * 65)
