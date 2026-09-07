@@ -29,9 +29,9 @@ FORENSICS_BASE_DIR = "forensics"
 class ZTracsForensicsClient:
     def __init__(
         self,
-        primary_url: str = "http://localhost:8000/api/v1",
-        secondary_url: str = "http://43.204.235.231:8000/api/v1",
-        tertiary_url: str = "https://z-t-tau.vercel.app/api/v1",
+        primary_url: str = "http://43.204.235.231:8000/api/v1",
+        secondary_url: str = "https://z-tracs.vercel.app/api/v1",
+        tertiary_url: str = "http://localhost:8000/api/v1",
         timeout: int = 5
     ):
         self.endpoints = [
@@ -94,17 +94,20 @@ class ZTracsForensicsListener:
         os.makedirs(self.base_dir, exist_ok=True)
 
     def sync_forensics_json(self, export_data: Dict[str, Any]):
-        """Generates and writes standardized forensics.json to disk."""
+        """Generates and writes standardized forensics.json atomically to disk."""
         try:
             t0 = time.time()
-            with open(self.forensics_filename, "w", encoding="utf-8") as f:
+            tmp_file = f"{self.forensics_filename}.tmp"
+            with open(tmp_file, "w", encoding="utf-8") as f:
                 json.dump(export_data, f, indent=2)
+            os.replace(tmp_file, self.forensics_filename)
             elapsed = time.time() - t0
             total = export_data.get("total_tasks", len(export_data.get("tasks", [])))
             return elapsed, total
         except Exception as e:
             print(f"[FORENSICS LISTENER ERROR] Error writing '{self.forensics_filename}': {e}")
             return 0.0, 0
+
 
     def start(self, blocking: bool = True):
         self.is_running = True

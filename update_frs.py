@@ -29,9 +29,9 @@ CLIPS_BASE_DIR = "clips"
 class ZTracsFrsClient:
     def __init__(
         self,
-        primary_url: str = "http://localhost:8000/api/v1",
-        secondary_url: str = "http://43.204.235.231:8000/api/v1",
-        tertiary_url: str = "https://z-t-tau.vercel.app/api/v1",
+        primary_url: str = "http://43.204.235.231:8000/api/v1",
+        secondary_url: str = "https://z-tracs.vercel.app/api/v1",
+        tertiary_url: str = "http://localhost:8000/api/v1",
         timeout: int = 5
     ):
         self.endpoints = [
@@ -94,17 +94,20 @@ class ZTracsFrsListener:
         os.makedirs(self.clips_dir, exist_ok=True)
 
     def sync_faces_json(self, export_data: Dict[str, Any]):
-        """Generates and writes standardized faces.json to disk."""
+        """Generates and writes standardized faces.json atomically to disk."""
         try:
             t0 = time.time()
-            with open(self.faces_filename, "w", encoding="utf-8") as f:
+            tmp_file = f"{self.faces_filename}.tmp"
+            with open(tmp_file, "w", encoding="utf-8") as f:
                 json.dump(export_data, f, indent=2)
+            os.replace(tmp_file, self.faces_filename)
             elapsed = time.time() - t0
             total = export_data.get("total_targets", len(export_data.get("targets", [])))
             return elapsed, total
         except Exception as e:
             print(f"[FRS LISTENER ERROR] Error writing '{self.faces_filename}': {e}")
             return 0.0, 0
+
 
     def start(self, blocking: bool = True):
         self.is_running = True

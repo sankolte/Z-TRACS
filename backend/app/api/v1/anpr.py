@@ -332,13 +332,81 @@ async def remove_watchlist_plate(plate: str):
         ANPR_WATCHLIST.remove(clean)
     return ApiResponse.ok({"status": "success", "watchlist": ANPR_WATCHLIST})
 
+from app.core.camera_utils import get_code_aliases, normalize_camera_code, get_sentinel_code
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SYNC VERSION FOR EDGE DAEMON CHANGE-DETECTION (FAST MAX UPDATED_AT)
+# ─────────────────────────────────────────────────────────────────────────────
+
+@router.get("/sync-version")
+async def get_sync_version():
+    """
+    Ultra-lightweight endpoint for edge listener daemons.
+    Returns the latest ISO timestamps of modifications to AI configs and ROIs.
+    """
+    ai_updated_at = None
+    rois_updated_at = None
+
+    conn = await get_db_connection()
+    if conn:
+        try:
+            row_ai = await conn.fetchrow("SELECT MAX(updated_at) as max_updated FROM anpr_camera_ai_configs;")
+            if row_ai and row_ai["max_updated"]:
+                ai_updated_at = row_ai["max_updated"].isoformat()
+
+            row_roi = await conn.fetchrow("SELECT MAX(updated_at) as max_updated FROM anpr_camera_rois;")
+            if row_roi and row_roi["max_updated"]:
+                rois_updated_at = row_roi["max_updated"].isoformat()
+            await conn.close()
+        except Exception as e:
+            print(f"[SYNC VERSION RDS WARN] {e}")
+
+    # Fallback to local memory / file modification times if DB offline
+    if not ai_updated_at and os.path.exists(AI_CONFIG_FILE):
+        ai_updated_at = datetime.fromtimestamp(os.path.getmtime(AI_CONFIG_FILE)).isoformat()
+    if not rois_updated_at and os.path.exists(ROI_FILE):
+        rois_updated_at = datetime.fromtimestamp(os.path.getmtime(ROI_FILE)).isoformat()
+
+    return {
+        "status": "success",
+        "ai_configs_updated_at": ai_updated_at,
+        "rois_updated_at": rois_updated_at
+    }
+
 # ─────────────────────────────────────────────────────────────────────────────
 # DETECTION AREA & ROI POLYGON MANAGEMENT (AWS RDS BACKED)
 # ─────────────────────────────────────────────────────────────────────────────
 
 @router.get("/all-rois")
 async def get_all_rois():
-    """Batch fetch all stored camera ROIs in 1 single fast call."""
+    """Batch fetch all stored camera ROIs directly from RDS PostgreSQL."""
+    conn = await get_db_connection()
+    if conn:
+        try:
+            rows = await conn.fetch("SELECT camera_code, camera_name, resolution, zone_name, points_json, updated_at FROM anpr_camera_rois;")
+            await conn.close()
+            if rows:
+                db_rois = {}
+                for r in rows:
+                    pts = json.loads(r["points_json"]) if r["points_json"] else []
+                    coords = [[int(p.get("x", 0)), int(p.get("y", 0))] for p in pts if isinstance(p, dict)]
+                    rec = {
+                        "camera_code": r["camera_code"],
+                        "camera_name": r["camera_name"],
+                        "resolution": r["resolution"],
+                        "zone_name": r["zone_name"],
+                        "points": pts,
+                        "coordinates": coords,
+                        "updated_at": r["updated_at"].isoformat() if r["updated_at"] else None
+                    }
+                    for alias in get_code_aliases(r["camera_code"]):
+                        db_rois[alias] = rec
+                # Update cache
+                SAVED_ROIS.update(db_rois)
+                return ApiResponse.ok(db_rois)
+        except Exception as e:
+            print(f"[RDS ALL-ROIS FETCH WARN] {e}")
+
     return ApiResponse.ok(SAVED_ROIS)
 
 @router.post("/roi")
@@ -350,13 +418,8 @@ async def save_camera_roi(camera_code: Optional[str] = None, payload: Dict[str, 
     if not cam_code:
         raise HTTPException(status_code=400, detail="camera_code is required")
 
-    normalized_codes = [cam_code]
-    if cam_code.startswith("CAM-") and not "SNTL" in cam_code:
-        try:
-            num = int(cam_code.replace("CAM-", ""))
-            normalized_codes.append(f"CAM-GJ-AHM-SNTL-{num:06d}")
-        except Exception:
-            pass
+    canonical_code = normalize_camera_code(cam_code)
+    aliases = get_code_aliases(cam_code)
 
     points = payload.get("points") or []
     if points and isinstance(points, list) and isinstance(points[0], dict):
@@ -365,8 +428,8 @@ async def save_camera_roi(camera_code: Optional[str] = None, payload: Dict[str, 
         coords = points
 
     roi_record = {
-        "camera_code": cam_code,
-        "camera_name": payload.get("camera_name") or f"Camera {cam_code}",
+        "camera_code": canonical_code,
+        "camera_name": payload.get("camera_name") or f"Camera {canonical_code}",
         "resolution": payload.get("resolution", "1920x1080"),
         "zone_name": payload.get("zone_name", "Detection Zone 1"),
         "points": points,
@@ -374,7 +437,7 @@ async def save_camera_roi(camera_code: Optional[str] = None, payload: Dict[str, 
         "saved_to_rds": False
     }
 
-    for code in normalized_codes:
+    for code in aliases:
         SAVED_ROIS[code] = roi_record
     save_json_file(ROI_FILE, SAVED_ROIS)
 
@@ -388,29 +451,30 @@ async def save_camera_roi(camera_code: Optional[str] = None, payload: Dict[str, 
                 VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
                 ON CONFLICT (camera_code) 
                 DO UPDATE SET camera_name = $2, resolution = $3, zone_name = $4, points_json = $5, updated_at = CURRENT_TIMESTAMP;
-            """, cam_code, payload.get("camera_name", ""), payload.get("resolution", "1920x1080"), payload.get("zone_name", ""), pts_json)
+            """, canonical_code, payload.get("camera_name", ""), payload.get("resolution", "1920x1080"), payload.get("zone_name", ""), pts_json)
             roi_record["saved_to_rds"] = True
             await conn.close()
         except Exception as e:
             print(f"[RDS ROI SAVE WARN] {e}")
 
-    return {"status": "success", "message": f"ROI saved for {cam_code}", "saved_to_rds": roi_record["saved_to_rds"], "data": roi_record}
+    return {"status": "success", "message": f"ROI saved for {canonical_code}", "saved_to_rds": roi_record["saved_to_rds"], "data": roi_record}
 
 @router.get("/roi/{camera_code}")
 async def get_camera_roi(camera_code: str):
     """Retrieve saved ROI polygon coordinates for a camera."""
     cam_code = camera_code.strip()
-    if cam_code in SAVED_ROIS:
-        return ApiResponse.ok(SAVED_ROIS[cam_code])
-        
-    for k, v in SAVED_ROIS.items():
-        if cam_code in k or k in cam_code:
-            return ApiResponse.ok(v)
+    for alias in get_code_aliases(cam_code):
+        if alias in SAVED_ROIS:
+            return ApiResponse.ok(SAVED_ROIS[alias])
 
     conn = await get_db_connection()
     if conn:
         try:
-            row = await conn.fetchrow("SELECT camera_code, camera_name, resolution, zone_name, points_json FROM anpr_camera_rois WHERE camera_code = $1 OR camera_code LIKE $2;", cam_code, f"%{cam_code}%")
+            row = await conn.fetchrow("""
+                SELECT camera_code, camera_name, resolution, zone_name, points_json, updated_at 
+                FROM anpr_camera_rois 
+                WHERE camera_code = $1 OR camera_code = $2;
+            """, normalize_camera_code(cam_code), get_sentinel_code(cam_code))
             if row:
                 pts = json.loads(row["points_json"]) if row["points_json"] else []
                 coords = [[int(p.get("x", 0)), int(p.get("y", 0))] for p in pts if isinstance(p, dict)]
@@ -420,9 +484,11 @@ async def get_camera_roi(camera_code: str):
                     "resolution": row["resolution"],
                     "zone_name": row["zone_name"],
                     "points": pts,
-                    "coordinates": coords
+                    "coordinates": coords,
+                    "updated_at": row["updated_at"].isoformat() if row["updated_at"] else None
                 }
-                SAVED_ROIS[cam_code] = rec
+                for alias in get_code_aliases(row["camera_code"]):
+                    SAVED_ROIS[alias] = rec
                 await conn.close()
                 return ApiResponse.ok(rec)
             await conn.close()
@@ -432,50 +498,154 @@ async def get_camera_roi(camera_code: str):
     return ApiResponse.ok({"camera_code": cam_code, "points": [], "coordinates": []})
 
 # ─────────────────────────────────────────────────────────────────────────────
-# AI VISION MODEL CONFIGURATIONS
+# AI VISION MODEL CONFIGURATIONS (AWS RDS BACKED)
 # ─────────────────────────────────────────────────────────────────────────────
 
 @router.get("/all-ai-configs")
 async def get_all_ai_configs():
-    """Batch fetch all active AI vision model configurations in 1 single fast call."""
+    """Batch fetch all active AI vision model configurations from AWS RDS."""
+    conn = await get_db_connection()
+    if conn:
+        try:
+            rows = await conn.fetch("""
+                SELECT camera_code, camera_name, enable_vector, usecases_json, models_json, 
+                       confidence_threshold, target_fps, updated_at 
+                FROM anpr_camera_ai_configs;
+            """)
+            await conn.close()
+            if rows:
+                db_configs = {}
+                for r in rows:
+                    raw_vec = r["enable_vector"] or "[0,0,0,0]"
+                    try:
+                        vec = json.loads(raw_vec) if isinstance(raw_vec, str) else list(raw_vec)
+                    except Exception:
+                        vec = [0, 0, 0, 0]
+
+                    models = json.loads(r["models_json"]) if isinstance(r["models_json"], str) else (r["models_json"] or {})
+                    usecases = json.loads(r["usecases_json"]) if isinstance(r["usecases_json"], str) else (r["usecases_json"] or [])
+                    conf = float(r["confidence_threshold"]) if r["confidence_threshold"] is not None else 0.500
+
+                    rec = {
+                        "camera_code": r["camera_code"],
+                        "camera_name": r["camera_name"],
+                        "enable": vec,
+                        "usecases": usecases,
+                        "models": models,
+                        "confidence_threshold": conf,
+                        "target_fps": r["target_fps"] or 15,
+                        "updated_at": r["updated_at"].isoformat() if r["updated_at"] else None
+                    }
+                    for alias in get_code_aliases(r["camera_code"]):
+                        db_configs[alias] = rec
+                AI_CONFIGS.update(db_configs)
+                return ApiResponse.ok(db_configs)
+        except Exception as e:
+            print(f"[RDS ALL AI CONFIGS FETCH WARN] {e}")
+
     return ApiResponse.ok(AI_CONFIGS)
 
 @router.post("/ai-config")
 async def save_ai_config(payload: Dict[str, Any] = Body(...)):
-    """Save active AI vision model configuration, enable vector, and usecases."""
+    """Save active AI vision model configuration, enable vector, and usecases to RDS."""
     cam_code = str(payload.get("camera_code") or payload.get("cameraCode") or "").strip()
     if not cam_code:
         raise HTTPException(status_code=400, detail="camera_code is required")
         
-    normalized_codes = [cam_code]
-    if cam_code.startswith("CAM-") and "SNTL" not in cam_code:
-        try:
-            num = int(cam_code.replace("CAM-", ""))
-            normalized_codes.append(f"CAM-GJ-AHM-SNTL-{num:06d}")
-        except Exception:
-            pass
+    canonical_code = normalize_camera_code(cam_code)
+    aliases = get_code_aliases(cam_code)
 
-    for code in normalized_codes:
+    for code in aliases:
         AI_CONFIGS[code] = payload
     save_json_file(AI_CONFIG_FILE, AI_CONFIGS)
 
-    return ApiResponse.ok({"status": "success", "camera_code": cam_code, "data": payload})
+    # Format data for PostgreSQL
+    enable_vec = payload.get("enable") or [0, 0, 0, 0]
+    enable_str = json.dumps(enable_vec)
+    usecases_json = json.dumps(payload.get("usecases") or [])
+    models_json = json.dumps(payload.get("models") or {})
+    raw_thresh = payload.get("confidence_threshold", 0.5)
+    # If user provided percentage 85 -> convert to 0.85
+    thresh = float(raw_thresh) / 100.0 if float(raw_thresh) > 1.0 else float(raw_thresh)
+    target_fps = int(payload.get("target_fps", 15))
+
+    conn = await get_db_connection()
+    if conn:
+        try:
+            await conn.execute("""
+                INSERT INTO anpr_camera_ai_configs (
+                    camera_code, camera_name, enable_vector, usecases_json, models_json, 
+                    confidence_threshold, target_fps, updated_at
+                ) VALUES ($1, $2, $3, $4::jsonb, $5::jsonb, $6, $7, CURRENT_TIMESTAMP)
+                ON CONFLICT (camera_code)
+                DO UPDATE SET 
+                    camera_name = $2,
+                    enable_vector = $3,
+                    usecases_json = $4::jsonb,
+                    models_json = $5::jsonb,
+                    confidence_threshold = $6,
+                    target_fps = $7,
+                    updated_at = CURRENT_TIMESTAMP;
+            """, canonical_code, payload.get("camera_name", f"Camera {canonical_code}"), enable_str, usecases_json, models_json, thresh, target_fps)
+            await conn.close()
+            print(f"✅ [RDS AI CONFIG STORED] Camera: {canonical_code} | Enable: {enable_str}")
+        except Exception as e:
+            print(f"[RDS AI CONFIG SAVE WARN] {e}")
+
+    return ApiResponse.ok({"status": "success", "camera_code": canonical_code, "data": payload})
 
 @router.get("/ai-config/{camera_code}")
 async def get_ai_config(camera_code: str):
     """Fetch active AI vision models configuration for a camera."""
     cam_code = camera_code.strip()
-    if cam_code in AI_CONFIGS:
-        return ApiResponse.ok(AI_CONFIGS[cam_code])
-    for k, v in AI_CONFIGS.items():
-        if cam_code in k or k in cam_code:
-            return ApiResponse.ok(v)
+    for alias in get_code_aliases(cam_code):
+        if alias in AI_CONFIGS:
+            return ApiResponse.ok(AI_CONFIGS[alias])
+
+    conn = await get_db_connection()
+    if conn:
+        try:
+            row = await conn.fetchrow("""
+                SELECT camera_code, camera_name, enable_vector, usecases_json, models_json, 
+                       confidence_threshold, target_fps, updated_at 
+                FROM anpr_camera_ai_configs 
+                WHERE camera_code = $1 OR camera_code = $2;
+            """, normalize_camera_code(cam_code), get_sentinel_code(cam_code))
+            if row:
+                raw_vec = row["enable_vector"] or "[0,0,0,0]"
+                try:
+                    vec = json.loads(raw_vec) if isinstance(raw_vec, str) else list(raw_vec)
+                except Exception:
+                    vec = [0, 0, 0, 0]
+
+                models = json.loads(row["models_json"]) if isinstance(row["models_json"], str) else (row["models_json"] or {})
+                usecases = json.loads(row["usecases_json"]) if isinstance(row["usecases_json"], str) else (row["usecases_json"] or [])
+                conf = float(row["confidence_threshold"]) if row["confidence_threshold"] is not None else 0.500
+
+                rec = {
+                    "camera_code": row["camera_code"],
+                    "camera_name": row["camera_name"],
+                    "enable": vec,
+                    "usecases": usecases,
+                    "models": models,
+                    "confidence_threshold": conf,
+                    "target_fps": row["target_fps"] or 15,
+                    "updated_at": row["updated_at"].isoformat() if row["updated_at"] else None
+                }
+                for alias in get_code_aliases(row["camera_code"]):
+                    AI_CONFIGS[alias] = rec
+                await conn.close()
+                return ApiResponse.ok(rec)
+            await conn.close()
+        except Exception:
+            pass
+
     return ApiResponse.ok({
         "camera_code": cam_code,
         "models": {"anpr": False, "frs": False, "crowd": False, "ppe": False, "footfall": False, "perimeter": False},
         "enable": [0, 0, 0, 0],
         "usecases": [],
-        "confidence_threshold": 85,
+        "confidence_threshold": 0.500,
         "target_fps": 15
     })
 
@@ -484,25 +654,27 @@ async def get_ai_config(camera_code: str):
 async def undeploy_ai_config(camera_code: str):
     """Undeploy / unassign all AI vision models from a camera node."""
     cam_code = camera_code.strip()
-    normalized_codes = [cam_code]
-    if cam_code.startswith("CAM-") and "SNTL" not in cam_code:
-        try:
-            num = int(cam_code.replace("CAM-", ""))
-            normalized_codes.append(f"CAM-GJ-AHM-SNTL-{num:06d}")
-        except Exception:
-            pass
+    canonical_code = normalize_camera_code(cam_code)
+    aliases = get_code_aliases(cam_code)
 
-    for code in normalized_codes:
-        if code in AI_CONFIGS:
-            del AI_CONFIGS[code]
-
-    keys_to_del = [k for k in AI_CONFIGS.keys() if cam_code in k or k in cam_code]
-    for k in keys_to_del:
-        AI_CONFIGS.pop(k, None)
-
+    for code in aliases:
+        AI_CONFIGS.pop(code, None)
     save_json_file(AI_CONFIG_FILE, AI_CONFIGS)
+
+    conn = await get_db_connection()
+    if conn:
+        try:
+            await conn.execute("""
+                DELETE FROM anpr_camera_ai_configs 
+                WHERE camera_code = $1 OR camera_code = $2;
+            """, canonical_code, get_sentinel_code(cam_code))
+            await conn.close()
+        except Exception as e:
+            print(f"[RDS AI CONFIG DELETE WARN] {e}")
+
     return ApiResponse.ok({
         "status": "success",
-        "message": f"AI models undeployed successfully for {cam_code}",
-        "camera_code": cam_code
+        "message": f"AI models undeployed successfully for {canonical_code}",
+        "camera_code": canonical_code
     })
+
