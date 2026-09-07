@@ -22,14 +22,14 @@ source venv/bin/activate
 
 echo "📦 [3/5] Installing Python dependencies..."
 pip install --upgrade pip
-pip install fastapi uvicorn boto3 psycopg2-binary pydantic python-dotenv requests sqlalchemy python-multipart
+pip install fastapi uvicorn boto3 psycopg2-binary pydantic python-dotenv requests sqlalchemy python-multipart asyncpg
 
 echo "🛑 [4/5] Stopping previous PM2 instances if running..."
 pm2 delete all || true
 
 echo "⚡ [5/5] Starting FastAPI Backend & 3 AI Ingestion Daemons..."
-# Start FastAPI backend
-pm2 start "venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000" --name "z-tracs-api" --cwd backend
+# Start FastAPI backend (correct root venv path with --app-dir)
+pm2 start "venv/bin/python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --app-dir backend" --name "z-tracs-api"
 
 # Start the 3 Continuous Background Daemons
 pm2 start "venv/bin/python update_json.py" --name "daemon-anpr"
