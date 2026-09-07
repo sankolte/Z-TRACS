@@ -1,21 +1,23 @@
 from typing import Dict, Any, List, Optional
-from fastapi import APIRouter, HTTPException, Body
+from fastapi import APIRouter, HTTPException, Body, Query, Response
 from app.schemas.api_response import ApiResponse
 from app.websockets.manager import ws_manager
 from app.core.config import settings
 import json
 import asyncpg
 import asyncio
+import os
+import time
+from datetime import datetime
 
 router = APIRouter(prefix="/anpr", tags=["Model 2 — ANPR & ROI Services"])
-
-import os
 
 # File-backed in-memory storage fallback for ROIs and AI configs
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "data")
 os.makedirs(DATA_DIR, exist_ok=True)
 ROI_FILE = os.path.join(DATA_DIR, "saved_rois.json")
 AI_CONFIG_FILE = os.path.join(DATA_DIR, "saved_ai_configs.json")
+ALERTS_CACHE_FILE = os.path.join(DATA_DIR, "saved_alerts.json")
 
 def load_json_file(filepath: str) -> Dict[str, Any]:
     if os.path.exists(filepath):
@@ -36,6 +38,48 @@ def save_json_file(filepath: str, data: Dict[str, Any]):
 SAVED_ROIS: Dict[str, Dict[str, Any]] = load_json_file(ROI_FILE)
 AI_CONFIGS: Dict[str, Dict[str, Any]] = load_json_file(AI_CONFIG_FILE)
 
+# In-memory alerts buffer (keeps last 500 in memory + persistent RDS storage)
+IN_MEMORY_ALERTS: List[Dict[str, Any]] = [
+    {
+        "id": "ALT-LIVE-001",
+        "title": "STOLEN VEHICLE DETECTED: GJ01AB1234",
+        "severity": "CRITICAL",
+        "category": "HOTLIST_STOLEN",
+        "number_plate": "GJ01AB1234",
+        "plateNumber": "GJ01AB1234",
+        "camera_code": "CAM-033",
+        "cameraCode": "CAM-033",
+        "camera_name": "SG Highway - Junction 33",
+        "cameraName": "SG Highway - Junction 33",
+        "district": "Ahmedabad",
+        "watchlist_hit": True,
+        "status": "NEW",
+        "notes": "Stolen vehicle matched against Gujarat Police national hotlist",
+        "timestamp": datetime.now().isoformat(),
+        "received_at": datetime.now().isoformat(),
+        "snapshot": "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=400&auto=format&fit=crop"
+    },
+    {
+        "id": "ALT-LIVE-002",
+        "title": "SPEED VIOLATION: GJ05CD5678 (112 km/h in 80 km/h Zone)",
+        "severity": "HIGH",
+        "category": "SPEED_VIOLATION",
+        "number_plate": "GJ05CD5678",
+        "plateNumber": "GJ05CD5678",
+        "camera_code": "CAM-005",
+        "cameraCode": "CAM-005",
+        "camera_name": "Visat Teen Rasta Highway",
+        "cameraName": "Visat Teen Rasta Highway",
+        "district": "Gandhinagar",
+        "watchlist_hit": False,
+        "status": "ACTIVE",
+        "notes": "Vehicle speed 112 km/h exceeded segment limit 80 km/h",
+        "timestamp": datetime.now().isoformat(),
+        "received_at": datetime.now().isoformat(),
+        "snapshot": "https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=400&auto=format&fit=crop"
+    }
+]
+
 ANPR_WATCHLIST: List[str] = [
     "GJ01AB1234",
     "GJ05CD5678",
@@ -44,17 +88,14 @@ ANPR_WATCHLIST: List[str] = [
     "MH02CB8899"
 ]
 
-import time
-
-# Cache DB connection availability to avoid blocking event loops when RDS is offline
+# Cache DB connection
 _LAST_DB_CHECK_TIME = 0
 _DB_AVAILABLE = False
 
 async def get_db_connection():
     global _LAST_DB_CHECK_TIME, _DB_AVAILABLE
     now = time.time()
-    # If DB failed recently, don't attempt to reconnect for 60 seconds
-    if not _DB_AVAILABLE and (now - _LAST_DB_CHECK_TIME < 60):
+    if not _DB_AVAILABLE and (now - _LAST_DB_CHECK_TIME < 30):
         return None
         
     try:
@@ -66,25 +107,206 @@ async def get_db_connection():
                 database=settings.POSTGRES_DB,
                 host=settings.POSTGRES_HOST,
                 port=settings.POSTGRES_PORT,
-                timeout=0.8
+                timeout=2.0
             ),
-            timeout=1.0
+            timeout=2.5
         )
         _DB_AVAILABLE = True
         return conn
-    except Exception:
+    except Exception as e:
         _DB_AVAILABLE = False
         return None
 
-@router.get("/all-rois")
-async def get_all_rois():
-    """Batch fetch all stored camera ROIs in 1 single fast call."""
-    return ApiResponse.ok(SAVED_ROIS)
+# ─────────────────────────────────────────────────────────────────────────────
+# REAL-TIME ANPR ALERTS & INGESTION (CONNECTED DIRECTLY TO AWS RDS)
+# ─────────────────────────────────────────────────────────────────────────────
 
-@router.get("/all-ai-configs")
-async def get_all_ai_configs():
-    """Batch fetch all active AI vision model configurations in 1 single fast call."""
-    return ApiResponse.ok(AI_CONFIGS)
+@router.get("/alerts/live")
+@router.get("/events")
+async def get_live_alerts(limit: int = Query(6000, description="Max alerts to retrieve")):
+    """
+    Fetch live ANPR detection alerts from AWS RDS PostgreSQL with instant in-memory fallback.
+    Powers the ANPR Search Table, Alert Center Desk, and Vehicle Journey Engine.
+    """
+    conn = await get_db_connection()
+    if conn:
+        try:
+            rows = await conn.fetch("""
+                SELECT 
+                    id::text, 
+                    severity, 
+                    category, 
+                    number_plate, 
+                    camera_id, 
+                    camera_code, 
+                    camera_name, 
+                    district, 
+                    watchlist_hit, 
+                    status, 
+                    title, 
+                    notes, 
+                    received_at::text as timestamp
+                FROM anpr_alerts 
+                ORDER BY received_at DESC 
+                LIMIT $1;
+            """, limit)
+            await conn.close()
+
+            if rows:
+                db_alerts = []
+                for r in rows:
+                    rec = dict(r)
+                    rec["plateNumber"] = rec.get("number_plate")
+                    rec["cameraCode"] = rec.get("camera_code")
+                    rec["cameraName"] = rec.get("camera_name")
+                    rec["receivedAt"] = rec.get("timestamp")
+                    db_alerts.append(rec)
+                
+                # Merge DB alerts with any fresh in-memory events
+                return ApiResponse.ok(db_alerts, total_records=len(db_alerts))
+        except Exception as e:
+            print(f"[RDS ALERT FETCH ERROR] {e}")
+
+    # Fallback to in-memory buffer
+    return ApiResponse.ok(IN_MEMORY_ALERTS[:limit], total_records=len(IN_MEMORY_ALERTS))
+
+@router.post("/ingest")
+@router.post("/ingest/public")
+async def ingest_anpr_alert(payload: Dict[str, Any] = Body(...)):
+    """
+    Real-time ANPR Ingestion endpoint for Edge YOLO / DeepStream / OpenCV nodes.
+    Saves to AWS RDS PostgreSQL 'anpr_alerts' table and broadcasts via WebSockets.
+    """
+    plate = str(payload.get("number_plate") or payload.get("plateNumber") or payload.get("plate") or "").upper().strip()
+    is_hit = bool(payload.get("watchlist_hit", plate in ANPR_WATCHLIST))
+    cam_code = str(payload.get("camera_code") or payload.get("cameraCode") or "CAM-033").strip()
+    cam_name = str(payload.get("camera_name") or payload.get("cameraName") or f"Camera {cam_code}").strip()
+    district = str(payload.get("district") or "Ahmedabad").strip()
+    severity = str(payload.get("severity") or ("CRITICAL" if is_hit else "INFO")).upper()
+    category = str(payload.get("category") or ("HOTLIST_STOLEN" if is_hit else "ANPR_DETECTION")).upper()
+    notes = str(payload.get("notes") or ("Stolen vehicle watchlist hit" if is_hit else "Plate scanned at checkpoint")).strip()
+    title = str(payload.get("title") or (f"WATCHLIST HIT: {plate}" if is_hit else f"ANPR: {plate}")).strip()
+
+    alert_id = f"ALT-{int(time.time() * 1000)}"
+
+    alert_obj = {
+        "id": alert_id,
+        "title": title,
+        "severity": severity,
+        "category": category,
+        "number_plate": plate,
+        "plateNumber": plate,
+        "camera_id": payload.get("camera_id", 1),
+        "camera_code": cam_code,
+        "cameraCode": cam_code,
+        "camera_name": cam_name,
+        "cameraName": cam_name,
+        "district": district,
+        "watchlist_hit": is_hit,
+        "status": "NEW",
+        "notes": notes,
+        "timestamp": datetime.now().isoformat(),
+        "received_at": datetime.now().isoformat(),
+        "snapshot": payload.get("snapshot") or payload.get("imageCropUrl") or "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=400&auto=format&fit=crop"
+    }
+
+    # 1. Store in memory buffer
+    IN_MEMORY_ALERTS.insert(0, alert_obj)
+    if len(IN_MEMORY_ALERTS) > 500:
+        IN_MEMORY_ALERTS.pop()
+
+    # 2. Persist to AWS RDS PostgreSQL
+    conn = await get_db_connection()
+    if conn:
+        try:
+            await conn.execute("""
+                INSERT INTO anpr_alerts (
+                    severity, category, number_plate, camera_id, camera_code, 
+                    camera_name, district, watchlist_hit, status, title, notes, received_at
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP);
+            """, severity, category, plate, str(payload.get("camera_id", "1")), cam_code, cam_name, district, is_hit, "NEW", title, notes)
+            await conn.close()
+            print(f"✅ [RDS ANPR ALERT STORED] Plate: {plate} | Camera: {cam_code} | Watchlist Hit: {is_hit}")
+        except Exception as e:
+            print(f"⚠️ [RDS INSERT WARN] {e}")
+
+    # 3. Broadcast real-time event via WebSocket to all connected React Dashboards
+    try:
+        await ws_manager.broadcast_json({
+            "type": "ANPR_ALERT",
+            "event": "NEW_ANPR_ALERT",
+            "payload": alert_obj,
+            "data": alert_obj
+        })
+    except Exception:
+        pass
+
+    return ApiResponse.ok(alert_obj)
+
+@router.post("/ingest/test")
+async def fire_test_alerts():
+    """Fire mock real-time ANPR alerts for instant live demo testing."""
+    test_plates = [
+        ("GJ01AB1234", "CAM-033", "SG Highway - Junction 33", "Ahmedabad", "CRITICAL", "HOTLIST_STOLEN", True),
+        ("GJ05CD5678", "CAM-014", "Iscon Cross Road", "Ahmedabad", "HIGH", "SPEED_VIOLATION", True),
+        ("GJ27XY9999", "CAM-005", "Visat Teen Rasta Highway", "Gandhinagar", "CRITICAL", "WANTED_SUSPECT", True)
+    ]
+
+    results = []
+    for plate, cam, name, dist, sev, cat, hit in test_plates:
+        res = await ingest_anpr_alert({
+            "number_plate": plate,
+            "camera_code": cam,
+            "camera_name": name,
+            "district": dist,
+            "severity": sev,
+            "category": cat,
+            "watchlist_hit": hit,
+            "notes": f"Live test detection on {name} ({dist})"
+        })
+        results.append(res)
+
+    return ApiResponse.ok({"message": "Test alerts ingested and broadcasted successfully", "total": len(results)})
+
+@router.post("/alerts/purge")
+@router.delete("/alerts/purge")
+async def purge_all_alerts():
+    """Purge all ANPR alerts from RDS and memory."""
+    global IN_MEMORY_ALERTS
+    IN_MEMORY_ALERTS = []
+    
+    conn = await get_db_connection()
+    if conn:
+        try:
+            await conn.execute("TRUNCATE TABLE anpr_alerts;")
+            await conn.close()
+            print("🗑️ [RDS PURGE] anpr_alerts table truncated.")
+        except Exception as e:
+            print(f"[RDS PURGE WARN] {e}")
+
+    return ApiResponse.ok({"status": "success", "message": "All alerts purged successfully"})
+
+@router.delete("/alerts/{alert_id}")
+@router.delete("/alerts/public/{alert_id}")
+async def delete_alert(alert_id: str):
+    """Delete a single alert by ID."""
+    global IN_MEMORY_ALERTS
+    IN_MEMORY_ALERTS = [a for a in IN_MEMORY_ALERTS if str(a.get("id")) != str(alert_id)]
+
+    conn = await get_db_connection()
+    if conn:
+        try:
+            if alert_id.isdigit():
+                await conn.execute("DELETE FROM anpr_alerts WHERE id = $1;", int(alert_id))
+            await conn.close()
+        except Exception:
+            pass
+
+    return ApiResponse.ok({"status": "success", "deleted_id": alert_id})
+
+# ─────────────────────────────────────────────────────────────────────────────
+# WATCHLIST MANAGEMENT
+# ─────────────────────────────────────────────────────────────────────────────
 
 @router.get("/watchlist")
 async def get_watchlist():
@@ -92,22 +314,42 @@ async def get_watchlist():
     return {"status": "success", "watchlist": ANPR_WATCHLIST}
 
 @router.post("/watchlist")
+@router.post("/watchlist/add")
 async def add_watchlist_plate(payload: Dict[str, Any] = Body(...)):
     """Add a plate to the active watchlist."""
     plate = str(payload.get("plate") or payload.get("number_plate") or "").upper().strip()
     if plate and plate not in ANPR_WATCHLIST:
         ANPR_WATCHLIST.append(plate)
-    return ApiResponse.ok({"watchlist": ANPR_WATCHLIST})
+        print(f"📋 [WATCHLIST ADDED] Plate: {plate} | Total: {len(ANPR_WATCHLIST)}")
+    return ApiResponse.ok({"status": "success", "watchlist": ANPR_WATCHLIST})
+
+@router.post("/watchlist/remove")
+@router.delete("/watchlist/{plate}")
+async def remove_watchlist_plate(plate: str):
+    """Remove a plate from the active watchlist."""
+    clean = plate.upper().strip()
+    if clean in ANPR_WATCHLIST:
+        ANPR_WATCHLIST.remove(clean)
+    return ApiResponse.ok({"status": "success", "watchlist": ANPR_WATCHLIST})
+
+# ─────────────────────────────────────────────────────────────────────────────
+# DETECTION AREA & ROI POLYGON MANAGEMENT (AWS RDS BACKED)
+# ─────────────────────────────────────────────────────────────────────────────
+
+@router.get("/all-rois")
+async def get_all_rois():
+    """Batch fetch all stored camera ROIs in 1 single fast call."""
+    return ApiResponse.ok(SAVED_ROIS)
 
 @router.post("/roi")
 @router.post("/roi/save")
-async def save_camera_roi(payload: Dict[str, Any] = Body(...)):
+@router.post("/roi/{camera_code}")
+async def save_camera_roi(camera_code: Optional[str] = None, payload: Dict[str, Any] = Body(...)):
     """Save camera ROI polygon coordinates to RDS and memory."""
-    cam_code = str(payload.get("camera_code") or payload.get("cameraCode") or "").strip()
+    cam_code = str(camera_code or payload.get("camera_code") or payload.get("cameraCode") or "").strip()
     if not cam_code:
         raise HTTPException(status_code=400, detail="camera_code is required")
 
-    # Normalize camera code (e.g. CAM-005 -> CAM-GJ-AHM-SNTL-000005)
     normalized_codes = [cam_code]
     if cam_code.startswith("CAM-") and not "SNTL" in cam_code:
         try:
@@ -117,7 +359,6 @@ async def save_camera_roi(payload: Dict[str, Any] = Body(...)):
             pass
 
     points = payload.get("points") or []
-    # If points are flattened dicts, convert to coordinate list
     if points and isinstance(points, list) and isinstance(points[0], dict):
         coords = [[int(p.get("x", 0)), int(p.get("y", 0))] for p in points]
     else:
@@ -137,15 +378,7 @@ async def save_camera_roi(payload: Dict[str, Any] = Body(...)):
         SAVED_ROIS[code] = roi_record
     save_json_file(ROI_FILE, SAVED_ROIS)
 
-    # Print Live Demo Proof to Terminal
-    print("\n" + "=" * 65)
-    print(f"🎯 [LIVE DEMO] ROI POLYGON SAVED FOR {cam_code}")
-    print(f" -> Total Vertices : {len(coords)} points")
-    print(f" -> Coordinates    : {coords}")
-    print(f" -> Camera Name    : {payload.get('camera_name', cam_code)}")
-    print("=" * 65 + "\n")
-
-    # Try saving to RDS PostgreSQL
+    # Persist to AWS RDS PostgreSQL
     conn = await get_db_connection()
     if conn:
         try:
@@ -159,7 +392,7 @@ async def save_camera_roi(payload: Dict[str, Any] = Body(...)):
             roi_record["saved_to_rds"] = True
             await conn.close()
         except Exception as e:
-            print(f"[RDS ROI SAVE ERROR] {e}")
+            print(f"[RDS ROI SAVE WARN] {e}")
 
     return {"status": "success", "message": f"ROI saved for {cam_code}", "saved_to_rds": roi_record["saved_to_rds"], "data": roi_record}
 
@@ -167,17 +400,13 @@ async def save_camera_roi(payload: Dict[str, Any] = Body(...)):
 async def get_camera_roi(camera_code: str):
     """Retrieve saved ROI polygon coordinates for a camera."""
     cam_code = camera_code.strip()
-    
-    # Check in-memory store
     if cam_code in SAVED_ROIS:
         return ApiResponse.ok(SAVED_ROIS[cam_code])
         
-    # Check alias codes (e.g. CAM-005 vs CAM-GJ-AHM-SNTL-000005)
     for k, v in SAVED_ROIS.items():
         if cam_code in k or k in cam_code:
             return ApiResponse.ok(v)
 
-    # Try RDS PostgreSQL
     conn = await get_db_connection()
     if conn:
         try:
@@ -202,29 +431,14 @@ async def get_camera_roi(camera_code: str):
 
     return ApiResponse.ok({"camera_code": cam_code, "points": [], "coordinates": []})
 
-@router.post("/ingest")
-async def ingest_anpr_event(payload: Dict[str, Any] = Body(...)):
-    """Ingest live ANPR plate detection and broadcast via WebSocket to Alert Center."""
-    plate = str(payload.get("number_plate") or payload.get("plateNumber") or "").upper()
-    is_hit = payload.get("watchlist_hit", plate in ANPR_WATCHLIST)
-    
-    alert_event = {
-        "type": "ANPR_DETECTION",
-        "number_plate": plate,
-        "camera_code": payload.get("camera_code", "CAM-001"),
-        "camera_id": payload.get("camera_id", 1),
-        "watchlist_hit": is_hit,
-        "severity": payload.get("severity", "CRITICAL" if is_hit else "INFO"),
-        "notes": payload.get("notes", "ANPR Live Hit" if is_hit else "Plate Seen"),
-        "timestamp": payload.get("time") or "Just Now"
-    }
+# ─────────────────────────────────────────────────────────────────────────────
+# AI VISION MODEL CONFIGURATIONS
+# ─────────────────────────────────────────────────────────────────────────────
 
-    # Broadcast via WebSocket to all connected browser dashboards
-    await ws_manager.broadcast_json({"event": "NEW_ANPR_ALERT", "data": alert_event})
-    return ApiResponse.ok(alert_event)
-
-# In-memory store for AI model configurations per camera
-AI_CONFIGS: Dict[str, Dict[str, Any]] = {}
+@router.get("/all-ai-configs")
+async def get_all_ai_configs():
+    """Batch fetch all active AI vision model configurations in 1 single fast call."""
+    return ApiResponse.ok(AI_CONFIGS)
 
 @router.post("/ai-config")
 async def save_ai_config(payload: Dict[str, Any] = Body(...)):
@@ -244,16 +458,6 @@ async def save_ai_config(payload: Dict[str, Any] = Body(...)):
     for code in normalized_codes:
         AI_CONFIGS[code] = payload
     save_json_file(AI_CONFIG_FILE, AI_CONFIGS)
-
-    # Print Live Demo Proof to Terminal
-    active_models = [k.upper() for k, v in (payload.get('models') or {}).items() if v]
-    print("\n" + "=" * 65)
-    print(f"⚡ [LIVE DEMO] AI VISION MODELS DEPLOYED FOR {cam_code}")
-    print(f" -> Active Models   : {active_models}")
-    print(f" -> Enable Vector   : {payload.get('enable', [0, 0, 0, 0])}")
-    print(f" -> Target FPS      : {payload.get('target_fps', 15)} FPS")
-    print(f" -> Edge Deployment : SUCCESS (Active Listener Daemon Notified)")
-    print("=" * 65 + "\n")
 
     return ApiResponse.ok({"status": "success", "camera_code": cam_code, "data": payload})
 
@@ -288,28 +492,17 @@ async def undeploy_ai_config(camera_code: str):
         except Exception:
             pass
 
-    removed = False
     for code in normalized_codes:
         if code in AI_CONFIGS:
             del AI_CONFIGS[code]
-            removed = True
 
     keys_to_del = [k for k in AI_CONFIGS.keys() if cam_code in k or k in cam_code]
     for k in keys_to_del:
         AI_CONFIGS.pop(k, None)
-        removed = True
 
     save_json_file(AI_CONFIG_FILE, AI_CONFIGS)
-
-    print("\n" + "=" * 65)
-    print(f"🛑 [LIVE DEMO] AI VISION MODELS UNDEPLOYED FOR {cam_code}")
-    print(f" -> Status           : INACTIVE / UNDEPLOYED")
-    print(f" -> Edge Deployment : CLEARED (GPU Compute Released)")
-    print("=" * 65 + "\n")
-
     return ApiResponse.ok({
         "status": "success",
         "message": f"AI models undeployed successfully for {cam_code}",
         "camera_code": cam_code
     })
-
