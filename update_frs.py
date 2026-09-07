@@ -240,21 +240,45 @@ class ZTracsFrsListener:
                     elapsed, total_targets = self.sync_faces_json(export_data)
                     self._last_catalog_str = catalog_str
 
-                    # 3. Check for deleted targets
+                    # 3. Check for deleted targets and purge orphaned local directories
+                    active_slugs = {
+                        tgt.get("slug") or (tgt.get("person_id") or "").lower().replace("-", "_")
+                        for tgt in synced_targets
+                        if tgt.get("slug") or tgt.get("person_id")
+                    }
+
                     if not initial_load:
                         deleted_ids = set(self.active_targets.keys()) - current_target_ids
                         for d_pid in deleted_ids:
                             old = self.active_targets.pop(d_pid, {})
                             self.version_cache.pop(d_pid, None)
                             self._save_version_cache()
+                            
+                            old_slug = old.get("slug") or d_pid.lower().replace("-", "_")
+                            old_dir = os.path.join(self.clips_dir, old_slug)
+                            if os.path.exists(old_dir):
+                                import shutil
+                                shutil.rmtree(old_dir, ignore_errors=True)
+                                print(f"[FRS CLEANUP] Purged deleted suspect directory: '{old_dir}/'")
+
                             print("\n" + "=" * 65)
                             print(f"[LIVE FRS SYNC EVENT DETECTED]")
                             print("=" * 65)
                             print(f" -> Event Type       : SUSPECT TARGET REMOVED / ARCHIVED")
                             print(f" -> Person Name      : {old.get('person_name')}")
                             print(f" -> Person ID        : {d_pid}")
+                            print(f" -> Cleanup Status   : Local Folder Purged from '{self.clips_dir}/'")
                             print(f" -> Faces File       : '{self.faces_filename}' ({total_targets} targets in {elapsed:.4f}s)")
                             print("=" * 65 + "\n")
+
+                    # General sync: prune any orphaned folder in clips/ that is not in active suspects
+                    if os.path.exists(self.clips_dir):
+                        import shutil
+                        for item in os.listdir(self.clips_dir):
+                            item_path = os.path.join(self.clips_dir, item)
+                            if os.path.isdir(item_path) and item not in active_slugs:
+                                shutil.rmtree(item_path, ignore_errors=True)
+                                print(f"[FRS CLEANUP] Purged orphaned directory: '{item_path}/'")
 
                     if initial_load:
                         print(f"[FRS LISTENER] Initialized '{self.faces_filename}' with {total_targets} suspect target(s).")
