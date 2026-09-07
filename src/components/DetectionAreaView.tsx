@@ -124,6 +124,12 @@ const isPointInPolygon = (pt: Point, poly: Point[]) => {
   return inside;
 };
 
+// Sample snapshots fallback for video frame canvas
+const SAMPLE_SNAPSHOTS: Record<string, string> = {
+  'CAM-033': 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=1920&q=80&auto=format&fit=crop',
+  'DEFAULT_HIGHWAY': 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=1920&q=80&auto=format&fit=crop',
+};
+
 export const DetectionAreaView: React.FC<DetectionAreaViewProps> = ({ 
   cameras: propCameras,
   initialCameraCode,
