@@ -9,6 +9,7 @@ from typing import Dict, Any, List, Optional
 from fastapi import APIRouter, HTTPException, Body
 from app.schemas.api_response import ApiResponse
 from app.websockets.manager import ws_manager
+from app.storage.s3 import s3_storage
 import json
 import os
 import re
@@ -17,6 +18,7 @@ import base64
 import random
 
 router = APIRouter(prefix="/forensics", tags=["Model 2 — Forensic Video Analysis & Offline CCTV Ingestion"])
+
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", ".."))
 FORENSICS_DIR = os.path.join(BASE_DIR, "forensics")
