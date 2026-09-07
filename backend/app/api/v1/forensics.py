@@ -106,37 +106,50 @@ async def export_tasks_for_edge():
         "tasks": tasks_list
     }
 
+@router.post("/upload-url")
+async def get_forensic_upload_url(payload: Dict[str, Any] = Body(...)):
+    """
+    Generate a direct-to-S3 Pre-Signed PUT URL for uploading large forensic video footage.
+    EC2 disk/memory never touches the video bytes.
+    """
+    case_id = str(payload.get("case_id") or f"FIR-FOR-{int(time.time())}").strip()
+    filename = str(payload.get("filename") or payload.get("footage_name") or "footage.mp4").strip()
+    content_type = str(payload.get("content_type") or "video/mp4").strip()
+    
+    task_id = f"TSK-FOR-{int(time.time()) % 100000:05d}"
+    s3_key = f"forensics/tasks/{task_id}/footage.mp4"
+
+    presigned_put_url = s3_storage.generate_upload_presigned_url(
+        s3_key=s3_key,
+        content_type=content_type,
+        expires_in=3600  # 1 hour upload window
+    )
+
+    return ApiResponse.ok({
+        "task_id": task_id,
+        "s3_key": s3_key,
+        "case_id": case_id,
+        "upload_url": presigned_put_url or f"http://43.204.235.231:8000/api/v1/forensics/tasks/{task_id}/upload-direct"
+    })
+
 @router.post("/tasks")
 async def create_forensic_task(payload: Dict[str, Any] = Body(...)):
-    """Create a new forensic video analysis task with uploaded footage & requested AI models."""
+    """Create a new forensic video analysis task with S3 key & requested AI models."""
     case_id = str(payload.get("case_id") or f"FIR-FOR-{int(time.time())}").strip()
     footage_name = str(payload.get("footage_name") or payload.get("filename") or "CCTV_Footage.mp4").strip()
     location_name = str(payload.get("location_name") or "Gujarat Police CCTV Node").strip()
     models_requested = payload.get("models_requested") or ["ANPR", "VEHICLE_CLASSIFICATION"]
+    search_filters = payload.get("search_filters") or {}
     duration_minutes = float(payload.get("estimated_duration_minutes") or 60.0)
 
-    task_id = f"TSK-FOR-{int(time.time()) % 100000:05d}"
+    task_id = str(payload.get("task_id") or f"TSK-FOR-{int(time.time()) % 100000:05d}").strip()
     slug = f"{task_id.lower()}_{sanitize_slug(case_id)}"
 
-    task_folder = os.path.join(FORENSICS_DIR, slug)
-    os.makedirs(task_folder, exist_ok=True)
-
+    s3_key = str(payload.get("s3_key") or f"forensics/tasks/{task_id}/footage.mp4")
+    
+    # Generate 24-hour streaming URL for GPU worker
+    streaming_url = s3_storage.generate_streaming_presigned_url(s3_key, expires_in=86400)
     video_rel_path = f"forensics/{slug}/footage.mp4"
-    crops_folder = os.path.join(task_folder, "crops")
-    os.makedirs(crops_folder, exist_ok=True)
-
-    # Save video if base64 provided
-    base64_media = payload.get("media_base64")
-    if base64_media:
-        try:
-            if "," in base64_media:
-                base64_media = base64_media.split(",")[1]
-            raw_bytes = base64.b64decode(base64_media)
-            dest_file = os.path.join(task_folder, "footage.mp4")
-            with open(dest_file, "wb") as f:
-                f.write(raw_bytes)
-        except Exception as e:
-            print(f"[FORENSICS VIDEO WRITE WARN] {e}")
 
     # Generate initial sample detection timeline entries across video duration
     total_seconds = max(60, int(duration_minutes * 60))
@@ -167,21 +180,30 @@ async def create_forensic_task(payload: Dict[str, Any] = Body(...)):
     task_obj = {
         "task_id": task_id,
         "case_id": case_id,
+        "slug": slug,
         "footage_name": footage_name,
         "location_name": location_name,
         "video_path": video_rel_path,
+        "s3_key": s3_key,
+        "media_source": {
+            "local_video_path": video_rel_path,
+            "s3_key": s3_key,
+            "s3_streaming_url": streaming_url or f"https://z-tracs-media.s3.ap-south-1.amazonaws.com/{s3_key}"
+        },
         "models_requested": models_requested,
-        "status": "COMPLETED",
-        "progress_percent": 100.0,
+        "search_filters": search_filters,
+        "status": "QUEUED",
+        "progress_percent": 0.0,
         "duration_seconds": total_seconds,
         "duration_formatted": format_seconds(total_seconds),
         "total_frames": total_seconds * 25,
-        "processed_frames": total_seconds * 25,
-        "processing_fps": 265.4,
+        "processed_frames": 0,
+        "processing_fps": 0.0,
         "total_detections": len(detections),
         "watchlist_hits": len([d for d in detections if d.get("watchlist_hit")]),
         "detections": detections,
-        "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ")
+        "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "updated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ")
     }
 
     SAVED_FORENSIC_TASKS[task_id] = task_obj
@@ -189,15 +211,16 @@ async def create_forensic_task(payload: Dict[str, Any] = Body(...)):
 
     # Clean ASCII Terminal Proof Output
     print("\n" + "=" * 65)
-    print(f"[LIVE DEMO] FORENSIC VIDEO ANALYSIS TASK CREATED")
+    print(f"[LIVE DEMO] FORENSIC VIDEO ANALYSIS TASK QUEUED (DIRECT S3)")
     print(f" -> Task ID         : {task_id}")
     print(f" -> Case / FIR ID   : {case_id}")
     print(f" -> Footage File    : {footage_name}")
+    print(f" -> S3 Storage Key  : s3://{s3_storage.bucket_name}/{s3_key}")
+    print(f" -> Streaming URL   : (Pre-Signed 24h Active)")
     print(f" -> Incident Loc    : {location_name}")
     print(f" -> AI Models       : {models_requested}")
-    print(f" -> Duration        : {task_obj['duration_formatted']} ({task_obj['total_frames']} frames)")
-    print(f" -> Extracted Plates: {len(detections)} Detections ({task_obj['watchlist_hits']} Watchlist Hits)")
-    print(f" -> Processing Rate : 265.4 FPS (Hardware Accelerated)")
+    print(f" -> Search Filters  : {search_filters}")
+    print(f" -> Status          : QUEUED FOR GPU STREAM WORKER")
     print("=" * 65 + "\n")
 
     try:
@@ -209,6 +232,76 @@ async def create_forensic_task(payload: Dict[str, Any] = Body(...)):
         pass
 
     return ApiResponse.ok(task_obj)
+
+@router.post("/tasks/{task_id}/progress")
+async def report_task_progress(task_id: str, payload: Dict[str, Any] = Body(...)):
+    """Endpoint for GPU Edge Worker to report interim progress during batch streaming."""
+    global SAVED_FORENSIC_TASKS
+    SAVED_FORENSIC_TASKS = load_forensic_tasks()
+    if task_id in SAVED_FORENSIC_TASKS:
+        task = SAVED_FORENSIC_TASKS[task_id]
+        task["status"] = "PROCESSING"
+        task["progress_percent"] = float(payload.get("progress_percent", task.get("progress_percent", 0.0)))
+        task["processed_frames"] = int(payload.get("processed_frames", task.get("processed_frames", 0)))
+        task["processing_fps"] = float(payload.get("processing_fps", task.get("processing_fps", 0.0)))
+        task["updated_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ")
+        
+        save_forensic_tasks(SAVED_FORENSIC_TASKS)
+
+        try:
+            await ws_manager.broadcast_json({
+                "event": "FORENSIC_TASK_PROGRESS",
+                "data": {
+                    "task_id": task_id,
+                    "progress_percent": task["progress_percent"],
+                    "processed_frames": task["processed_frames"],
+                    "processing_fps": task["processing_fps"]
+                }
+            })
+        except Exception:
+            pass
+
+        return ApiResponse.ok({"task_id": task_id, "status": "PROCESSING", "progress_percent": task["progress_percent"]})
+    raise HTTPException(status_code=404, detail="Task not found")
+
+@router.post("/tasks/{task_id}/results")
+async def submit_task_results(task_id: str, payload: Dict[str, Any] = Body(...)):
+    """Endpoint for GPU Edge Worker to submit final batch inference results."""
+    global SAVED_FORENSIC_TASKS
+    SAVED_FORENSIC_TASKS = load_forensic_tasks()
+    if task_id in SAVED_FORENSIC_TASKS:
+        task = SAVED_FORENSIC_TASKS[task_id]
+        task["status"] = "COMPLETED"
+        task["progress_percent"] = 100.0
+        task["total_frames_processed"] = payload.get("total_frames_processed", task.get("total_frames", 0))
+        task["processed_frames"] = task["total_frames_processed"]
+        
+        new_detections = payload.get("detections")
+        if new_detections is not None:
+            task["detections"] = new_detections
+            task["total_detections"] = len(new_detections)
+            task["watchlist_hits"] = len([d for d in new_detections if d.get("watchlist_hit")])
+
+        task["updated_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ")
+        save_forensic_tasks(SAVED_FORENSIC_TASKS)
+
+        print("\n" + "=" * 65)
+        print(f"[LIVE DEMO] FORENSIC TASK COMPLETED BY GPU INFERENCE WORKER")
+        print(f" -> Task ID         : {task_id}")
+        print(f" -> Total Frames    : {task['total_frames_processed']}")
+        print(f" -> Total Detections: {task['total_detections']} ({task['watchlist_hits']} Watchlist Hits)")
+        print("=" * 65 + "\n")
+
+        try:
+            await ws_manager.broadcast_json({
+                "event": "FORENSIC_TASK_COMPLETED",
+                "data": task
+            })
+        except Exception:
+            pass
+
+        return ApiResponse.ok(task)
+    raise HTTPException(status_code=404, detail="Task not found")
 
 @router.delete("/tasks/{task_id}")
 async def delete_forensic_task(task_id: str):
@@ -225,3 +318,4 @@ async def delete_forensic_task(task_id: str):
 
         return ApiResponse.ok({"message": f"Task {task_id} deleted successfully", "task_id": task_id})
     raise HTTPException(status_code=404, detail="Task not found")
+

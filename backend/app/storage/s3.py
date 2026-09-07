@@ -82,6 +82,47 @@ class S3StorageManager:
         # Fallback if S3 direct upload is not reachable
         return s3_key, version_marker, None
 
+    def generate_upload_presigned_url(self, s3_key: str, content_type: str = "video/mp4", expires_in: int = 3600) -> Optional[str]:
+        """
+        Generate a pre-signed S3 PUT URL for direct browser-to-S3 video upload.
+        Expires in 1 hour (3600s).
+        """
+        if self.s3_client:
+            try:
+                url = self.s3_client.generate_presigned_url(
+                    "put_object",
+                    Params={
+                        "Bucket": self.bucket_name,
+                        "Key": s3_key,
+                        "ContentType": content_type
+                    },
+                    ExpiresIn=expires_in
+                )
+                return url
+            except Exception as e:
+                print(f"[S3 PRESIGNED UPLOAD WARN] {e}")
+        return None
+
+    def generate_streaming_presigned_url(self, s3_key: str, expires_in: int = 86400) -> Optional[str]:
+        """
+        Generate a long-lived pre-signed S3 GET URL for OpenCV streaming on GPU workers.
+        Default expiry: 24 hours (86400s) to support long multi-hour batch video processing.
+        """
+        if self.s3_client:
+            try:
+                url = self.s3_client.generate_presigned_url(
+                    "get_object",
+                    Params={
+                        "Bucket": self.bucket_name,
+                        "Key": s3_key
+                    },
+                    ExpiresIn=expires_in
+                )
+                return url
+            except Exception as e:
+                print(f"[S3 PRESIGNED STREAM WARN] {e}")
+        return None
+
     def download_photo(self, s3_key: str) -> Optional[bytes]:
         """Fetch raw photo bytes from S3 key."""
         if self.s3_client:
@@ -93,3 +134,4 @@ class S3StorageManager:
         return None
 
 s3_storage = S3StorageManager()
+

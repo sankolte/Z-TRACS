@@ -147,6 +147,9 @@ class ZTracsForensicsListener:
                         if tid not in self.active_tasks:
                             self.active_tasks[tid] = task
                             if not initial_load:
+                                media_src = task.get("media_source") or {}
+                                s3_stream = media_src.get("s3_streaming_url") or "Direct S3 Stream"
+
                                 print("\n" + "=" * 65)
                                 print(f"[LIVE FORENSIC SYNC EVENT DETECTED]")
                                 print("=" * 65)
@@ -154,20 +157,33 @@ class ZTracsForensicsListener:
                                 print(f" -> Task ID          : {tid}")
                                 print(f" -> Case / FIR ID    : {task.get('case_id')}")
                                 print(f" -> Footage File     : {task.get('footage_name')}")
+                                print(f" -> S3 Storage Key   : {task.get('s3_key', 'N/A')}")
+                                print(f" -> Stream Mode      : OpenCV cv2.VideoCapture(s3_streaming_url)")
                                 print(f" -> AI Models        : {task.get('models_requested')}")
                                 print(f" -> Duration         : {task.get('duration_formatted')} ({task.get('total_frames')} frames)")
-                                print(f" -> Extracted Plates : {task.get('total_detections')} Plates ({task.get('watchlist_hits')} Watchlist Hits)")
                                 print(f" -> Forensics File   : '{self.forensics_filename}' ({total_tasks} jobs in {elapsed:.4f}s)")
-                                print(f" -> Engine Status    : READY FOR GPU BATCH INFERENCE")
+                                print(f" -> Engine Status    : READY FOR GPU BATCH STREAMING")
                                 print("=" * 65 + "\n")
                         else:
                             self.active_tasks[tid] = task
 
-                    # Check for deleted tasks
+                    # Check for deleted tasks and purge orphaned local directories
+                    active_slugs = {
+                        task.get("slug") or (task.get("task_id") or "").lower().replace("-", "_")
+                        for task in tasks_list
+                    }
+
                     if not initial_load:
                         deleted_ids = set(self.active_tasks.keys()) - current_task_ids
                         for d_tid in deleted_ids:
                             old = self.active_tasks.pop(d_tid, {})
+                            old_slug = old.get("slug") or d_tid.lower().replace("-", "_")
+                            old_dir = os.path.join(self.base_dir, old_slug)
+                            if os.path.exists(old_dir):
+                                import shutil
+                                shutil.rmtree(old_dir, ignore_errors=True)
+                                print(f"[FORENSICS CLEANUP] Purged deleted task directory: '{old_dir}/'")
+
                             print("\n" + "=" * 65)
                             print(f"[LIVE FORENSIC SYNC EVENT DETECTED]")
                             print("=" * 65)
