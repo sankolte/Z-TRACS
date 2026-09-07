@@ -2,9 +2,16 @@ import os
 import hashlib
 import time
 from typing import Optional, Dict, Any, Tuple
-import boto3
-from botocore.exceptions import ClientError, NoCredentialsError
 from app.core.config import settings
+
+try:
+    import boto3
+    from botocore.exceptions import ClientError, NoCredentialsError
+    HAS_BOTO3 = True
+except ImportError:
+    HAS_BOTO3 = False
+    ClientError = Exception
+    NoCredentialsError = Exception
 
 S3_BUCKET_NAME = os.getenv("AWS_S3_BUCKET_NAME", "z-tracs-media")
 AWS_REGION = os.getenv("AWS_REGION", "ap-south-1")
@@ -22,7 +29,11 @@ class S3StorageManager:
         return cls._instance
 
     def _init_client(self):
+        if not HAS_BOTO3:
+            print("[S3 INIT WARN] boto3 not installed in python environment. Running in offline/API direct mode.")
+            return
         try:
+
             ak = os.getenv("AWS_ACCESS_KEY_ID")
             sk = os.getenv("AWS_SECRET_ACCESS_KEY")
             if ak and sk:
