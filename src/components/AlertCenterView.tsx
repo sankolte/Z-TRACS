@@ -140,9 +140,7 @@ export const AlertCenterView: React.FC<AlertCenterViewProps> = ({
   const handlePurgeAllAlerts = async () => {
     if (!confirm('Are you sure you want to purge all watchlist alerts from the database and dashboard?')) return;
     try {
-      const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
-      const base = isHttps ? '/api/v1' : 'http://43.204.235.231:8000/api/v1';
-      await fetch(`${base}/anpr/alerts/purge`, { method: 'POST' });
+      await fetch(`${ApiClient.getApiBase()}/anpr/alerts/purge`, { method: 'POST' });
       if (onDeleteAlert && alerts.length > 0) {
         alerts.forEach(a => onDeleteAlert(a.id));
       }
