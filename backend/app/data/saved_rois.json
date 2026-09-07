@@ -1,0 +1,134 @@
+{
+  "CAM-005": {
+    "camera_code": "CAM-005",
+    "camera_name": "Visat Teen Rasta (Cam 5)",
+    "resolution": "1920x1080",
+    "zone_name": "1 Polygon Zones Configured",
+    "points": [
+      {
+        "x": 1078,
+        "y": 298,
+        "label": "Z1_A1",
+        "zone_id": "zone-1",
+        "zone_name": "Polygon Zone 1"
+      },
+      {
+        "x": 813,
+        "y": 192,
+        "label": "Z1_A2",
+        "zone_id": "zone-1",
+        "zone_name": "Polygon Zone 1"
+      },
+      {
+        "x": 663,
+        "y": 415,
+        "label": "Z1_A3",
+        "zone_id": "zone-1",
+        "zone_name": "Polygon Zone 1"
+      },
+      {
+        "x": 874,
+        "y": 571,
+        "label": "Z1_A4",
+        "zone_id": "zone-1",
+        "zone_name": "Polygon Zone 1"
+      },
+      {
+        "x": 1088,
+        "y": 424,
+        "label": "Z1_A5",
+        "zone_id": "zone-1",
+        "zone_name": "Polygon Zone 1"
+      }
+    ],
+    "coordinates": [
+      [
+        1078,
+        298
+      ],
+      [
+        813,
+        192
+      ],
+      [
+        663,
+        415
+      ],
+      [
+        874,
+        571
+      ],
+      [
+        1088,
+        424
+      ]
+    ],
+    "saved_to_rds": false
+  },
+  "CAM-GJ-AHM-SNTL-000005": {
+    "camera_code": "CAM-005",
+    "camera_name": "Visat Teen Rasta (Cam 5)",
+    "resolution": "1920x1080",
+    "zone_name": "1 Polygon Zones Configured",
+    "points": [
+      {
+        "x": 1078,
+        "y": 298,
+        "label": "Z1_A1",
+        "zone_id": "zone-1",
+        "zone_name": "Polygon Zone 1"
+      },
+      {
+        "x": 813,
+        "y": 192,
+        "label": "Z1_A2",
+        "zone_id": "zone-1",
+        "zone_name": "Polygon Zone 1"
+      },
+      {
+        "x": 663,
+        "y": 415,
+        "label": "Z1_A3",
+        "zone_id": "zone-1",
+        "zone_name": "Polygon Zone 1"
+      },
+      {
+        "x": 874,
+        "y": 571,
+        "label": "Z1_A4",
+        "zone_id": "zone-1",
+        "zone_name": "Polygon Zone 1"
+      },
+      {
+        "x": 1088,
+        "y": 424,
+        "label": "Z1_A5",
+        "zone_id": "zone-1",
+        "zone_name": "Polygon Zone 1"
+      }
+    ],
+    "coordinates": [
+      [
+        1078,
+        298
+      ],
+      [
+        813,
+        192
+      ],
+      [
+        663,
+        415
+      ],
+      [
+        874,
+        571
+      ],
+      [
+        1088,
+        424
+      ]
+    ],
+    "saved_to_rds": false
+  }
+}

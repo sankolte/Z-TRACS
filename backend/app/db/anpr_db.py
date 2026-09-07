@@ -1,0 +1,74 @@
+"""
+ANPR Database Table Management & Auto-Initialization for AWS RDS
+"""
+import asyncpg
+from app.core.config import settings
+
+async def get_db_connection():
+    try:
+        return await asyncpg.connect(
+            user=settings.POSTGRES_USER,
+            password=settings.POSTGRES_PASSWORD,
+            database=settings.POSTGRES_DB,
+            host=settings.POSTGRES_HOST,
+            port=settings.POSTGRES_PORT,
+            timeout=5.0
+        )
+    except Exception as e:
+        print(f"[RDS WARNING] Could not connect to PostgreSQL database: {e}")
+        return None
+
+async def ensure_anpr_alerts_table():
+    """Create anpr_alerts table in RDS if it does not exist."""
+    conn = await get_db_connection()
+    if not conn:
+        print("[RDS NOTE] Skipping anpr_alerts table check (DB offline or local mode)")
+        return
+    try:
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS anpr_alerts (
+                id SERIAL PRIMARY KEY,
+                severity VARCHAR(50) DEFAULT 'INFO',
+                category VARCHAR(100) DEFAULT 'ANPR_DETECTION',
+                number_plate VARCHAR(50),
+                camera_id VARCHAR(100),
+                camera_code VARCHAR(100),
+                camera_name VARCHAR(255),
+                district VARCHAR(100),
+                watchlist_hit BOOLEAN DEFAULT FALSE,
+                status VARCHAR(50) DEFAULT 'ACTIVE',
+                title VARCHAR(255),
+                notes TEXT,
+                received_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
+        print("[RDS SUCCESS] anpr_alerts table verified/created.")
+    except Exception as e:
+        print(f"[RDS ERROR] Failed to ensure anpr_alerts table: {e}")
+    finally:
+        await conn.close()
+
+async def ensure_anpr_rois_table():
+    """Create anpr_camera_rois table in RDS if it does not exist."""
+    conn = await get_db_connection()
+    if not conn:
+        print("[RDS NOTE] Skipping anpr_camera_rois table check (DB offline or local mode)")
+        return
+    try:
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS anpr_camera_rois (
+                id SERIAL PRIMARY KEY,
+                camera_code VARCHAR(100) UNIQUE NOT NULL,
+                camera_name VARCHAR(255),
+                resolution VARCHAR(50),
+                zone_name VARCHAR(100),
+                points_json TEXT,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
+        print("[RDS SUCCESS] anpr_camera_rois table verified/created.")
+    except Exception as e:
+        print(f"[RDS ERROR] Failed to ensure anpr_camera_rois table: {e}")
+    finally:
+        await conn.close()

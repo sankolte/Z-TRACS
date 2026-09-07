@@ -1,0 +1,16 @@
+{
+  "status": "success",
+  "total_targets": 0,
+  "export_timestamp": "2026-09-07T16:27:59Z",
+  "global_config": {
+    "face_detector": "yolov8n-face",
+    "feature_extractor": "arcface_r100",
+    "embedding_dimension": 512,
+    "default_threshold": 0.78,
+    "min_face_size_pixels": [
+      40,
+      40
+    ]
+  },
+  "targets": []
+}
