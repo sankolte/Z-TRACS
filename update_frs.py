@@ -143,9 +143,23 @@ class ZTracsFrsListener:
                             continue
                         current_target_ids.add(pid)
                         
+                        # Extract folder from media_source paths if specified
+                        media_src = tgt.get("media_source") or {}
+                        clip_path = media_src.get("clip_path") or tgt.get("media_path") or ""
+                        face_img_path = media_src.get("face_image_path") or tgt.get("face_image_path") or ""
+                        
+                        dirs_to_create = set()
+                        if clip_path and "/" in clip_path:
+                            dirs_to_create.add(os.path.dirname(clip_path))
+                        if face_img_path and "/" in face_img_path:
+                            dirs_to_create.add(os.path.dirname(face_img_path))
+                            
                         slug = tgt.get("slug") or pid.lower().replace("-", "_")
-                        target_folder = os.path.join(self.clips_dir, slug)
-                        os.makedirs(target_folder, exist_ok=True)
+                        dirs_to_create.add(os.path.join(self.clips_dir, slug))
+                        
+                        for d in dirs_to_create:
+                            if d:
+                                os.makedirs(d, exist_ok=True)
 
                         # Check if newly added
                         if pid not in self.active_targets:
@@ -158,12 +172,11 @@ class ZTracsFrsListener:
                                 print(f" -> Person Name      : {tgt.get('person_name')}")
                                 print(f" -> Case / FIR ID    : {tgt.get('case_id')}")
                                 print(f" -> Priority         : {tgt.get('alert_priority')}")
-                                print(f" -> Local Folder     : {self.clips_dir}/{slug}/")
-                                print(f" -> Media Path       : {tgt.get('media_path')}")
-                                print(f" -> Active Cameras   : {tgt.get('target_cameras')}")
+                                print(f" -> Local Folder     : {clip_path or f'{self.clips_dir}/{slug}/'}")
                                 print(f" -> Faces File       : '{self.faces_filename}' ({total_targets} targets in {elapsed:.4f}s)")
                                 print(f" -> Status           : READY FOR EDGE GPU INFERENCE ENGINE")
                                 print("=" * 65 + "\n")
+
                         else:
                             self.active_targets[pid] = tgt
 
