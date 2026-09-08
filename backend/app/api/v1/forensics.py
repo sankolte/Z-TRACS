@@ -44,19 +44,7 @@ def format_seconds(seconds: float) -> str:
         return f"{hrs:02d}:{mins:02d}:{secs:02d}"
     return f"{mins:02d}:{secs:02d}"
 
-SAMPLE_VEHICLES = [
-    {"type": "Car (White Swift)", "color": "White"},
-    {"type": "SUV (Black Fortuner)", "color": "Black"},
-    {"type": "Truck (Tata 407)", "color": "Yellow/Brown"},
-    {"type": "Motorcycle (Hero Splendor)", "color": "Black/Red"},
-    {"type": "Sedan (Silver Honda City)", "color": "Silver"},
-    {"type": "Auto Rickshaw (Bajaj RE)", "color": "Green/Yellow"}
-]
 
-SAMPLE_PLATES = [
-    "GJ01AB1234", "GJ05CD5678", "GJ27XY9999", "GJ03EF4321",
-    "MH02CB8899", "GJ06GH7711", "DL01AQ5544", "GJ18JK3322"
-]
 
 def load_forensic_tasks() -> Dict[str, Dict[str, Any]]:
     if os.path.exists(FORENSIC_TASKS_FILE):
@@ -189,30 +177,8 @@ async def upload_forensic_task_video(
         enable_vector = [1, 0, 0, 0]
 
     slug = f"{task_id.lower()}_{sanitize_slug(case_id)}"
-    total_seconds = max(60, int(duration_minutes * 60))
-
-    # Pre-generate timeline detections
+    # Strictly empty detections: Real detections will be posted when offline GPU worker runs
     detections = []
-    num_samples = min(15, max(4, int(duration_minutes // 4)))
-    timestamps = sorted(random.sample(range(5, total_seconds - 5), min(num_samples, total_seconds - 10)))
-    for idx, ts in enumerate(timestamps):
-        veh = random.choice(SAMPLE_VEHICLES)
-        plate = random.choice(SAMPLE_PLATES) if idx % 3 != 0 else f"GJ{random.randint(1,33):02d}{chr(random.randint(65,90))}{chr(random.randint(65,90))}{random.randint(1000,9999)}"
-        is_watchlist = plate in ["GJ01AB1234", "MH02CB8899", "GJ27XY9999"]
-        detections.append({
-            "detection_id": f"DET-{idx+1:03d}",
-            "plate_number": plate,
-            "vehicle_type": veh["type"],
-            "color": veh["color"],
-            "video_timestamp_sec": float(ts),
-            "video_timestamp_formatted": format_seconds(ts),
-            "confidence": round(random.uniform(94.5, 99.8), 1),
-            "plate_confidence": round(random.uniform(96.0, 99.9), 1),
-            "watchlist_hit": is_watchlist,
-            "watchlist_reason": "CRIME BRANCH STOLEN HOTLIST" if is_watchlist else None,
-            "snapshot_crop": f"forensics/{slug}/crops/det_{idx+1:03d}.jpg",
-            "frame_number": int(ts * 25)
-        })
 
     download_url = f"/api/v1/forensics/tasks/{task_id}/video"
     task_obj = {
@@ -320,31 +286,8 @@ async def create_forensic_task(payload: Dict[str, Any] = Body(...)):
     streaming_url = s3_storage.generate_streaming_presigned_url(s3_key, expires_in=86400)
     video_rel_path = f"forensics/{slug}/footage.mp4"
 
-    # Generate initial sample detection timeline entries across video duration
-    total_seconds = max(60, int(duration_minutes * 60))
+    # Strictly empty detections: Real detections will be posted when offline GPU worker runs
     detections = []
-    num_samples = min(15, max(4, int(duration_minutes // 4)))
-
-    timestamps = sorted(random.sample(range(5, total_seconds - 5), min(num_samples, total_seconds - 10)))
-    for idx, ts in enumerate(timestamps):
-        veh = random.choice(SAMPLE_VEHICLES)
-        plate = random.choice(SAMPLE_PLATES) if idx % 3 != 0 else f"GJ{random.randint(1,33):02d}{chr(random.randint(65,90))}{chr(random.randint(65,90))}{random.randint(1000,9999)}"
-        is_watchlist = plate in ["GJ01AB1234", "MH02CB8899", "GJ27XY9999"]
-
-        detections.append({
-            "detection_id": f"DET-{idx+1:03d}",
-            "plate_number": plate,
-            "vehicle_type": veh["type"],
-            "color": veh["color"],
-            "video_timestamp_sec": float(ts),
-            "video_timestamp_formatted": format_seconds(ts),
-            "confidence": round(random.uniform(94.5, 99.8), 1),
-            "plate_confidence": round(random.uniform(96.0, 99.9), 1),
-            "watchlist_hit": is_watchlist,
-            "watchlist_reason": "CRIME BRANCH STOLEN HOTLIST" if is_watchlist else None,
-            "snapshot_crop": f"forensics/{slug}/crops/det_{idx+1:03d}.jpg",
-            "frame_number": int(ts * 25)
-        })
 
     models_upper = [str(m).upper() for m in (models_requested if isinstance(models_requested, list) else [str(models_requested)])]
     enable_vector = [

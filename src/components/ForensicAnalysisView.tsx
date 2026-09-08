@@ -560,127 +560,109 @@ export const ForensicAnalysisView: React.FC = () => {
                 </div>
               </div>
 
-              {/* Video Timeline Scrubber & Marker Jump Strip */}
+              {/* Video Timeline Scrubber */}
               <div className="space-y-1.5 pt-1">
                 <div className="flex items-center justify-between text-[11px] text-slate-400 font-mono">
-                  <span>Detection Timeline Markers (Click to Jump):</span>
-                  <span>{selectedTask.detections.length} Total Vehicles</span>
+                  <span>Footage Playback Timeline:</span>
+                  <span className="text-cyan-300 font-bold">{selectedTask.duration_formatted}</span>
                 </div>
 
-                <div className="relative h-7 bg-[#02111f] rounded-xl border border-[#0d3457] overflow-hidden flex items-center px-2">
-                  {selectedTask.detections.map((det) => {
-                    const pct = Math.min(98, Math.max(2, (det.video_timestamp_sec / selectedTask.duration_seconds) * 100));
-                    return (
-                      <button
-                        key={det.detection_id}
-                        onClick={() => handleSeekToDetection(det)}
-                        style={{ left: `${pct}%` }}
-                        className={`absolute w-2.5 h-4.5 rounded-sm transition transform -translate-x-1/2 cursor-pointer ${
-                          det.watchlist_hit
-                            ? 'bg-rose-500 hover:scale-150 z-20 shadow-rose-500/50 shadow-md animate-pulse'
-                            : 'bg-cyan-400 hover:bg-cyan-300 hover:scale-125 z-10'
-                        }`}
-                        title={`${det.plate_number} at ${det.video_timestamp_formatted}`}
-                      />
-                    );
-                  })}
-                </div>
+                {selectedTask.detections && selectedTask.detections.length > 0 && (
+                  <div className="relative h-7 bg-[#02111f] rounded-xl border border-[#0d3457] overflow-hidden flex items-center px-2">
+                    {selectedTask.detections.map((det) => {
+                      const pct = Math.min(98, Math.max(2, (det.video_timestamp_sec / selectedTask.duration_seconds) * 100));
+                      return (
+                        <button
+                          key={det.detection_id}
+                          onClick={() => handleSeekToDetection(det)}
+                          style={{ left: `${pct}%` }}
+                          className={`absolute w-2.5 h-4.5 rounded-sm transition transform -translate-x-1/2 cursor-pointer ${
+                            det.watchlist_hit
+                              ? 'bg-rose-500 hover:scale-150 z-20 shadow-rose-500/50 shadow-md animate-pulse'
+                              : 'bg-cyan-400 hover:bg-cyan-300 hover:scale-125 z-10'
+                          }`}
+                          title={`${det.plate_number} at ${det.video_timestamp_formatted}`}
+                        />
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
             </div>
           </div>
 
-          {/* RIGHT 5 COLUMNS: DETECTED PLATES GALLERY & TIMELINE */}
+          {/* RIGHT 5 COLUMNS: FOOTAGE DETAILS & INGEST STATUS */}
           <div className="lg:col-span-5 space-y-4">
             <div className="bg-[#041a2e] border border-[#0d3457] rounded-3xl p-5 shadow-2xl space-y-4 flex flex-col h-full max-h-[640px]">
               
-              {/* Header & Filters */}
-              <div className="space-y-3 border-b border-[#0d3457] pb-3.5">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-black text-white uppercase tracking-wider flex items-center space-x-2">
-                    <span>Scanned License Plates</span>
-                    <span className="px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 text-[10px] font-mono font-bold">
-                      {detectionsList.length} Found
-                    </span>
-                  </h3>
+              {/* Header */}
+              <div className="border-b border-[#0d3457] pb-3.5 flex items-center justify-between">
+                <h3 className="text-sm font-black text-white uppercase tracking-wider flex items-center space-x-2">
+                  <FileVideo className="w-4 h-4 text-cyan-400" />
+                  <span>Footage Ingest Details</span>
+                </h3>
 
-                  <button
-                    onClick={() => setWatchlistOnly(!watchlistOnly)}
-                    className={`px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider transition cursor-pointer ${
-                      watchlistOnly
-                        ? 'bg-rose-500 text-white shadow-lg'
-                        : 'bg-[#02111f] text-slate-400 border border-[#0e3b63] hover:text-white'
-                    }`}
-                  >
-                    🚨 Watchlist Hits ({selectedTask.watchlist_hits})
-                  </button>
-                </div>
-
-                <div className="relative">
-                  <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input
-                    type="text"
-                    placeholder="Search plate number or timestamp..."
-                    value={searchPlateQuery}
-                    onChange={(e) => setSearchPlateQuery(e.target.value)}
-                    className="w-full bg-[#02111f] border border-[#0e3b63] rounded-xl pl-8 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-cyan-400"
-                  />
-                </div>
+                <span className="px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center space-x-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                  <span>{selectedTask.status}</span>
+                </span>
               </div>
 
-              {/* Detections Scroll List */}
-              <div className="flex-1 overflow-y-auto space-y-2.5 pr-1">
-                {detectionsList.length === 0 ? (
-                  <div className="text-center py-12 text-slate-500 text-xs italic">
-                    No detections match your filter.
+              {/* Footage Metadata & Status Card */}
+              <div className="flex-1 overflow-y-auto space-y-3.5 pr-1">
+                <div className="bg-[#02111f] border border-[#0c2f4e] rounded-2xl p-4 space-y-3">
+                  <span className="text-xs text-slate-400 font-bold uppercase tracking-wider block">
+                    File & Incident Information
+                  </span>
+
+                  <div className="space-y-2.5 pt-1 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-400">Case / FIR ID:</span>
+                      <span className="text-white font-mono font-bold">{selectedTask.case_id}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-400">Footage File:</span>
+                      <span className="text-cyan-300 font-mono font-bold truncate max-w-[200px]" title={selectedTask.footage_name}>
+                        {selectedTask.footage_name}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-400">Location / Junction:</span>
+                      <span className="text-slate-200">{selectedTask.location_name}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-400">Footage Duration:</span>
+                      <span className="text-cyan-300 font-mono font-bold">{selectedTask.duration_formatted}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-400">Local Hard Drive Path:</span>
+                      <span className="text-slate-300 font-mono text-[11px] truncate max-w-[200px]" title={selectedTask.video_path}>
+                        {selectedTask.video_path}
+                      </span>
+                    </div>
                   </div>
-                ) : (
-                  detectionsList.map((det) => {
-                    const isSelected = activeDetection?.detection_id === det.detection_id;
-                    return (
-                      <div
-                        key={det.detection_id}
-                        onClick={() => handleSeekToDetection(det)}
-                        className={`p-3.5 rounded-2xl border transition-all duration-150 cursor-pointer flex items-center justify-between ${
-                          isSelected
-                            ? 'bg-[#062c4e] border-cyan-400 shadow-lg scale-[1.02]'
-                            : det.watchlist_hit
-                            ? 'bg-rose-500/10 border-rose-500/40 hover:bg-rose-500/20'
-                            : 'bg-[#02111f] border-[#0c2f4e] hover:border-cyan-500/40 hover:bg-[#03182b]'
-                        }`}
+                </div>
+
+                {/* AI Models Selected */}
+                <div className="bg-[#02111f] border border-[#0c2f4e] rounded-2xl p-4 space-y-2.5">
+                  <span className="text-xs text-slate-400 font-bold uppercase tracking-wider block">
+                    AI Models Configured:
+                  </span>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedTask.models_requested.map((m) => (
+                      <span
+                        key={m}
+                        className="px-3 py-1 rounded-xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 text-xs font-bold font-mono"
                       >
-                        <div className="space-y-1 min-w-0 flex-1 pr-2">
-                          <div className="flex items-center space-x-2">
-                            <span className="font-mono text-sm font-black text-white tracking-wider">
-                              {det.plate_number}
-                            </span>
-                            {det.watchlist_hit && (
-                              <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-rose-500 text-white tracking-wider animate-pulse">
-                                STOLEN HIT
-                              </span>
-                            )}
-                          </div>
-
-                          <div className="text-xs text-slate-300 truncate">
-                            {det.vehicle_type}
-                          </div>
-
-                          <div className="flex items-center space-x-3 text-[10px] text-slate-400 font-mono">
-                            <span className="text-cyan-300 font-bold">⏱ {det.video_timestamp_formatted}</span>
-                            <span>Confidence: {det.confidence}%</span>
-                          </div>
-                        </div>
-
-                        <button
-                          type="button"
-                          className="px-3 py-1.5 rounded-xl bg-cyan-500/15 hover:bg-cyan-500 text-cyan-300 hover:text-slate-950 font-bold text-xs transition flex items-center space-x-1 shrink-0 cursor-pointer"
-                        >
-                          <span>🎯 Seek</span>
-                        </button>
-                      </div>
-                    );
-                  })
-                )}
+                        ✓ {m}
+                      </span>
+                    ))}
+                  </div>
+                  <p className="text-[11px] text-slate-400 pt-1">
+                    Footage safely stored on edge storage. Native player active for video playback.
+                  </p>
+                </div>
               </div>
 
             </div>
