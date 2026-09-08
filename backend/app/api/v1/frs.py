@@ -22,6 +22,7 @@ FRS_TARGETS_FILE = os.path.join(DATA_DIR, "saved_frs_targets.json")
 
 # In-memory transient buffer for fast edge delivery
 _PHOTO_MEMORY_CACHE: Dict[str, bytes] = {}
+_CLIP_MEMORY_CACHE: Dict[str, bytes] = {}
 
 def sanitize_slug(name: str) -> str:
     """Generate clean directory slug from suspect name (e.g. 'Rahul Sharma' -> 'usr_rahul_sharma')."""
@@ -46,6 +47,8 @@ def load_frs_targets() -> Dict[str, Dict[str, Any]]:
             "alert_priority": "HIGH",
             "s3_key": "frs/targets/TGT-GJ-001/face_reference.jpg",
             "photo_version": "v_1725700000_sample",
+            "s3_clip_key": "frs/targets/TGT-GJ-001/clip.mp4",
+            "clip_version": "v_1725700000_clip",
             "media_path": "clips/usr1/clip.mp4",
             "face_image_path": "clips/usr1/face_reference.jpg",
             "enabled": 1,
@@ -84,11 +87,9 @@ async def get_target_photo(person_id: str):
     Direct photo download endpoint for Edge Listener Daemon (update_frs.py).
     Fetches binary directly from S3 or transient memory buffer.
     """
-    # 1. Check in-memory transient cache
     if person_id in _PHOTO_MEMORY_CACHE:
         return Response(content=_PHOTO_MEMORY_CACHE[person_id], media_type="image/jpeg")
 
-    # 2. Check S3 storage
     target = SAVED_FRS_TARGETS.get(person_id)
     if target:
         s3_key = target.get("s3_key") or f"frs/targets/{person_id}/face_reference.jpg"
@@ -98,6 +99,26 @@ async def get_target_photo(person_id: str):
             return Response(content=photo_bytes, media_type="image/jpeg")
 
     raise HTTPException(status_code=404, detail=f"Reference photo for target {person_id} not found.")
+
+@router.get("/targets/{person_id}/clip")
+async def get_target_clip(person_id: str):
+    """
+    Direct video clip download endpoint for Edge Listener Daemon (update_frs.py).
+    Streams or returns full 1-minute video clip binary from S3 or memory cache.
+    """
+    if person_id in _CLIP_MEMORY_CACHE:
+        return Response(content=_CLIP_MEMORY_CACHE[person_id], media_type="video/mp4")
+
+    target = SAVED_FRS_TARGETS.get(person_id)
+    if target:
+        s3_clip_key = target.get("s3_clip_key") or f"frs/targets/{person_id}/clip.mp4"
+        clip_bytes = s3_storage.download_photo(s3_clip_key)
+        if clip_bytes:
+            _CLIP_MEMORY_CACHE[person_id] = clip_bytes
+            return Response(content=clip_bytes, media_type="video/mp4")
+
+    # If dummy or not found, return empty or 404
+    raise HTTPException(status_code=404, detail=f"Video clip for target {person_id} not found.")
 
 @router.get("/export-targets")
 async def export_targets_for_edge():
@@ -126,12 +147,17 @@ async def export_targets_for_edge():
                 "s3_key": s3_k,
                 "photo_version": version_m,
                 "photo_download_url": f"/frs/targets/{pid}/photo",
+                "clip_download_url": f"/frs/targets/{pid}/clip",
+                "clip_version": t.get("clip_version") or version_m,
+                "clip_url": t.get("clip_url") or f"/api/v1/frs/targets/{pid}/clip",
                 "media_source": {
                     "clip_path": clip_p,
                     "face_image_path": face_p,
                     "embeddings_path": emb_p,
                     "s3_key": s3_k,
-                    "photo_version": version_m
+                    "s3_clip_key": t.get("s3_clip_key") or f"frs/targets/{pid}/clip.mp4",
+                    "photo_version": version_m,
+                    "clip_version": t.get("clip_version") or version_m
                 },
                 "inference_rules": {
                     "similarity_threshold": float(t.get("similarity_threshold", 0.78)),
@@ -164,7 +190,7 @@ async def export_targets_for_edge():
 async def create_or_update_target(payload: Dict[str, Any] = Body(...)):
     """
     Create or update a suspect target.
-    Decodes base64 photo and uploads directly to AWS S3 without writing to EC2 local disk.
+    Decodes base64 photo and full video clip, uploading directly to AWS S3.
     """
     raw_name = payload.get("person_name") or payload.get("name")
     if not raw_name or not str(raw_name).strip():
@@ -189,28 +215,46 @@ async def create_or_update_target(payload: Dict[str, Any] = Body(...)):
 
     # Default S3 key using person_id (stable unique key)
     s3_key = f"frs/targets/{person_id}/{face_filename}"
+    s3_clip_key = f"frs/targets/{person_id}/{clip_filename}"
     version_marker = f"v_{int(time.time())}"
+    clip_version_marker = f"v_clip_{int(time.time())}"
     presigned_url = None
+    clip_presigned_url = None
     uploaded_media_type = "NONE"
 
-    # Handle base64 photo upload directly to S3 (No EC2 disk write)
-    base64_media = payload.get("media_base64")
+    # 1. Handle base64 photo upload directly to S3
+    base64_media = payload.get("media_base64") or payload.get("photo_base64") or payload.get("face_image")
     if base64_media:
         try:
             clean_base64 = base64_media.split(",")[1] if "," in base64_media else base64_media
             raw_bytes = base64.b64decode(clean_base64)
             
-            # Upload directly to S3
             s3_key, version_marker, presigned_url = s3_storage.upload_photo(
                 person_id=person_id,
                 photo_bytes=raw_bytes,
                 filename=face_filename
             )
-            # Store in transient cache for instant edge delivery
             _PHOTO_MEMORY_CACHE[person_id] = raw_bytes
             uploaded_media_type = "PHOTO (Uploaded directly to S3)"
         except Exception as e:
             print(f"[FRS MEDIA PROCESS WARN] {e}")
+
+    # 2. Handle base64 full 1-minute video clip upload directly to S3
+    base64_clip = payload.get("clip_base64") or payload.get("video_base64") or payload.get("media_clip")
+    if base64_clip:
+        try:
+            clean_clip_b64 = base64_clip.split(",")[1] if "," in base64_clip else base64_clip
+            clip_bytes = base64.b64decode(clean_clip_b64)
+
+            s3_clip_key, clip_version_marker, clip_presigned_url = s3_storage.upload_photo(
+                person_id=person_id,
+                photo_bytes=clip_bytes,
+                filename=clip_filename
+            )
+            _CLIP_MEMORY_CACHE[person_id] = clip_bytes
+            uploaded_media_type += " + 1-MIN VIDEO CLIP"
+        except Exception as e:
+            print(f"[FRS CLIP PROCESS WARN] {e}")
 
     # Build target object with S3 metadata and version marker
     now_iso = time.strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -225,12 +269,17 @@ async def create_or_update_target(payload: Dict[str, Any] = Body(...)):
         "s3_key": s3_key,
         "photo_version": version_marker,
         "photo_url": presigned_url,
+        "s3_clip_key": s3_clip_key,
+        "clip_version": clip_version_marker,
+        "clip_url": clip_presigned_url,
         "media_source": {
             "clip_path": media_rel_path,
             "face_image_path": face_rel_path,
             "embeddings_path": embeddings_rel_path,
             "s3_key": s3_key,
-            "photo_version": version_marker
+            "s3_clip_key": s3_clip_key,
+            "photo_version": version_marker,
+            "clip_version": clip_version_marker
         },
         "inference_rules": {
             "similarity_threshold": float(payload.get("similarity_threshold", 0.78)),

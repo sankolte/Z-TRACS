@@ -95,6 +95,24 @@ class ZTracsFrsClient:
 
         return None
 
+    def fetch_target_clip(self, person_id: str, direct_url: Optional[str] = None) -> Optional[bytes]:
+        """Fetch raw 1-minute video clip binary from S3 presigned URL or backend failover endpoints."""
+        # 1. Try direct URL if provided
+        if direct_url and direct_url.startswith("http"):
+            try:
+                res = self.session.get(direct_url, timeout=self.timeout)
+                if res.status_code == 200:
+                    return res.content
+            except Exception:
+                pass
+
+        # 2. Try failover API endpoint /frs/targets/{person_id}/clip
+        res = self._request_with_failover("GET", f"/frs/targets/{person_id}/clip")
+        if res and res.status_code == 200:
+            return res.content
+
+        return None
+
 
 class ZTracsFrsListener:
     def __init__(
@@ -177,7 +195,7 @@ class ZTracsFrsListener:
                 if self._last_catalog_str != catalog_str:
                     synced_targets = []
 
-                    # 1. PHOTO-FIRST ORDERING: Download and verify all photos before updating faces.json
+                    # 1. DOWNLOAD MEDIA: Verify both reference photo AND full video clip exist on disk
                     for tgt in targets_list:
                         pid = tgt.get("person_id") or tgt.get("id")
                         if not pid:
@@ -189,32 +207,48 @@ class ZTracsFrsListener:
                         os.makedirs(target_folder, exist_ok=True)
                         
                         local_photo_path = os.path.join(target_folder, "face_reference.jpg")
-                        remote_version = str(tgt.get("photo_version") or tgt.get("s3_key") or "v1")
-                        cached_version = self.version_cache.get(pid)
+                        local_clip_path = os.path.join(target_folder, "clip.mp4")
 
-                        # Check if photo already exists with identical version marker
-                        need_download = not os.path.exists(local_photo_path) or cached_version != remote_version
-                        
-                        photo_synced = True
-                        if need_download:
-                            direct_url = tgt.get("photo_url")
-                            photo_bytes = self.client.fetch_target_photo(pid, direct_url=direct_url)
+                        remote_photo_ver = str(tgt.get("photo_version") or tgt.get("s3_key") or "v1")
+                        remote_clip_ver = str(tgt.get("clip_version") or tgt.get("s3_clip_key") or "v1")
+
+                        cached_photo_ver = self.version_cache.get(f"{pid}_photo") or self.version_cache.get(pid)
+                        cached_clip_ver = self.version_cache.get(f"{pid}_clip")
+
+                        # 1a. Download Face Reference Photo
+                        need_photo = not os.path.exists(local_photo_path) or cached_photo_ver != remote_photo_ver
+                        if need_photo:
+                            direct_photo_url = tgt.get("photo_url") or tgt.get("photo_download_url")
+                            photo_bytes = self.client.fetch_target_photo(pid, direct_url=direct_photo_url)
                             if photo_bytes:
                                 try:
                                     tmp_photo = f"{local_photo_path}.tmp"
                                     with open(tmp_photo, "wb") as pf:
                                         pf.write(photo_bytes)
                                     os.replace(tmp_photo, local_photo_path)
-                                    self.version_cache[pid] = remote_version
+                                    self.version_cache[f"{pid}_photo"] = remote_photo_ver
+                                    self.version_cache[pid] = remote_photo_ver
                                     self._save_version_cache()
-                                    print(f"[FRS S3 SYNC] Downloaded reference photo for '{tgt.get('person_name')}' -> {local_photo_path} (Version: {remote_version})")
+                                    print(f"[FRS S3 SYNC] Downloaded reference photo for '{tgt.get('person_name')}' -> {local_photo_path}")
                                 except Exception as write_err:
                                     print(f"[FRS PHOTO WRITE WARN] Could not write photo for {pid}: {write_err}")
-                                    photo_synced = False
-                            else:
-                                print(f"[FRS SYNC WARN] Photo binary for suspect '{tgt.get('person_name')}' ({pid}) pending on S3. Will retry next cycle.")
-                                # Allow graceful fallback if local file already exists from previous sync
-                                photo_synced = os.path.exists(local_photo_path)
+
+                        # 1b. Download Full 1-Minute Video Clip
+                        need_clip = not os.path.exists(local_clip_path) or cached_clip_ver != remote_clip_ver
+                        if need_clip:
+                            direct_clip_url = tgt.get("clip_url") or tgt.get("clip_download_url")
+                            clip_bytes = self.client.fetch_target_clip(pid, direct_url=direct_clip_url)
+                            if clip_bytes:
+                                try:
+                                    tmp_clip = f"{local_clip_path}.tmp"
+                                    with open(tmp_clip, "wb") as cf:
+                                        cf.write(clip_bytes)
+                                    os.replace(tmp_clip, local_clip_path)
+                                    self.version_cache[f"{pid}_clip"] = remote_clip_ver
+                                    self._save_version_cache()
+                                    print(f"[FRS S3 SYNC] Downloaded full 1-min video clip for '{tgt.get('person_name')}' -> {local_clip_path}")
+                                except Exception as write_err:
+                                    print(f"[FRS CLIP WRITE WARN] Could not write video clip for {pid}: {write_err}")
 
                         synced_targets.append(tgt)
 
@@ -231,7 +265,8 @@ class ZTracsFrsListener:
                                 print(f" -> Priority         : {tgt.get('alert_priority')}")
                                 print(f" -> S3 Key           : {tgt.get('s3_key', 'N/A')}")
                                 print(f" -> Local Photo Path : {local_photo_path}")
-                                print(f" -> Status           : PHOTO ON DISK -> READY FOR CV INFERENCE")
+                                print(f" -> Local Clip Path  : {local_clip_path}")
+                                print(f" -> Status           : PHOTO & VIDEO CLIP ON DISK -> READY FOR CV INFERENCE")
                                 print("=" * 65 + "\n")
                         else:
                             self.active_targets[pid] = tgt
