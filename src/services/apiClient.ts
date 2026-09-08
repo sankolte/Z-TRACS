@@ -6,7 +6,7 @@ const getDynamicApiBase = (): string => {
   // This allows Vercel's Edge proxy (configured in vercel.json) to bridge HTTPS -> EC2 HTTP securely
   if (typeof window !== 'undefined') {
     if (window.location.protocol === 'https:') {
-      const envUrl = import.meta.env.VITE_API_BASE_URL;
+      const envUrl = (import.meta as any).env?.VITE_API_BASE_URL;
       if (envUrl && envUrl.startsWith('https://')) {
         return envUrl;
       }
@@ -17,7 +17,7 @@ const getDynamicApiBase = (): string => {
     }
   }
 
-  const envUrl = import.meta.env.VITE_API_BASE_URL;
+  const envUrl = (import.meta as any).env?.VITE_API_BASE_URL;
   if (envUrl) return envUrl;
   
   return 'http://43.204.235.231:8000/api/v1';
@@ -330,8 +330,8 @@ export class ApiClient {
       cameraUuid: camId,
       cameraCode: `CAM-RTSP-${Date.now() % 1000000}`,
       name: sentinelCam.name,
-      type: 'Fixed Bullet',
-      lifecycle: 'ACTIVE',
+      type: 'Fixed Bullet' as any,
+      lifecycle: 'ACTIVE' as any,
       healthStatus: 'ONLINE',
       latitude: params.latitude || 23.0225,
       longitude: params.longitude || 72.5714,
@@ -372,7 +372,7 @@ export class ApiClient {
     // Fire-and-forget both in parallel — don't block UI
     Promise.all([
       ApiClient.onboardCameraStream(sentinelCam).catch(e => console.warn('[Pipeline] Stream onboard:', e)),
-      ApiClient.createCamera(cameraRecord).catch(e => console.warn('[Pipeline] DB save:', e))
+      ApiClient.createCamera(cameraRecord as any).catch(e => console.warn('[Pipeline] DB save:', e))
     ]);
 
     // Persist to localStorage for cross-session persistence

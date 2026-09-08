@@ -227,7 +227,7 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
         vehicleImageUrl: snapUrl,
       };
     })
-    .filter((e): e is AnprEvent => e !== null);
+    .filter(Boolean) as AnprEvent[];
 
   // 2. Map live detections fetched directly from backend (only with real CCTV snapshots)
   const liveEventsMapped: AnprEvent[] = liveDetections
@@ -267,7 +267,7 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
         vehicleImageUrl: snapUrl,
       };
     })
-    .filter((e): e is AnprEvent => e !== null);
+    .filter(Boolean) as AnprEvent[];
 
   const combinedEvents = [...alertsMapped, ...liveEventsMapped];
   const uniqueEventsMap = new Map<string, AnprEvent>();

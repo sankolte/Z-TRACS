@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Camera, CameraLifecycle, CameraHealthStatus } from '../types';
+import { ApiClient } from '../services/apiClient';
 import { 
   Search, 
   Plus, 

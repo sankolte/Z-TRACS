@@ -291,6 +291,7 @@ export const DetectionAreaView: React.FC<DetectionAreaViewProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
   const hlsRef = useRef<Hls | null>(null);
   const selectedCamera = masterCameraList.find(c => c.cameraCode === selectedCamCode) || masterCameraList[0] || ({
     cameraUuid: 'uuid-cam-1',
@@ -343,7 +344,7 @@ export const DetectionAreaView: React.FC<DetectionAreaViewProps> = ({
       usecase: usecaseKey,
       color: meta.color,
       closed: true,
-      points: meta.preset ? meta.preset : PRESET_SHAPES.FULL_FRAME_80
+      points: (meta as any).preset ? (meta as any).preset : PRESET_SHAPES.FULL_FRAME_80
     };
 
     setCameraZones(prev => ({
@@ -365,7 +366,7 @@ export const DetectionAreaView: React.FC<DetectionAreaViewProps> = ({
             usecase: newUsecase,
             name: `${meta.name}`,
             color: meta.color,
-            points: meta.preset ? meta.preset : z.points
+            points: (meta as any).preset ? (meta as any).preset : z.points
           };
         }
         return z;
@@ -486,7 +487,7 @@ export const DetectionAreaView: React.FC<DetectionAreaViewProps> = ({
                 ? z.points.map((p: any) => ({ x: Number(p.x || (Array.isArray(p) ? p[0] : 0)), y: Number(p.y || (Array.isArray(p) ? p[1] : 0)) }))
                 : (Array.isArray(z.coordinates) && z.coordinates.length > 0
                     ? z.coordinates.map((c: any) => ({ x: Number(c[0]), y: Number(c[1]) }))
-                    : (USECASE_META[uKey]?.preset || PRESET_SHAPES.FULL_FRAME_80));
+                    : ((USECASE_META[uKey] as any)?.preset || PRESET_SHAPES.FULL_FRAME_80));
 
               return {
                 id: z.id || `zone-${uKey.toLowerCase()}-${idx}`,

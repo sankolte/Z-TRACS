@@ -510,7 +510,8 @@ export const AiModelsView: React.FC<AiModelsViewProps> = ({
   // Compute list of configured cameras with active models (Deduplicated by Canonical Camera Code)
   const canonicalConfigMap = new Map<string, any>();
 
-  Object.entries(allAiConfigs).forEach(([code, cfg]) => {
+  Object.entries(allAiConfigs).forEach(([code, rawCfg]) => {
+    const cfg: any = rawCfg;
     const canonicalCode = toCanonicalCode(code);
     const matchedCam = cameras.find(c => 
       c.cameraCode === canonicalCode || 

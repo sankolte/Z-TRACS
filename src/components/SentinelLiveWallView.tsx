@@ -398,6 +398,7 @@ function CameraFeedTile({
   height,
   onFullScreen
 }: {
+  key?: any;
   cam: SentinelCatalogCamera;
   height: number;
   onFullScreen: (cam: SentinelCatalogCamera) => void;

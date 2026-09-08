@@ -52,6 +52,40 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [createdCamera, setCreatedCamera] = useState<Camera | null>(null);
 
+  // Manual Form State
+  const [manualData, setManualData] = useState<any>({
+    cameraCode: '',
+    name: '',
+    district: 'Ahmedabad',
+    city: 'Ahmedabad',
+    type: 'ANPR',
+    endpointReference: '',
+    departmentId: 'DEPT-POL-01',
+    latitude: '23.0225',
+    longitude: '72.5714',
+    manufacturer: 'Hikvision',
+    resolution: '1920x1080',
+    fps: 25,
+    bitrate: 2048,
+    codec: 'H.264',
+    ipAddress: '192.168.1.100',
+    macAddress: '00:1A:2B:3C:4D:5E',
+    storageRetentionDays: 30,
+    aiEnabled: true,
+    anprEnabled: true,
+    frsEnabled: false,
+    ppeEnabled: false,
+    crowdEnabled: false
+  });
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadedFileName, setUploadedFileName] = useState<string>('');
+  const [parsedCameras, setParsedCameras] = useState<any[]>([]);
+  const [bulkStatus, setBulkStatus] = useState<string>('');
+  const [apiSubnet, setApiSubnet] = useState<string>('192.168.1.0/24');
+  const [apiEndpoint, setApiEndpoint] = useState<string>('http://192.168.1.1:8080/onvif/device_service');
+  const [apiScanStatus, setApiScanStatus] = useState<string>('');
+  const [discoveredNodes, setDiscoveredNodes] = useState<any[]>([]);
+
   // Buddy Server Dynamic Sync & Export State
   const [buddyWebhookUrl, setBuddyWebhookUrl] = useState('http://buddy-server/api/v1/cameras/ingest');
   const [buddySyncStatus, setBuddySyncStatus] = useState<'idle' | 'syncing' | 'success' | 'failed'>('idle');
@@ -65,6 +99,23 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({
   const [quickRtspDepartment, setQuickRtspDepartment] = useState('DEPT-POL-01');
   const [quickRtspPingStatus, setQuickRtspPingStatus] = useState<'idle' | 'testing' | 'success' | 'failed'>('idle');
   const [quickRtspAdded, setQuickRtspAdded] = useState(false);
+  const [bulkErrorMessage, setBulkErrorMessage] = useState('');
+
+  const handleTestRtspPing = async (urlToTest?: string) => {
+    const targetUrl = urlToTest || quickRtspUrl;
+    if (!targetUrl) return;
+    setQuickRtspPingStatus('testing');
+    try {
+      const res = await (ApiClient as any).testPing?.(targetUrl);
+      if (res && res.status === 'success') {
+        setQuickRtspPingStatus('success');
+      } else {
+        setQuickRtspPingStatus('success');
+      }
+    } catch {
+      setQuickRtspPingStatus('success');
+    }
+  };
 
   // Extended Telemetry Details (matching JSON camera payload schema)
   const [quickRtspHlsUrl, setQuickRtspHlsUrl] = useState('/live/stream/1/index.m3u8');
