@@ -2,7 +2,7 @@
   "status": "success",
   "total_locations": 1,
   "total_cameras": 37,
-  "export_timestamp": "2026-09-08T22:11:35Z",
+  "export_timestamp": "2026-09-08T22:38:04Z",
   "locations": [
     {
       "location_id": "LOC-AHMEDABAD",
@@ -16,7 +16,7 @@
           "enable": [
             1,
             1,
-            1,
+            0,
             0
           ],
           "usecases": [
@@ -85,20 +85,20 @@
             ],
             [
               [
-                300,
-                400
+                503,
+                306
               ],
               [
-                700,
-                400
+                1213,
+                218
               ],
               [
-                700,
-                800
+                920,
+                980
               ],
               [
-                300,
-                800
+                100,
+                980
               ]
             ]
           ]

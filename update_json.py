@@ -101,6 +101,10 @@ class ZTracsBuddyClient:
         self.session.mount("http://", adapter)
         self.session.mount("https://", adapter)
 
+        # Fast in-memory cache to prevent redundant network queries
+        self._roi_cache: Dict[str, Any] = {}
+        self._ai_cache: Dict[str, Any] = {}
+
         # Background Queue Worker for Non-blocking Alerts
         self.enable_background_queue = enable_background_queue
         if self.enable_background_queue:
@@ -202,34 +206,46 @@ class ZTracsBuddyClient:
 
         return ai_map
 
-    # 4. Fetch Structured ROI for single Camera Node (fallback)
+    # 4. Fetch Structured ROI for single Camera Node (fallback with fast in-memory cache)
     def get_camera_roi(self, camera_code: str) -> Optional[Dict[str, Any]]:
+        if camera_code in self._roi_cache:
+            return self._roi_cache[camera_code]
+
+        base_url = self.endpoints[0]
         for code in get_code_aliases(camera_code):
-            for ep in [f"/cameras/{code}/roi", f"/anpr/roi/{code}"]:
-                res = self._request_with_failover("GET", ep)
-                if res and res.status_code == 200:
-                    try:
+            for ep in [f"/anpr/roi/{code}", f"/cameras/{code}/roi"]:
+                try:
+                    res = self.session.get(f"{base_url}{ep}", timeout=0.3)
+                    if res.status_code == 200:
                         data = res.json()
                         d = data.get("data") if isinstance(data, dict) and "data" in data else (data.get("roi") if isinstance(data, dict) and "roi" in data else data)
                         if d and isinstance(d, dict) and (d.get("points") or d.get("zones") or d.get("usecase_rois") or d.get("coordinates") or d.get("roi")):
+                            self._roi_cache[camera_code] = d
                             return d
-                    except Exception:
-                        pass
+                except Exception:
+                    pass
+        self._roi_cache[camera_code] = None
         return None
 
-    # 5. Fetch Assigned AI Vision Models & Config for single camera (fallback)
+    # 5. Fetch Assigned AI Vision Models & Config for single camera (fallback with fast in-memory cache)
     def get_camera_ai_config(self, camera_code: str) -> Optional[Dict[str, Any]]:
+        if camera_code in self._ai_cache:
+            return self._ai_cache[camera_code]
+
+        base_url = self.endpoints[0]
         for code in get_code_aliases(camera_code):
             for ep in [f"/cameras/{code}/ai-config", f"/anpr/ai-config/{code}"]:
-                res = self._request_with_failover("GET", ep)
-                if res and res.status_code == 200:
-                    try:
+                try:
+                    res = self.session.get(f"{base_url}{ep}", timeout=0.3)
+                    if res.status_code == 200:
                         data = res.json()
                         d = data.get("data") if isinstance(data, dict) and "data" in data else (data.get("ai_config") if isinstance(data, dict) and "ai_config" in data else data)
                         if d and isinstance(d, dict) and ("enable" in d or "models" in d or "ai_models" in d):
+                            self._ai_cache[camera_code] = d
                             return d
-                    except Exception:
-                        pass
+                except Exception:
+                    pass
+        self._ai_cache[camera_code] = None
         return None
 
     # 6. Build and Export Multi-Usecase Location Grouped Catalog
@@ -525,8 +541,14 @@ class ZTracsActiveCameraListener:
 
     def _listen_loop(self):
         last_catalog_hash = None
+        last_cache_clear = time.time()
         while self.is_running:
             try:
+                if time.time() - last_cache_clear > 1.5:
+                    self.client._roi_cache.clear()
+                    self.client._ai_cache.clear()
+                    last_cache_clear = time.time()
+
                 # 1. Fetch export feeds, ROIs, and AI configs in 3 lightweight requests
                 feeds = self.client.get_export_feeds()
                 all_rois = self.client.get_all_rois()
