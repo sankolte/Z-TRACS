@@ -678,6 +678,46 @@ export class ApiClient {
     }
   }
 
+  static async uploadForensicTask(formData: FormData, onProgress?: (percent: number) => void): Promise<any> {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', `${API_BASE}/forensics/tasks/upload`);
+
+      if (xhr.upload && onProgress) {
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable) {
+            const percent = Math.round((event.loaded / event.total) * 100);
+            onProgress(percent);
+          }
+        };
+      }
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            const json = JSON.parse(xhr.responseText);
+            resolve(json.data || json);
+          } catch (e) {
+            resolve({ success: true, text: xhr.responseText });
+          }
+        } else {
+          try {
+            const errJson = JSON.parse(xhr.responseText);
+            reject(new Error(errJson.detail || errJson.message || 'Upload failed'));
+          } catch {
+            reject(new Error(`Upload failed with status ${xhr.status}`));
+          }
+        }
+      };
+
+      xhr.onerror = () => {
+        reject(new Error('Network error during forensic video upload'));
+      };
+
+      xhr.send(formData);
+    });
+  }
+
   static async createForensicTask(taskData: any): Promise<any> {
     try {
       const res = await fetch(`${API_BASE}/forensics/tasks`, {

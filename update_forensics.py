@@ -21,6 +21,7 @@ import time
 import json
 import os
 import sys
+import shutil
 from typing import Dict, Any, List, Optional
 
 DEFAULT_FORENSICS_FILE = "forensics.json"
@@ -73,6 +74,73 @@ class ZTracsForensicsClient:
             except Exception:
                 pass
         return {"status": "success", "total_tasks": 0, "active_processing": 0, "tasks": []}
+
+    def stream_download_footage(self, task_id: str, dest_path: str, direct_url: Optional[str] = None) -> bool:
+        """Stream download large CCTV footage directly to disk in 1MB chunks with progress bar."""
+        os.makedirs(os.path.dirname(dest_path), exist_ok=True)
+        tmp_dest = f"{dest_path}.tmp"
+
+        # 1. Try direct URL if provided
+        if direct_url and direct_url.startswith("http"):
+            try:
+                with self.session.get(direct_url, timeout=60, stream=True) as res:
+                    if res.status_code == 200:
+                        total_bytes = int(res.headers.get("content-length", 0))
+                        dl_bytes = 0
+                        start_t = time.time()
+                        print(f"[FORENSICS] Streaming footage from cloud for task {task_id}...")
+                        with open(tmp_dest, "wb") as f:
+                            for chunk in res.iter_content(chunk_size=1024 * 1024):
+                                if chunk:
+                                    f.write(chunk)
+                                    dl_bytes += len(chunk)
+                                    if total_bytes > 0:
+                                        pct = (dl_bytes / total_bytes) * 100
+                                        sys.stdout.write(f"\r -> Progress: [{pct:5.1f}%] {dl_bytes / (1024*1024):.1f} / {total_bytes / (1024*1024):.1f} MB")
+                                        sys.stdout.flush()
+                        sys.stdout.write("\n")
+                        os.replace(tmp_dest, dest_path)
+                        dur = max(0.1, time.time() - start_t)
+                        size_mb = os.path.getsize(dest_path) / (1024 * 1024)
+                        print(f" -> Download Complete: {size_mb:.2f} MB in {dur:.2f}s ({size_mb/dur:.2f} MB/s)")
+                        return True
+            except Exception as e:
+                print(f"[FORENSICS DOWNLOAD ERROR] Direct URL failed: {e}")
+
+        # 2. Try failover API endpoints /forensics/tasks/{task_id}/video
+        for base_url in self.endpoints:
+            try:
+                url = f"{base_url}/forensics/tasks/{task_id}/video"
+                with self.session.get(url, timeout=60, stream=True) as res:
+                    if res.status_code == 200:
+                        total_bytes = int(res.headers.get("content-length", 0))
+                        dl_bytes = 0
+                        start_t = time.time()
+                        print(f"[FORENSICS] Streaming footage from {base_url}...")
+                        with open(tmp_dest, "wb") as f:
+                            for chunk in res.iter_content(chunk_size=1024 * 1024):
+                                if chunk:
+                                    f.write(chunk)
+                                    dl_bytes += len(chunk)
+                                    if total_bytes > 0:
+                                        pct = (dl_bytes / total_bytes) * 100
+                                        sys.stdout.write(f"\r -> Progress: [{pct:5.1f}%] {dl_bytes / (1024*1024):.1f} / {total_bytes / (1024*1024):.1f} MB")
+                                        sys.stdout.flush()
+                        sys.stdout.write("\n")
+                        os.replace(tmp_dest, dest_path)
+                        dur = max(0.1, time.time() - start_t)
+                        size_mb = os.path.getsize(dest_path) / (1024 * 1024)
+                        print(f" -> Download Complete: {size_mb:.2f} MB in {dur:.2f}s ({size_mb/dur:.2f} MB/s)")
+                        return True
+            except Exception:
+                continue
+
+        if os.path.exists(tmp_dest):
+            try:
+                os.remove(tmp_dest)
+            except Exception:
+                pass
+        return False
 
 
 class ZTracsForensicsListener:
@@ -131,9 +199,33 @@ class ZTracsForensicsListener:
             try:
                 export_data = self.client.get_export_tasks()
                 tasks_list = export_data.get("tasks", [])
-                
-                catalog_str = json.dumps(export_data, indent=2, sort_keys=True)
                 current_task_ids = set()
+
+                for task in tasks_list:
+                    tid = task.get("task_id")
+                    if not tid:
+                        continue
+                    current_task_ids.add(tid)
+
+                    clean_fn = task.get("filename") or f"{tid.lower()}.mp4"
+                    task_dir = os.path.join(self.base_dir, tid)
+                    local_dest = os.path.join(task_dir, clean_fn)
+                    expected_size = task.get("file_size_bytes")
+                    direct_url = task.get("direct_video_url") or task.get("download_url")
+
+                    # Download video if missing or incomplete
+                    needs_download = not os.path.exists(local_dest) or (expected_size and os.path.getsize(local_dest) != expected_size)
+                    if needs_download:
+                        print(f"\n[FORENSICS] Syncing footage file for task: {tid} ({task.get('case_id')})")
+                        ok = self.client.stream_download_footage(tid, local_dest, direct_url)
+                        if ok:
+                            print(f"[FORENSICS] Successfully stored local footage: '{local_dest}'")
+
+                    # Update task paths for local GPU inference workers
+                    task["video_path"] = f"{self.base_dir}/{tid}/{clean_fn}".replace("\\", "/")
+                    task["absolute_video_path"] = os.path.abspath(local_dest)
+
+                catalog_str = json.dumps(export_data, indent=2, sort_keys=True)
 
                 if self._last_catalog_str != catalog_str:
                     self._last_catalog_str = catalog_str
@@ -141,17 +233,9 @@ class ZTracsForensicsListener:
 
                     for task in tasks_list:
                         tid = task.get("task_id")
-                        if not tid:
-                            continue
-                        current_task_ids.add(tid)
-
-                        # Check if newly created task
-                        if tid not in self.active_tasks:
+                        if tid and tid not in self.active_tasks:
                             self.active_tasks[tid] = task
                             if not initial_load:
-                                media_src = task.get("media_source") or {}
-                                s3_stream = media_src.get("s3_streaming_url") or "Direct S3 Stream"
-
                                 print("\n" + "=" * 65)
                                 print(f"[LIVE FORENSIC SYNC EVENT DETECTED]")
                                 print("=" * 65)
@@ -159,32 +243,25 @@ class ZTracsForensicsListener:
                                 print(f" -> Task ID          : {tid}")
                                 print(f" -> Case / FIR ID    : {task.get('case_id')}")
                                 print(f" -> Footage File     : {task.get('footage_name')}")
-                                print(f" -> S3 Storage Key   : {task.get('s3_key', 'N/A')}")
-                                print(f" -> Stream Mode      : OpenCV cv2.VideoCapture(s3_streaming_url)")
+                                print(f" -> Local Video File : {task.get('video_path')}")
+                                print(f" -> Stream Mode      : Local Direct cv2.VideoCapture('{task.get('video_path')}')")
                                 print(f" -> AI Models        : {task.get('models_requested')}")
                                 print(f" -> Duration         : {task.get('duration_formatted')} ({task.get('total_frames')} frames)")
                                 print(f" -> Forensics File   : '{self.forensics_filename}' ({total_tasks} jobs in {elapsed:.4f}s)")
-                                print(f" -> Engine Status    : READY FOR GPU BATCH STREAMING")
+                                print(f" -> Engine Status    : READY FOR LOCAL GPU INFERENCE")
                                 print("=" * 65 + "\n")
-                        else:
+                        elif tid:
                             self.active_tasks[tid] = task
 
-                    # Check for deleted tasks and purge orphaned local directories
-                    active_slugs = {
-                        task.get("slug") or (task.get("task_id") or "").lower().replace("-", "_")
-                        for task in tasks_list
-                    }
-
+                    # Cleanup deleted tasks
                     if not initial_load:
                         deleted_ids = set(self.active_tasks.keys()) - current_task_ids
                         for d_tid in deleted_ids:
                             old = self.active_tasks.pop(d_tid, {})
-                            old_slug = old.get("slug") or d_tid.lower().replace("-", "_")
-                            old_dir = os.path.join(self.base_dir, old_slug)
-                            if os.path.exists(old_dir):
-                                import shutil
-                                shutil.rmtree(old_dir, ignore_errors=True)
-                                print(f"[FORENSICS CLEANUP] Purged deleted task directory: '{old_dir}/'")
+                            del_dir = os.path.join(self.base_dir, d_tid)
+                            if os.path.exists(del_dir):
+                                shutil.rmtree(del_dir, ignore_errors=True)
+                                print(f"[FORENSICS CLEANUP] Purged deleted task directory: '{del_dir}/'")
 
                             print("\n" + "=" * 65)
                             print(f"[LIVE FORENSIC SYNC EVENT DETECTED]")

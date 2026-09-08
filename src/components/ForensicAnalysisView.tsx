@@ -52,6 +52,8 @@ export interface ForensicTask {
   footage_name: string;
   location_name: string;
   video_path: string;
+  download_url?: string;
+  video_url?: string;
   models_requested: string[];
   status: 'QUEUED' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
   progress_percent: number;
@@ -83,8 +85,8 @@ export const ForensicAnalysisView: React.FC = () => {
   const [selectedModels, setSelectedModels] = useState<string[]>(['ANPR', 'VEHICLE_CLASSIFICATION']);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [mediaBase64, setMediaBase64] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
 
   // Studio / Player State
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -128,32 +130,22 @@ export const ForensicAnalysisView: React.FC = () => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
     setSelectedFile(file);
     setFootageName(file.name);
     const objUrl = URL.createObjectURL(file);
     setPreviewUrl(objUrl);
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      setMediaBase64(reader.result as string);
-    };
-    reader.readAsDataURL(file);
   };
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     const file = e.dataTransfer.files?.[0];
     if (!file) return;
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
     setSelectedFile(file);
     setFootageName(file.name);
     const objUrl = URL.createObjectURL(file);
     setPreviewUrl(objUrl);
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      setMediaBase64(reader.result as string);
-    };
-    reader.readAsDataURL(file);
   };
 
   const toggleModel = (model: string) => {
@@ -162,7 +154,7 @@ export const ForensicAnalysisView: React.FC = () => {
     );
   };
 
-  // Submit Footage Task
+  // Submit Footage Task (Direct EC2 Streaming Pipeline)
   const handleCreateTask = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!caseId.trim()) {
@@ -177,18 +169,35 @@ export const ForensicAnalysisView: React.FC = () => {
     }
 
     setIsSubmitting(true);
-    const payload = {
-      case_id: caseId.trim(),
-      footage_name: footageName.trim() || selectedFile?.name || 'Evidence_CCTV_Footage.mp4',
-      location_name: locationName.trim() || 'Gujarat Highway Junction Node',
-      models_requested: selectedModels.length > 0 ? selectedModels : ['ANPR'],
-      estimated_duration_minutes: durationMinutes,
-      media_base64: mediaBase64
-    };
+    setUploadProgress(0);
 
     try {
-      const res = await ApiClient.createForensicTask(payload);
+      let res;
+      if (selectedFile) {
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+        formData.append('case_id', caseId.trim());
+        formData.append('footage_name', footageName.trim() || selectedFile.name);
+        formData.append('location_name', locationName.trim() || 'Gujarat Highway Junction Node');
+        formData.append('models_requested', JSON.stringify(selectedModels.length > 0 ? selectedModels : ['ANPR']));
+        formData.append('duration_minutes', String(durationMinutes));
+
+        res = await ApiClient.uploadForensicTask(formData, (percent) => {
+          setUploadProgress(percent);
+        });
+      } else {
+        const payload = {
+          case_id: caseId.trim(),
+          footage_name: footageName.trim() || 'Evidence_CCTV_Footage.mp4',
+          location_name: locationName.trim() || 'Gujarat Highway Junction Node',
+          models_requested: selectedModels.length > 0 ? selectedModels : ['ANPR'],
+          estimated_duration_minutes: durationMinutes,
+        };
+        res = await ApiClient.createForensicTask(payload);
+      }
+
       setIsSubmitting(false);
+      setUploadProgress(0);
       if (res && (res.status === 'success' || res.data)) {
         setStatusMessage(`Forensic Job "${caseId}" deployed to GPU Batch Engine!`);
         setIsModalOpen(false);
@@ -196,15 +205,18 @@ export const ForensicAnalysisView: React.FC = () => {
         setFootageName('');
         setLocationName('');
         setSelectedFile(null);
+        if (previewUrl) URL.revokeObjectURL(previewUrl);
         setPreviewUrl(null);
-        setMediaBase64(null);
         fetchTasks();
         if (res.data) setSelectedTask(res.data);
       }
       setTimeout(() => setStatusMessage(null), 4000);
-    } catch (err) {
+    } catch (err: any) {
       console.warn('[Forensics Submit Error]', err);
+      setStatusMessage(`Upload failed: ${err?.message || 'Server error'}`);
       setIsSubmitting(false);
+      setUploadProgress(0);
+      setTimeout(() => setStatusMessage(null), 4000);
     }
   };
 
@@ -472,7 +484,11 @@ export const ForensicAnalysisView: React.FC = () => {
               <div className="relative bg-black rounded-2xl overflow-hidden aspect-video border border-[#0d3457] shadow-inner group">
                 <video
                   ref={videoRef}
-                  src={previewUrl || DEFAULT_SAMPLE_VIDEO}
+                  src={
+                    selectedTask?.download_url
+                      ? `${ApiClient.getApiBase().replace(/\/api\/v1\/?$/, '')}${selectedTask.download_url}`
+                      : previewUrl || DEFAULT_SAMPLE_VIDEO
+                  }
                   onTimeUpdate={handleTimeUpdate}
                   className="w-full h-full object-contain"
                   controls={false}
@@ -811,12 +827,36 @@ export const ForensicAnalysisView: React.FC = () => {
                 </div>
               </div>
 
+              {/* Upload Progress Bar */}
+              {isSubmitting && (
+                <div className="bg-[#02111f] border border-cyan-500/30 rounded-xl p-3.5 space-y-2">
+                  <div className="flex items-center justify-between text-xs font-mono">
+                    <span className="text-cyan-300 font-bold flex items-center space-x-2">
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin text-cyan-400" />
+                      <span>{uploadProgress < 100 ? 'Streaming Video Directly to Edge Cloud...' : 'Finalizing GPU Task Ingestion...'}</span>
+                    </span>
+                    <span className="text-cyan-400 font-bold">{uploadProgress}%</span>
+                  </div>
+                  <div className="w-full bg-slate-800 rounded-full h-2.5 overflow-hidden border border-cyan-500/20">
+                    <div
+                      className="bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-500 h-full transition-all duration-150 rounded-full"
+                      style={{ width: `${uploadProgress}%` }}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between text-[10px] text-slate-400">
+                    <span>Direct chunked stream (EC2 RAM footprint &lt; 10MB)</span>
+                    <span className="text-emerald-400 font-semibold">Safe Zero-Spike Pipeline</span>
+                  </div>
+                </div>
+              )}
+
               {/* Submit Buttons */}
               <div className="flex items-center justify-end space-x-3 pt-3 border-t border-[#0d3b66]">
                 <button
                   type="button"
+                  disabled={isSubmitting}
                   onClick={() => setIsModalOpen(false)}
-                  className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition cursor-pointer disabled:opacity-50"
                 >
                   Cancel
                 </button>
@@ -829,7 +869,7 @@ export const ForensicAnalysisView: React.FC = () => {
                   {isSubmitting ? (
                     <>
                       <RefreshCw className="w-4 h-4 animate-spin text-slate-950" />
-                      <span>Deploying Batch Task...</span>
+                      <span>{uploadProgress > 0 && uploadProgress < 100 ? `Uploading (${uploadProgress}%)...` : 'Deploying Batch Task...'}</span>
                     </>
                   ) : (
                     <>

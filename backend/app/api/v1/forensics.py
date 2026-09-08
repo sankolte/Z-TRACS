@@ -6,7 +6,8 @@ distribute batch jobs to OpenCV / GPU AI workers, and perform interactive timeli
 """
 
 from typing import Dict, Any, List, Optional
-from fastapi import APIRouter, HTTPException, Body
+from fastapi import APIRouter, HTTPException, Body, UploadFile, File, Form
+from fastapi.responses import FileResponse
 from app.schemas.api_response import ApiResponse
 from app.websockets.manager import ws_manager
 from app.storage.s3 import s3_storage
@@ -16,15 +17,18 @@ import re
 import time
 import base64
 import random
+import shutil
 
 router = APIRouter(prefix="/forensics", tags=["Model 2 — Forensic Video Analysis & Offline CCTV Ingestion"])
-
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", ".."))
 FORENSICS_DIR = os.path.join(BASE_DIR, "forensics")
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "data")
+FORENSICS_MEDIA_DIR = os.path.join(DATA_DIR, "forensics_media")
+
 os.makedirs(FORENSICS_DIR, exist_ok=True)
 os.makedirs(DATA_DIR, exist_ok=True)
+os.makedirs(FORENSICS_MEDIA_DIR, exist_ok=True)
 
 FORENSIC_TASKS_FILE = os.path.join(DATA_DIR, "saved_forensic_tasks.json")
 
@@ -133,6 +137,155 @@ async def get_forensic_upload_url(payload: Dict[str, Any] = Body(...)):
         "case_id": case_id,
         "upload_url": presigned_put_url or f"http://43.204.235.231:8000/api/v1/forensics/tasks/{task_id}/upload-direct"
     })
+
+@router.post("/tasks/upload")
+async def upload_forensic_task_video(
+    file: UploadFile = File(...),
+    case_id: str = Form("FIR-FOR-001"),
+    footage_name: str = Form(""),
+    location_name: str = Form("Gujarat Police CCTV Node"),
+    models_requested: str = Form('["ANPR", "VEHICLE_CLASSIFICATION"]'),
+    duration_minutes: float = Form(60.0),
+):
+    """
+    Direct-to-Disk Chunked Streaming Video Ingestion (FRS Architecture).
+    Streams multi-gigabyte video directly to server disk in 4MB chunks with minimal RAM (< 10MB).
+    """
+    global SAVED_FORENSIC_TASKS
+    SAVED_FORENSIC_TASKS = load_forensic_tasks()
+
+    task_id = f"TSK-FOR-{int(time.time()) % 100000:05d}"
+    orig_name = footage_name or file.filename or "footage.mp4"
+    clean_filename = sanitize_slug(orig_name)
+    if not clean_filename.endswith((".mp4", ".avi", ".mkv", ".mov")):
+        ext = os.path.splitext(orig_name)[1] or ".mp4"
+        clean_filename += ext
+
+    task_dir = os.path.join(FORENSICS_MEDIA_DIR, task_id)
+    os.makedirs(task_dir, exist_ok=True)
+    video_dest_path = os.path.join(task_dir, clean_filename)
+
+    # 4MB buffer streaming: Zero RAM bloat even for 5GB CCTV files
+    with open(video_dest_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer, length=4 * 1024 * 1024)
+
+    file_size = os.path.getsize(video_dest_path)
+
+    try:
+        models = json.loads(models_requested) if isinstance(models_requested, str) else models_requested
+    except Exception:
+        models = ["ANPR", "VEHICLE_CLASSIFICATION"]
+
+    slug = f"{task_id.lower()}_{sanitize_slug(case_id)}"
+    total_seconds = max(60, int(duration_minutes * 60))
+
+    # Pre-generate timeline detections
+    detections = []
+    num_samples = min(15, max(4, int(duration_minutes // 4)))
+    timestamps = sorted(random.sample(range(5, total_seconds - 5), min(num_samples, total_seconds - 10)))
+    for idx, ts in enumerate(timestamps):
+        veh = random.choice(SAMPLE_VEHICLES)
+        plate = random.choice(SAMPLE_PLATES) if idx % 3 != 0 else f"GJ{random.randint(1,33):02d}{chr(random.randint(65,90))}{chr(random.randint(65,90))}{random.randint(1000,9999)}"
+        is_watchlist = plate in ["GJ01AB1234", "MH02CB8899", "GJ27XY9999"]
+        detections.append({
+            "detection_id": f"DET-{idx+1:03d}",
+            "plate_number": plate,
+            "vehicle_type": veh["type"],
+            "color": veh["color"],
+            "video_timestamp_sec": float(ts),
+            "video_timestamp_formatted": format_seconds(ts),
+            "confidence": round(random.uniform(94.5, 99.8), 1),
+            "plate_confidence": round(random.uniform(96.0, 99.9), 1),
+            "watchlist_hit": is_watchlist,
+            "watchlist_reason": "CRIME BRANCH STOLEN HOTLIST" if is_watchlist else None,
+            "snapshot_crop": f"forensics/{slug}/crops/det_{idx+1:03d}.jpg",
+            "frame_number": int(ts * 25)
+        })
+
+    download_url = f"/api/v1/forensics/tasks/{task_id}/video"
+    task_obj = {
+        "task_id": task_id,
+        "case_id": case_id,
+        "slug": slug,
+        "footage_name": orig_name,
+        "filename": clean_filename,
+        "location_name": location_name,
+        "video_path": f"forensics/{task_id}/{clean_filename}",
+        "file_size_bytes": file_size,
+        "download_url": download_url,
+        "direct_video_url": f"http://43.204.235.231:8000{download_url}",
+        "media_source": {
+            "local_video_path": f"forensics/{task_id}/{clean_filename}",
+            "direct_download_url": f"http://43.204.235.231:8000{download_url}",
+            "file_size_bytes": file_size
+        },
+        "models_requested": models,
+        "status": "QUEUED",
+        "progress_percent": 0.0,
+        "duration_seconds": total_seconds,
+        "duration_formatted": format_seconds(total_seconds),
+        "total_frames": total_seconds * 25,
+        "processed_frames": 0,
+        "processing_fps": 0.0,
+        "total_detections": len(detections),
+        "watchlist_hits": len([d for d in detections if d.get("watchlist_hit")]),
+        "detections": detections,
+        "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "updated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ")
+    }
+
+    SAVED_FORENSIC_TASKS[task_id] = task_obj
+    save_forensic_tasks(SAVED_FORENSIC_TASKS)
+
+    print("\n" + "=" * 65)
+    print(f"[FORENSICS] DIRECT FOOTAGE UPLOAD RECEIVED (CHUNKED STREAM)")
+    print(f" -> Task ID       : {task_id}")
+    print(f" -> Case ID       : {case_id}")
+    print(f" -> File          : {clean_filename} ({file_size / (1024*1024):.2f} MB)")
+    print(f" -> Saved to Disk : {video_dest_path}")
+    print(f" -> Download URL  : {download_url}")
+    print(f" -> Status        : QUEUED FOR EDGE LISTENER")
+    print("=" * 65 + "\n")
+
+    try:
+        await ws_manager.broadcast_json({
+            "event": "NEW_FORENSIC_TASK_DEPLOYED",
+            "data": task_obj
+        })
+    except Exception:
+        pass
+
+    return ApiResponse.ok(task_obj)
+
+@router.get("/tasks/{task_id}/video")
+async def get_forensic_task_video(task_id: str):
+    """Direct HTTP stream & download endpoint for edge listener daemon."""
+    global SAVED_FORENSIC_TASKS
+    SAVED_FORENSIC_TASKS = load_forensic_tasks()
+    task = SAVED_FORENSIC_TASKS.get(task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="Forensic task not found")
+
+    filename = task.get("filename") or "footage.mp4"
+    file_path = os.path.join(FORENSICS_MEDIA_DIR, task_id, filename)
+
+    if not os.path.exists(file_path):
+        task_dir = os.path.join(FORENSICS_MEDIA_DIR, task_id)
+        if os.path.exists(task_dir):
+            files = [f for f in os.listdir(task_dir) if not f.startswith(".")]
+            if files:
+                file_path = os.path.join(task_dir, files[0])
+                filename = files[0]
+
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="Footage file not found on disk")
+
+    return FileResponse(
+        path=file_path,
+        media_type="video/mp4",
+        filename=filename,
+        headers={"Accept-Ranges": "bytes"}
+    )
 
 @router.post("/tasks")
 async def create_forensic_task(payload: Dict[str, Any] = Body(...)):
@@ -307,12 +460,16 @@ async def submit_task_results(task_id: str, payload: Dict[str, Any] = Body(...))
 
 @router.delete("/tasks/{task_id}")
 async def delete_forensic_task(task_id: str):
-    """Delete a forensic video analysis job."""
+    """Delete a forensic video analysis job and remove media on disk."""
     global SAVED_FORENSIC_TASKS
     SAVED_FORENSIC_TASKS = load_forensic_tasks()
     if task_id in SAVED_FORENSIC_TASKS:
         deleted = SAVED_FORENSIC_TASKS.pop(task_id)
         save_forensic_tasks(SAVED_FORENSIC_TASKS)
+
+        task_dir = os.path.join(FORENSICS_MEDIA_DIR, task_id)
+        if os.path.exists(task_dir):
+            shutil.rmtree(task_dir, ignore_errors=True)
 
         print("\n" + "=" * 65)
         print(f"[LIVE DEMO] FORENSIC TASK REMOVED: {deleted.get('case_id')} ({task_id})")
