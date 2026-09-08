@@ -641,6 +641,19 @@ export class ApiClient {
     }
   }
 
+  static async uploadFrsTarget(formData: FormData): Promise<any> {
+    try {
+      const res = await fetch(`${API_BASE}/frs/targets/upload`, {
+        method: 'POST',
+        body: formData
+      });
+      return await res.json();
+    } catch (err) {
+      console.warn('[API] POST /frs/targets/upload failed:', err);
+      return null;
+    }
+  }
+
   static async getFrsTargets(): Promise<any[]> {
     try {
       const res = await fetch(`${API_BASE}/frs/targets`);

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import {
   UserCheck,
@@ -282,7 +283,7 @@ export const FaceRecognitionView: React.FC<FaceRecognitionViewProps> = ({
   const handleDeployTarget = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedFile && !mediaBase64) {
-      setStatusMessage('Please upload a suspect video clip or reference face photo.');
+      setStatusMessage('Please upload a 1-minute suspect video clip (.mp4).');
       setTimeout(() => setStatusMessage(null), 4000);
       return;
     }
@@ -298,32 +299,57 @@ export const FaceRecognitionView: React.FC<FaceRecognitionViewProps> = ({
     }
 
     setIsDeploying(true);
-    setStatusMessage(null);
-
-    const targetPayload = {
-      person_name: personName.trim(),
-      case_id: caseId.trim(),
-      category,
-      alert_priority: priority,
-      target_cameras: selectedCamScope === 'ALL' ? ['ALL'] : [selectedCamScope],
-      notes: notes.trim() || 'Suspect enrolled for live facial recognition tracking across Gujarat CCTV network.',
-      media_base64: mediaBase64,
-      file_type: fileType || (selectedFile?.type.startsWith('image') ? 'image' : 'video'),
-      filename: selectedFile?.name || (fileType === 'image' ? 'face_reference.jpg' : 'clip.mp4')
-    };
+    setStatusMessage('Enrolling suspect & configuring camera AI...');
 
     try {
-      const res = await ApiClient.createFrsTarget(targetPayload);
+      // 1. Auto-enable FRS on selected camera if not already active
+      if (selectedCamScope && selectedCamScope !== 'ALL') {
+        const isAlreadyFrs = frsEnabledCameras.some(c => (c.cameraCode || c.id) === selectedCamScope);
+        if (!isAlreadyFrs) {
+          try {
+            await handleQuickEnableFrs(selectedCamScope);
+          } catch (camErr) {
+            console.warn('[FRS Auto-Enable Cam Warn]', camErr);
+          }
+        }
+      }
+
+      // 2. High-Speed Upload via FormData (streams directly without memory overhead)
+      let res;
+      if (selectedFile) {
+        const formData = new FormData();
+        formData.append('person_name', personName.trim());
+        formData.append('case_id', caseId.trim());
+        formData.append('category', category);
+        formData.append('alert_priority', priority);
+        formData.append('target_cameras', JSON.stringify(selectedCamScope === 'ALL' ? ['ALL'] : [selectedCamScope]));
+        formData.append('notes', notes.trim() || 'Suspect enrolled for live facial recognition tracking across Gujarat CCTV network.');
+        formData.append('video_file', selectedFile);
+        res = await ApiClient.uploadFrsTarget(formData);
+      } else {
+        const targetPayload = {
+          person_name: personName.trim(),
+          case_id: caseId.trim(),
+          category,
+          alert_priority: priority,
+          target_cameras: selectedCamScope === 'ALL' ? ['ALL'] : [selectedCamScope],
+          notes: notes.trim() || 'Suspect enrolled for live facial recognition tracking across Gujarat CCTV network.',
+          media_base64: mediaBase64,
+          file_type: 'video',
+          filename: 'clip.mp4'
+        };
+        res = await ApiClient.createFrsTarget(targetPayload);
+      }
+
       setIsDeploying(false);
       
       if (res && (res.status === 'success' || res.data)) {
-        setStatusMessage(`Suspect "${personName}" deployed for live facial surveillance!`);
+        setStatusMessage(`Suspect "${personName}" video clip deployed for live FRS surveillance!`);
         clearDraft();
         setIsAddModalOpen(false);
-
         fetchTargets();
       } else {
-        setStatusMessage('Target deployed to Edge AI.');
+        setStatusMessage('Suspect video deployed to Edge AI.');
         clearDraft();
         setIsAddModalOpen(false);
         fetchTargets();
@@ -669,11 +695,11 @@ export const FaceRecognitionView: React.FC<FaceRecognitionViewProps> = ({
                 </div>
               )}
 
-              {/* Media Upload Area */}
+              {/* Media Upload Area (Video Only as requested) */}
               <div>
                 <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1.5 flex items-center justify-between">
-                  <span>Suspect Video Clip / Reference Photo <span className="text-rose-400">*</span></span>
-                  <span className="text-[10px] text-cyan-400 normal-case font-normal">(Compulsory for Facial Embeddings)</span>
+                  <span>Suspect Video Clip (.mp4) <span className="text-rose-400">*</span></span>
+                  <span className="text-[10px] text-cyan-400 normal-case font-normal">(Short 1-min video for edge surveillance download)</span>
                 </label>
                 <div
                   onDragOver={(e) => e.preventDefault()}
@@ -688,29 +714,21 @@ export const FaceRecognitionView: React.FC<FaceRecognitionViewProps> = ({
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept="video/mp4,video/x-matroska,image/jpeg,image/png,image/webp"
+                    accept="video/mp4,video/x-matroska,video/webm,video/quicktime"
                     onChange={handleFileChange}
                     className="hidden"
                   />
 
                   {previewUrl ? (
                     <div className="w-full flex flex-col items-center space-y-2">
-                      {fileType === 'video' ? (
-                        <video
-                          src={previewUrl}
-                          controls
-                          className="max-h-36 rounded-xl shadow border border-slate-700 w-full object-cover"
-                        />
-                      ) : (
-                        <img
-                          src={previewUrl}
-                          alt="Preview"
-                          className="max-h-36 rounded-xl shadow border border-slate-700 object-contain"
-                        />
-                      )}
+                      <video
+                        src={previewUrl}
+                        controls
+                        className="max-h-44 rounded-xl shadow border border-slate-700 w-full object-cover"
+                      />
                       <span className="text-xs text-cyan-300 font-mono font-bold flex items-center space-x-1.5">
                         <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                        <span>{selectedFile?.name || 'Media Uploaded'}</span>
+                        <span>{selectedFile?.name || 'Video Clip Attached'} {selectedFile ? `(${(selectedFile.size / (1024 * 1024)).toFixed(1)} MB)` : ''}</span>
                       </span>
                     </div>
                   ) : (
@@ -719,10 +737,10 @@ export const FaceRecognitionView: React.FC<FaceRecognitionViewProps> = ({
                         <FileVideo className="w-6 h-6" />
                       </div>
                       <p className="text-xs font-bold text-slate-200">
-                        Drop Suspect Video Clip (.mp4) or Photo here <span className="text-rose-400">*</span>
+                        Drop 1-Minute Suspect Video Clip (.mp4) here <span className="text-rose-400">*</span>
                       </p>
                       <p className="text-[10px] text-slate-400">
-                        Supports MP4, JPG, PNG, WEBP (Max 50MB) — Required
+                        Supports MP4, MKV, WEBM — Fast Direct Edge Download Ready
                       </p>
                     </div>
                   )}
@@ -807,65 +825,72 @@ export const FaceRecognitionView: React.FC<FaceRecognitionViewProps> = ({
                   </span>
                 </label>
 
-                {frsEnabledCameras.length === 0 ? (
-                  <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 text-left space-y-3">
-                    <div className="flex items-start space-x-3">
-                      <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
-                      <div>
-                        <h4 className="text-xs font-bold text-amber-300 uppercase tracking-wide">
-                          No Cameras Assigned to Face Recognition (FRS)
-                        </h4>
-                        <p className="text-[11px] text-slate-300 mt-1 leading-relaxed">
-                          Suspect facial embeddings cannot be scanned until the <strong>Facial Recognition System (FRS)</strong> AI model is enabled on at least one camera.
-                        </p>
-                      </div>
-                    </div>
+                <div>
+                  <select
+                    value={selectedCamScope}
+                    onChange={(e) => setSelectedCamScope(e.target.value)}
+                    className="w-full bg-[#02111f] border border-[#0e3b63] rounded-xl px-3.5 py-2.5 text-xs font-bold text-white focus:ring-1 focus:ring-cyan-400 focus:outline-none cursor-pointer"
+                  >
+                    <option value="ALL">
+                      🌐 All Active FRS Checkpoints (Statewide Scan)
+                    </option>
 
-                    <button
-                      type="button"
-                      onClick={() => setIsQuickEnableOpen(true)}
-                      className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-black text-xs uppercase tracking-wider transition cursor-pointer flex items-center justify-center space-x-2 shadow-lg"
-                    >
-                      <Zap className="w-4 h-4 text-slate-950 fill-current" />
-                      <span>⚡ 1-Click Enable FRS on Cameras Below</span>
-                    </button>
-                  </div>
-                ) : (
-                  <div>
-                    <select
-                      value={selectedCamScope}
-                      onChange={(e) => setSelectedCamScope(e.target.value)}
-                      className="w-full bg-[#02111f] border border-[#0e3b63] rounded-xl px-3.5 py-2.5 text-xs font-bold text-white focus:ring-1 focus:ring-cyan-400 focus:outline-none cursor-pointer"
-                    >
-                      <option value="ALL">
-                        All {frsEnabledCameras.length} FRS-Enabled Checkpoints (Statewide Scan)
-                      </option>
-                      {frsEnabledCameras.map(c => (
-                        <option key={c.cameraCode} value={c.cameraCode}>
-                          {c.cameraCode} — {c.name} ({c.district}) [FRS ACTIVE]
-                        </option>
-                      ))}
-                    </select>
+                    {frsEnabledCameras.length > 0 && (
+                      <optgroup label="── Active FRS Cameras [🟢 Running FRS] ──">
+                        {frsEnabledCameras.map(c => {
+                          const code = c.cameraCode || c.id;
+                          return (
+                            <option key={code} value={code}>
+                              {code} — {c.name} ({c.district || 'Zone'}) [🟢 FRS Active]
+                            </option>
+                          );
+                        })}
+                      </optgroup>
+                    )}
 
-                    <div className="flex items-center justify-between mt-2 text-[11px] text-slate-400 px-0.5">
+                    <optgroup label="── Other Cameras [⚡ Select to Auto-Enable FRS] ──">
+                      {cameras
+                        .filter(c => !frsEnabledCameras.some(fc => (fc.cameraCode || fc.id) === (c.cameraCode || c.id)))
+                        .map(c => {
+                          const code = c.cameraCode || c.id;
+                          return (
+                            <option key={code} value={code}>
+                              {code} — {c.name} ({c.district || 'Zone'}) [⚡ Auto-Enables FRS]
+                            </option>
+                          );
+                        })}
+                    </optgroup>
+                  </select>
+
+                  {/* Dynamic Notice when selecting a camera where FRS is currently off */}
+                  {selectedCamScope !== 'ALL' && !frsEnabledCameras.some(c => (c.cameraCode || c.id) === selectedCamScope) && (
+                    <div className="mt-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[11px] flex items-center space-x-2 animate-in fade-in duration-150">
+                      <Zap className="w-4 h-4 text-amber-400 shrink-0 fill-amber-400" />
                       <span>
-                        Showing <strong>{frsEnabledCameras.length}</strong> of {cameras.length} cameras running FRS AI engine.
+                        <strong>Auto-Enable Ready:</strong> Deploying this suspect will automatically turn ON FRS AI model on <strong>{selectedCamScope}</strong> and update <code>cameras.json</code>!
                       </span>
-                      {onNavigateToAiModels && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsAddModalOpen(false);
-                            onNavigateToAiModels();
-                          }}
-                          className="text-cyan-400 hover:text-cyan-300 font-bold hover:underline cursor-pointer flex items-center space-x-1 shrink-0 ml-2"
-                        >
-                          <span>Full AI Models Page ➔</span>
-                        </button>
-                      )}
                     </div>
+                  )}
+
+                  <div className="flex items-center justify-between mt-2 text-[11px] text-slate-400 px-0.5">
+                    <span>
+                      Active FRS: <strong>{frsEnabledCameras.length}</strong> | Total Available: {cameras.length}
+                    </span>
+                    {onNavigateToAiModels && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsAddModalOpen(false);
+                          onNavigateToAiModels();
+                        }}
+                        className="text-cyan-400 hover:text-cyan-300 font-bold hover:underline cursor-pointer flex items-center space-x-1 shrink-0 ml-2"
+                      >
+                        <span>Full AI Models Page ➔</span>
+                      </button>
+                    )}
                   </div>
-                )}
+                </div>
+              </div>
 
                 {/* QUICK-ENABLE FRS INLINE DRAWER */}
                 <div className="mt-3 border border-[#0e3b63] bg-[#021324] rounded-2xl p-3">
@@ -954,7 +979,6 @@ export const FaceRecognitionView: React.FC<FaceRecognitionViewProps> = ({
                     </div>
                   )}
                 </div>
-              </div>
 
               {/* Notes */}
               <div>

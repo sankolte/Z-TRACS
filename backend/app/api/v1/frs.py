@@ -104,10 +104,21 @@ async def get_target_photo(person_id: str):
 async def get_target_clip(person_id: str):
     """
     Direct video clip download endpoint for Edge Listener Daemon (update_frs.py).
-    Streams or returns full 1-minute video clip binary from S3 or memory cache.
+    Streams or returns full 1-minute video clip binary from memory cache, local disk, or S3.
     """
     if person_id in _CLIP_MEMORY_CACHE:
         return Response(content=_CLIP_MEMORY_CACHE[person_id], media_type="video/mp4")
+
+    # Check local server disk persistence
+    local_clip_file = os.path.join(DATA_DIR, "media", person_id, "clip.mp4")
+    if os.path.exists(local_clip_file):
+        try:
+            with open(local_clip_file, "rb") as cf:
+                clip_bytes = cf.read()
+            _CLIP_MEMORY_CACHE[person_id] = clip_bytes
+            return Response(content=clip_bytes, media_type="video/mp4")
+        except Exception as e:
+            print(f"[FRS LOCAL CLIP READ ERROR] {e}")
 
     target = SAVED_FRS_TARGETS.get(person_id)
     if target:
@@ -117,7 +128,6 @@ async def get_target_clip(person_id: str):
             _CLIP_MEMORY_CACHE[person_id] = clip_bytes
             return Response(content=clip_bytes, media_type="video/mp4")
 
-    # If dummy or not found, return empty or 404
     raise HTTPException(status_code=404, detail=f"Video clip for target {person_id} not found.")
 
 @router.get("/export-targets")
@@ -222,8 +232,16 @@ async def create_or_update_target(payload: Dict[str, Any] = Body(...)):
     clip_presigned_url = None
     uploaded_media_type = "NONE"
 
-    # 1. Handle base64 photo upload directly to S3
+    # 1. Detect if media_base64 is actually a video file
+    file_type = str(payload.get("file_type", "")).lower()
+    filename_hint = str(payload.get("filename", "")).lower()
     base64_media = payload.get("media_base64") or payload.get("photo_base64") or payload.get("face_image")
+    base64_clip = payload.get("clip_base64") or payload.get("video_base64") or payload.get("media_clip")
+
+    if (file_type == "video" or filename_hint.endswith(".mp4")) and base64_media and not base64_clip:
+        base64_clip = base64_media
+        base64_media = None
+
     if base64_media:
         try:
             clean_base64 = base64_media.split(",")[1] if "," in base64_media else base64_media
@@ -235,24 +253,33 @@ async def create_or_update_target(payload: Dict[str, Any] = Body(...)):
                 filename=face_filename
             )
             _PHOTO_MEMORY_CACHE[person_id] = raw_bytes
-            uploaded_media_type = "PHOTO (Uploaded directly to S3)"
+            media_dir = os.path.join(DATA_DIR, "media", person_id)
+            os.makedirs(media_dir, exist_ok=True)
+            with open(os.path.join(media_dir, face_filename), "wb") as pf:
+                pf.write(raw_bytes)
+            uploaded_media_type = "PHOTO"
         except Exception as e:
             print(f"[FRS MEDIA PROCESS WARN] {e}")
 
-    # 2. Handle base64 full 1-minute video clip upload directly to S3
-    base64_clip = payload.get("clip_base64") or payload.get("video_base64") or payload.get("media_clip")
+    # 2. Handle base64 full 1-minute video clip upload
     if base64_clip:
         try:
             clean_clip_b64 = base64_clip.split(",")[1] if "," in base64_clip else base64_clip
             clip_bytes = base64.b64decode(clean_clip_b64)
+
+            _CLIP_MEMORY_CACHE[person_id] = clip_bytes
+            # Persist directly on server disk
+            media_dir = os.path.join(DATA_DIR, "media", person_id)
+            os.makedirs(media_dir, exist_ok=True)
+            with open(os.path.join(media_dir, clip_filename), "wb") as cf:
+                cf.write(clip_bytes)
 
             s3_clip_key, clip_version_marker, clip_presigned_url = s3_storage.upload_photo(
                 person_id=person_id,
                 photo_bytes=clip_bytes,
                 filename=clip_filename
             )
-            _CLIP_MEMORY_CACHE[person_id] = clip_bytes
-            uploaded_media_type += " + 1-MIN VIDEO CLIP"
+            uploaded_media_type = "1-MIN VIDEO CLIP"
         except Exception as e:
             print(f"[FRS CLIP PROCESS WARN] {e}")
 
@@ -315,6 +342,123 @@ async def create_or_update_target(payload: Dict[str, Any] = Body(...)):
     print("=" * 65 + "\n")
 
     # Broadcast notification to all connected dashboard websockets
+    try:
+        await ws_manager.broadcast_json({
+            "event": "NEW_FRS_TARGET_DEPLOYED",
+            "data": target_obj
+        })
+    except Exception:
+        pass
+
+    return ApiResponse.ok(target_obj)
+
+@router.post("/targets/upload")
+async def upload_target_with_video(
+    person_name: str = Form(...),
+    case_id: str = Form(...),
+    category: str = Form("CRITICAL_SUSPECT"),
+    alert_priority: str = Form("HIGH"),
+    target_cameras: str = Form("ALL"),
+    notes: str = Form("Suspect enrolled for live facial recognition tracking across Gujarat CCTV network."),
+    video_file: Optional[UploadFile] = File(None)
+):
+    """
+    High-Speed Multipart Form Upload for 1-Minute Suspect Video Clip.
+    Directly streams video binary to local server disk and S3 without client-side base64 memory overhead.
+    """
+    if not person_name or not person_name.strip():
+        raise HTTPException(status_code=400, detail="Suspect Full Name ('person_name') is compulsory.")
+    if not case_id or not case_id.strip():
+        raise HTTPException(status_code=400, detail="FIR / Case Reference ID ('case_id') is compulsory.")
+
+    clean_name = person_name.strip()
+    slug = sanitize_slug(clean_name)
+    person_id = f"TGT-GJ-{len(SAVED_FRS_TARGETS)+1:03d}"
+    clip_filename = "clip.mp4"
+    face_filename = "face_reference.jpg"
+    media_rel_path = f"clips/{slug}/{clip_filename}"
+    face_rel_path = f"clips/{slug}/{face_filename}"
+
+    # Parse target cameras
+    cams = ["ALL"]
+    try:
+        if target_cameras.startswith("["):
+            cams = json.loads(target_cameras)
+        elif target_cameras != "ALL":
+            cams = [target_cameras]
+    except Exception:
+        cams = [target_cameras]
+
+    s3_clip_key = f"frs/targets/{person_id}/{clip_filename}"
+    s3_key = f"frs/targets/{person_id}/{face_filename}"
+    clip_version_marker = f"v_clip_{int(time.time())}"
+    version_marker = f"v_{int(time.time())}"
+    clip_presigned_url = None
+
+    if video_file:
+        clip_bytes = await video_file.read()
+        if clip_bytes:
+            _CLIP_MEMORY_CACHE[person_id] = clip_bytes
+            media_dir = os.path.join(DATA_DIR, "media", person_id)
+            os.makedirs(media_dir, exist_ok=True)
+            with open(os.path.join(media_dir, clip_filename), "wb") as cf:
+                cf.write(clip_bytes)
+            
+            s3_clip_key, clip_version_marker, clip_presigned_url = s3_storage.upload_photo(
+                person_id=person_id,
+                photo_bytes=clip_bytes,
+                filename=clip_filename
+            )
+
+    now_iso = time.strftime("%Y-%m-%dT%H:%M:%SZ")
+    target_obj = {
+        "person_id": person_id,
+        "person_name": clean_name,
+        "slug": slug,
+        "case_id": case_id.strip(),
+        "category": category,
+        "alert_priority": alert_priority,
+        "enabled": 1,
+        "s3_key": s3_key,
+        "photo_version": version_marker,
+        "photo_url": None,
+        "s3_clip_key": s3_clip_key,
+        "clip_version": clip_version_marker,
+        "clip_url": clip_presigned_url,
+        "media_source": {
+            "clip_path": media_rel_path,
+            "face_image_path": face_rel_path,
+            "embeddings_path": f"clips/{slug}/embeddings.npy",
+            "s3_key": s3_key,
+            "s3_clip_key": s3_clip_key,
+            "photo_version": version_marker,
+            "clip_version": clip_version_marker
+        },
+        "inference_rules": {
+            "similarity_threshold": 0.78,
+            "target_cameras": cams,
+            "trigger_cooldown_seconds": 30
+        },
+        "media_path": media_rel_path,
+        "face_image_path": face_rel_path,
+        "target_cameras": cams,
+        "similarity_threshold": 0.78,
+        "notes": notes,
+        "created_at": now_iso,
+        "updated_at": now_iso
+    }
+
+    SAVED_FRS_TARGETS[person_id] = target_obj
+    save_frs_targets(SAVED_FRS_TARGETS)
+
+    print("\n" + "=" * 65)
+    print(f"[FAST MULTIPART UPLOAD] FRS SUSPECT ONBOARDED: {clean_name}")
+    print(f" -> Person ID       : {person_id}")
+    print(f" -> Case / FIR ID   : {case_id.strip()}")
+    print(f" -> Local Disk File : clips/{slug}/clip.mp4")
+    print(f" -> Active Cameras  : {cams}")
+    print("=" * 65 + "\n")
+
     try:
         await ws_manager.broadcast_json({
             "event": "NEW_FRS_TARGET_DEPLOYED",

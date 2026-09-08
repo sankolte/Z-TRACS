@@ -96,7 +96,7 @@ class ZTracsFrsClient:
         return None
 
     def fetch_target_clip(self, person_id: str, direct_url: Optional[str] = None) -> Optional[bytes]:
-        """Fetch raw 1-minute video clip binary from S3 presigned URL or backend failover endpoints."""
+        """Fetch raw 1-minute video clip binary from direct URL or backend failover endpoints."""
         # 1. Try direct URL if provided
         if direct_url and direct_url.startswith("http"):
             try:
@@ -112,6 +112,45 @@ class ZTracsFrsClient:
             return res.content
 
         return None
+
+    def stream_download_clip(self, person_id: str, dest_path: str, direct_url: Optional[str] = None) -> bool:
+        """Stream download raw 1-minute video clip binary directly into disk file to prevent RAM spikes."""
+        tmp_dest = f"{dest_path}.tmp"
+        # 1. Try direct URL if provided
+        if direct_url and direct_url.startswith("http"):
+            try:
+                with self.session.get(direct_url, timeout=self.timeout, stream=True) as res:
+                    if res.status_code == 200:
+                        with open(tmp_dest, "wb") as f:
+                            for chunk in res.iter_content(chunk_size=65536):
+                                if chunk:
+                                    f.write(chunk)
+                        os.replace(tmp_dest, dest_path)
+                        return True
+            except Exception:
+                pass
+
+        # 2. Try failover API endpoint
+        for base_url in self.endpoints:
+            try:
+                url = f"{base_url}/frs/targets/{person_id}/clip"
+                with self.session.get(url, timeout=self.timeout, stream=True) as res:
+                    if res.status_code == 200:
+                        with open(tmp_dest, "wb") as f:
+                            for chunk in res.iter_content(chunk_size=65536):
+                                if chunk:
+                                    f.write(chunk)
+                        os.replace(tmp_dest, dest_path)
+                        return True
+            except Exception:
+                continue
+
+        if os.path.exists(tmp_dest):
+            try:
+                os.remove(tmp_dest)
+            except Exception:
+                pass
+        return False
 
 
 class ZTracsFrsListener:
@@ -233,22 +272,15 @@ class ZTracsFrsListener:
                                 except Exception as write_err:
                                     print(f"[FRS PHOTO WRITE WARN] Could not write photo for {pid}: {write_err}")
 
-                        # 1b. Download Full 1-Minute Video Clip
+                        # 1b. Download Full 1-Minute Video Clip (Directly Streamed to Local Hard Drive)
                         need_clip = not os.path.exists(local_clip_path) or cached_clip_ver != remote_clip_ver
                         if need_clip:
                             direct_clip_url = tgt.get("clip_url") or tgt.get("clip_download_url")
-                            clip_bytes = self.client.fetch_target_clip(pid, direct_url=direct_clip_url)
-                            if clip_bytes:
-                                try:
-                                    tmp_clip = f"{local_clip_path}.tmp"
-                                    with open(tmp_clip, "wb") as cf:
-                                        cf.write(clip_bytes)
-                                    os.replace(tmp_clip, local_clip_path)
-                                    self.version_cache[f"{pid}_clip"] = remote_clip_ver
-                                    self._save_version_cache()
-                                    print(f"[FRS S3 SYNC] Downloaded full 1-min video clip for '{tgt.get('person_name')}' -> {local_clip_path}")
-                                except Exception as write_err:
-                                    print(f"[FRS CLIP WRITE WARN] Could not write video clip for {pid}: {write_err}")
+                            downloaded = self.client.stream_download_clip(pid, local_clip_path, direct_url=direct_clip_url)
+                            if downloaded:
+                                self.version_cache[f"{pid}_clip"] = remote_clip_ver
+                                self._save_version_cache()
+                                print(f"[FRS LOCAL SYNC] Downloaded 1-min video clip for '{tgt.get('person_name')}' -> {local_clip_path}")
 
                         synced_targets.append(tgt)
 
