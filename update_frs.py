@@ -133,10 +133,12 @@ class ZTracsFrsListener:
         except Exception:
             pass
 
-    def sync_faces_json(self, export_data: Dict[str, Any]):
+    def sync_faces_json(self, export_data: Optional[Dict[str, Any]] = None):
         """Generates and writes standardized faces.json atomically to disk."""
         try:
             t0 = time.time()
+            if export_data is None:
+                export_data = self.client.get_export_targets()
             tmp_file = f"{self.faces_filename}.tmp"
             with open(tmp_file, "w", encoding="utf-8") as f:
                 json.dump(export_data, f, indent=2)

@@ -1,7 +1,7 @@
 {
   "status": "success",
   "total_targets": 2,
-  "export_timestamp": "2026-09-08T13:49:12Z",
+  "export_timestamp": "2026-09-08T13:55:40Z",
   "global_config": {
     "face_detector": "yolov8n-face",
     "feature_extractor": "arcface_r100",

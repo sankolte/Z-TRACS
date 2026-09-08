@@ -93,10 +93,12 @@ class ZTracsForensicsListener:
 
         os.makedirs(self.base_dir, exist_ok=True)
 
-    def sync_forensics_json(self, export_data: Dict[str, Any]):
+    def sync_forensics_json(self, export_data: Optional[Dict[str, Any]] = None):
         """Generates and writes standardized forensics.json atomically to disk."""
         try:
             t0 = time.time()
+            if export_data is None:
+                export_data = self.client.get_export_tasks()
             tmp_file = f"{self.forensics_filename}.tmp"
             with open(tmp_file, "w", encoding="utf-8") as f:
                 json.dump(export_data, f, indent=2)
