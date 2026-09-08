@@ -1,8 +1,8 @@
 {
   "status": "success",
   "total_locations": 1,
-  "total_cameras": 35,
-  "export_timestamp": "2026-09-08T19:25:25Z",
+  "total_cameras": 37,
+  "export_timestamp": "2026-09-08T21:19:54Z",
   "locations": [
     {
       "location_id": "LOC-AHMEDABAD",
@@ -14,8 +14,8 @@
           "camera_code": "CAM-GJ-AHM-SNTL-000001",
           "camera_name": "Camera 1 (Chiman Bhai Bridge)",
           "enable": [
-            1,
-            1,
+            0,
+            0,
             0,
             0
           ],
@@ -25,44 +25,44 @@
             "PPE",
             "FOOTFALL"
           ],
-          "rtsp": "rtsp://103.250.160.189:8554/stream/cam01",
+          "rtsp": "rtsp://admin%40zeexai.com:RCVN-BJ7U-UCA4@103.250.160.189:8554/stream/cam01",
           "latitude": 23.0612,
           "longitude": 72.5804,
           "rois": [
             [
               [
-                180,
-                400
-              ],
-              [
-                920,
-                400
-              ],
-              [
-                920,
-                980
-              ],
-              [
                 100,
-                980
+                200
+              ],
+              [
+                800,
+                200
+              ],
+              [
+                900,
+                900
+              ],
+              [
+                50,
+                900
               ]
             ],
             [
               [
-                550,
-                200
+                200,
+                150
               ],
               [
-                1370,
-                200
+                600,
+                150
               ],
               [
-                1370,
-                960
+                600,
+                750
               ],
               [
-                550,
-                960
+                200,
+                750
               ]
             ],
             [
@@ -107,8 +107,8 @@
           "camera_code": "CAM-GJ-AHM-SNTL-000002",
           "camera_name": "Camera 2 (Janpath Road)",
           "enable": [
-            1,
-            1,
+            0,
+            0,
             0,
             0
           ],
@@ -118,30 +118,26 @@
             "PPE",
             "FOOTFALL"
           ],
-          "rtsp": "rtsp://103.250.160.189:8554/stream/cam02",
+          "rtsp": "rtsp://admin%40zeexai.com:RCVN-BJ7U-UCA4@103.250.160.189:8554/stream/cam02",
           "latitude": 23.0315,
           "longitude": 72.5621,
           "rois": [
             [
               [
-                19,
-                405
+                100,
+                200
               ],
               [
-                872,
-                233
+                800,
+                200
               ],
               [
-                1886,
-                479
+                900,
+                900
               ],
               [
-                1869,
-                1040
-              ],
-              [
-                27,
-                1027
+                50,
+                900
               ]
             ],
             [
@@ -204,9 +200,9 @@
           "camera_code": "CAM-GJ-AHM-SNTL-000003",
           "camera_name": "Camera 3 (C.G. Road Axis)",
           "enable": [
-            1,
             0,
-            1,
+            0,
+            0,
             0
           ],
           "usecases": [
@@ -215,7 +211,7 @@
             "PPE",
             "FOOTFALL"
           ],
-          "rtsp": "rtsp://103.250.160.189:8554/stream/cam03",
+          "rtsp": "rtsp://admin%40zeexai.com:RCVN-BJ7U-UCA4@103.250.160.189:8554/stream/cam03",
           "latitude": 23.0254,
           "longitude": 72.5562,
           "rois": [
@@ -308,7 +304,7 @@
             "PPE",
             "FOOTFALL"
           ],
-          "rtsp": "rtsp://103.250.160.189:8554/stream/cam04",
+          "rtsp": "rtsp://admin%40zeexai.com:RCVN-BJ7U-UCA4@103.250.160.189:8554/stream/cam04",
           "latitude": 23.0112,
           "longitude": 72.561,
           "rois": [
@@ -390,8 +386,8 @@
           "camera_code": "CAM-GJ-AHM-SNTL-000005",
           "camera_name": "Camera 5 (Narol Circle South)",
           "enable": [
-            1,
-            1,
+            0,
+            0,
             0,
             0
           ],
@@ -401,30 +397,26 @@
             "PPE",
             "FOOTFALL"
           ],
-          "rtsp": "rtsp://103.250.160.189:8554/stream/cam05",
+          "rtsp": "rtsp://admin%40zeexai.com:RCVN-BJ7U-UCA4@103.250.160.189:8554/stream/cam05",
           "latitude": 22.9754,
           "longitude": 72.6001,
           "rois": [
             [
               [
-                724,
-                154
+                100,
+                200
               ],
               [
-                1223,
-                415
+                800,
+                200
               ],
               [
-                1018,
-                591
+                900,
+                900
               ],
               [
-                648,
-                656
-              ],
-              [
-                429,
-                449
+                50,
+                900
               ]
             ],
             [
@@ -488,7 +480,7 @@
           "camera_name": "Camera 6 (Asarwa Civil Corridor)",
           "enable": [
             0,
-            1,
+            0,
             0,
             0
           ],
@@ -498,7 +490,7 @@
             "PPE",
             "FOOTFALL"
           ],
-          "rtsp": "rtsp://103.250.160.189:8554/stream/cam06",
+          "rtsp": "rtsp://admin%40zeexai.com:RCVN-BJ7U-UCA4@103.250.160.189:8554/stream/cam06",
           "latitude": 23.0489,
           "longitude": 72.6021,
           "rois": [
@@ -522,24 +514,20 @@
             ],
             [
               [
-                188,
-                202
+                200,
+                150
               ],
               [
-                178,
-                890
+                600,
+                150
               ],
               [
-                1427,
-                875
+                600,
+                750
               ],
               [
-                1603,
-                275
-              ],
-              [
-                1048,
-                69
+                200,
+                750
               ]
             ],
             [
@@ -595,38 +583,26 @@
             "PPE",
             "FOOTFALL"
           ],
-          "rtsp": "rtsp://103.250.160.189:8554/stream/cam07",
+          "rtsp": "rtsp://admin%40zeexai.com:RCVN-BJ7U-UCA4@103.250.160.189:8554/stream/cam07",
           "latitude": 23.0341,
           "longitude": 72.6289,
           "rois": [
             [
               [
-                231,
-                230
+                100,
+                200
               ],
               [
-                166,
-                742
+                800,
+                200
               ],
               [
-                699,
-                860
+                900,
+                900
               ],
               [
-                1299,
-                782
-              ],
-              [
-                1583,
-                410
-              ],
-              [
-                1063,
-                197
-              ],
-              [
-                666,
-                192
+                50,
+                900
               ]
             ],
             [
@@ -700,7 +676,7 @@
             "PPE",
             "FOOTFALL"
           ],
-          "rtsp": "rtsp://103.250.160.189:8554/stream/cam08",
+          "rtsp": "rtsp://admin%40zeexai.com:RCVN-BJ7U-UCA4@103.250.160.189:8554/stream/cam08",
           "latitude": 23.0512,
           "longitude": 72.5412,
           "rois": [
@@ -793,7 +769,7 @@
             "PPE",
             "FOOTFALL"
           ],
-          "rtsp": "rtsp://103.250.160.189:8554/stream/cam09",
+          "rtsp": "rtsp://admin%40zeexai.com:RCVN-BJ7U-UCA4@103.250.160.189:8554/stream/cam09",
           "latitude": 22.9989,
           "longitude": 72.6012,
           "rois": [
@@ -886,7 +862,7 @@
             "PPE",
             "FOOTFALL"
           ],
-          "rtsp": "rtsp://103.250.160.189:8554/stream/cam10",
+          "rtsp": "rtsp://admin%40zeexai.com:RCVN-BJ7U-UCA4@103.250.160.189:8554/stream/cam10",
           "latitude": 23.0381,
           "longitude": 72.5298,
           "rois": [
@@ -979,7 +955,7 @@
             "PPE",
             "FOOTFALL"
           ],
-          "rtsp": "rtsp://103.250.160.189:8554/stream/cam11",
+          "rtsp": "rtsp://admin%40zeexai.com:RCVN-BJ7U-UCA4@103.250.160.189:8554/stream/cam11",
           "latitude": 23.0471,
           "longitude": 72.521,
           "rois": [
@@ -1072,7 +1048,7 @@
             "PPE",
             "FOOTFALL"
           ],
-          "rtsp": "rtsp://103.250.160.189:8554/stream/cam12",
+          "rtsp": "rtsp://admin%40zeexai.com:RCVN-BJ7U-UCA4@103.250.160.189:8554/stream/cam12",
           "latitude": 23.0912,
           "longitude": 72.531,
           "rois": [
@@ -1165,7 +1141,7 @@
             "PPE",
             "FOOTFALL"
           ],
-          "rtsp": "rtsp://103.250.160.189:8554/stream/cam13",
+          "rtsp": "rtsp://admin%40zeexai.com:RCVN-BJ7U-UCA4@103.250.160.189:8554/stream/cam13",
           "latitude": 22.9812,
           "longitude": 72.4989,
           "rois": [
@@ -1258,7 +1234,7 @@
             "PPE",
             "FOOTFALL"
           ],
-          "rtsp": "rtsp://103.250.160.189:8554/stream/cam14",
+          "rtsp": "rtsp://admin%40zeexai.com:RCVN-BJ7U-UCA4@103.250.160.189:8554/stream/cam14",
           "latitude": 23.0298,
           "longitude": 72.5074,
           "rois": [
@@ -1351,7 +1327,7 @@
             "PPE",
             "FOOTFALL"
           ],
-          "rtsp": "rtsp://103.250.160.189:8554/stream/cam15",
+          "rtsp": "rtsp://admin%40zeexai.com:RCVN-BJ7U-UCA4@103.250.160.189:8554/stream/cam15",
           "latitude": 23.0389,
           "longitude": 72.5112,
           "rois": [
@@ -1444,7 +1420,7 @@
             "PPE",
             "FOOTFALL"
           ],
-          "rtsp": "rtsp://103.250.160.189:8554/stream/cam16",
+          "rtsp": "rtsp://admin%40zeexai.com:RCVN-BJ7U-UCA4@103.250.160.189:8554/stream/cam16",
           "latitude": 23.0501,
           "longitude": 72.5089,
           "rois": [
@@ -1537,7 +1513,7 @@
             "PPE",
             "FOOTFALL"
           ],
-          "rtsp": "rtsp://103.250.160.189:8554/stream/cam17",
+          "rtsp": "rtsp://admin%40zeexai.com:RCVN-BJ7U-UCA4@103.250.160.189:8554/stream/cam17",
           "latitude": 23.0765,
           "longitude": 72.4921,
           "rois": [
@@ -1630,7 +1606,7 @@
             "PPE",
             "FOOTFALL"
           ],
-          "rtsp": "rtsp://103.250.160.189:8554/stream/cam18",
+          "rtsp": "rtsp://admin%40zeexai.com:RCVN-BJ7U-UCA4@103.250.160.189:8554/stream/cam18",
           "latitude": 23.0241,
           "longitude": 72.581,
           "rois": [
@@ -1723,7 +1699,7 @@
             "PPE",
             "FOOTFALL"
           ],
-          "rtsp": "rtsp://103.250.160.189:8554/stream/cam19",
+          "rtsp": "rtsp://admin%40zeexai.com:RCVN-BJ7U-UCA4@103.250.160.189:8554/stream/cam19",
           "latitude": 23.021,
           "longitude": 72.571,
           "rois": [
@@ -1816,7 +1792,7 @@
             "PPE",
             "FOOTFALL"
           ],
-          "rtsp": "rtsp://103.250.160.189:8554/stream/cam20",
+          "rtsp": "rtsp://admin%40zeexai.com:RCVN-BJ7U-UCA4@103.250.160.189:8554/stream/cam20",
           "latitude": 23.0189,
           "longitude": 72.5432,
           "rois": [
@@ -1909,7 +1885,7 @@
             "PPE",
             "FOOTFALL"
           ],
-          "rtsp": "rtsp://103.250.160.189:8554/stream/cam21",
+          "rtsp": "rtsp://admin%40zeexai.com:RCVN-BJ7U-UCA4@103.250.160.189:8554/stream/cam21",
           "latitude": 23.0212,
           "longitude": 72.5589,
           "rois": [
@@ -2002,7 +1978,7 @@
             "PPE",
             "FOOTFALL"
           ],
-          "rtsp": "rtsp://103.250.160.189:8554/stream/cam22",
+          "rtsp": "rtsp://admin%40zeexai.com:RCVN-BJ7U-UCA4@103.250.160.189:8554/stream/cam22",
           "latitude": 23.1121,
           "longitude": 72.551,
           "rois": [
@@ -2095,7 +2071,7 @@
             "PPE",
             "FOOTFALL"
           ],
-          "rtsp": "rtsp://103.250.160.189:8554/stream/cam23",
+          "rtsp": "rtsp://admin%40zeexai.com:RCVN-BJ7U-UCA4@103.250.160.189:8554/stream/cam23",
           "latitude": 23.0289,
           "longitude": 72.5998,
           "rois": [
@@ -2188,7 +2164,7 @@
             "PPE",
             "FOOTFALL"
           ],
-          "rtsp": "rtsp://103.250.160.189:8554/stream/cam24",
+          "rtsp": "rtsp://admin%40zeexai.com:RCVN-BJ7U-UCA4@103.250.160.189:8554/stream/cam24",
           "latitude": 23.0121,
           "longitude": 72.5889,
           "rois": [
@@ -2281,7 +2257,7 @@
             "PPE",
             "FOOTFALL"
           ],
-          "rtsp": "rtsp://103.250.160.189:8554/stream/cam25",
+          "rtsp": "rtsp://admin%40zeexai.com:RCVN-BJ7U-UCA4@103.250.160.189:8554/stream/cam25",
           "latitude": 23.0645,
           "longitude": 72.5889,
           "rois": [
@@ -2374,7 +2350,7 @@
             "PPE",
             "FOOTFALL"
           ],
-          "rtsp": "rtsp://103.250.160.189:8554/stream/cam26",
+          "rtsp": "rtsp://admin%40zeexai.com:RCVN-BJ7U-UCA4@103.250.160.189:8554/stream/cam26",
           "latitude": 23.061,
           "longitude": 72.5812,
           "rois": [
@@ -2467,7 +2443,7 @@
             "PPE",
             "FOOTFALL"
           ],
-          "rtsp": "rtsp://103.250.160.189:8554/stream/cam27",
+          "rtsp": "rtsp://admin%40zeexai.com:RCVN-BJ7U-UCA4@103.250.160.189:8554/stream/cam27",
           "latitude": 23.0789,
           "longitude": 72.571,
           "rois": [
@@ -2560,7 +2536,7 @@
             "PPE",
             "FOOTFALL"
           ],
-          "rtsp": "rtsp://103.250.160.189:8554/stream/cam28",
+          "rtsp": "rtsp://admin%40zeexai.com:RCVN-BJ7U-UCA4@103.250.160.189:8554/stream/cam28",
           "latitude": 23.1112,
           "longitude": 72.5821,
           "rois": [
@@ -2653,7 +2629,7 @@
             "PPE",
             "FOOTFALL"
           ],
-          "rtsp": "rtsp://103.250.160.189:8554/stream/cam29",
+          "rtsp": "rtsp://admin%40zeexai.com:RCVN-BJ7U-UCA4@103.250.160.189:8554/stream/cam29",
           "latitude": 23.0712,
           "longitude": 72.521,
           "rois": [
@@ -2746,7 +2722,7 @@
             "PPE",
             "FOOTFALL"
           ],
-          "rtsp": "rtsp://103.250.160.189:8554/stream/cam30",
+          "rtsp": "rtsp://admin%40zeexai.com:RCVN-BJ7U-UCA4@103.250.160.189:8554/stream/cam30",
           "latitude": 23.0398,
           "longitude": 72.5189,
           "rois": [
@@ -2839,7 +2815,7 @@
             "PPE",
             "FOOTFALL"
           ],
-          "rtsp": "rtsp://103.250.160.189:8554/stream/cam31",
+          "rtsp": "rtsp://admin%40zeexai.com:RCVN-BJ7U-UCA4@103.250.160.189:8554/stream/cam31",
           "latitude": 23.0112,
           "longitude": 72.5089,
           "rois": [
@@ -2932,7 +2908,7 @@
             "PPE",
             "FOOTFALL"
           ],
-          "rtsp": "rtsp://103.250.160.189:8554/stream/cam32",
+          "rtsp": "rtsp://admin%40zeexai.com:RCVN-BJ7U-UCA4@103.250.160.189:8554/stream/cam32",
           "latitude": 23.0289,
           "longitude": 72.5065,
           "rois": [
@@ -3025,26 +3001,212 @@
             "PPE",
             "FOOTFALL"
           ],
-          "rtsp": "rtsp://103.250.160.189:8554/stream/cam33",
+          "rtsp": "rtsp://admin%40zeexai.com:RCVN-BJ7U-UCA4@103.250.160.189:8554/stream/cam33",
           "latitude": 23.1345,
           "longitude": 72.5389,
           "rois": [
             [
               [
-                380,
-                420
+                100,
+                200
               ],
               [
-                1540,
-                420
+                800,
+                200
               ],
               [
-                1780,
-                920
+                900,
+                900
               ],
               [
-                140,
-                920
+                50,
+                900
+              ]
+            ],
+            [
+              [
+                200,
+                150
+              ],
+              [
+                600,
+                150
+              ],
+              [
+                600,
+                750
+              ],
+              [
+                200,
+                750
+              ]
+            ],
+            [
+              [
+                50,
+                100
+              ],
+              [
+                950,
+                100
+              ],
+              [
+                950,
+                950
+              ],
+              [
+                50,
+                950
+              ]
+            ],
+            [
+              [
+                300,
+                400
+              ],
+              [
+                700,
+                400
+              ],
+              [
+                700,
+                800
+              ],
+              [
+                300,
+                800
+              ]
+            ]
+          ]
+        },
+        {
+          "camera_code": "CAM-GJ-AHM-SNTL-000034",
+          "camera_name": "Camera 34 (Rajkot Highway Checkpost)",
+          "enable": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "usecases": [
+            "ANPR",
+            "FACE_RECOGNITION",
+            "PPE",
+            "FOOTFALL"
+          ],
+          "rtsp": "rtsp://admin%40zeexai.com:RCVN-BJ7U-UCA4@103.250.160.189:8554/stream/cam34",
+          "latitude": 22.3112,
+          "longitude": 70.8112,
+          "rois": [
+            [
+              [
+                100,
+                200
+              ],
+              [
+                800,
+                200
+              ],
+              [
+                900,
+                900
+              ],
+              [
+                50,
+                900
+              ]
+            ],
+            [
+              [
+                200,
+                150
+              ],
+              [
+                600,
+                150
+              ],
+              [
+                600,
+                750
+              ],
+              [
+                200,
+                750
+              ]
+            ],
+            [
+              [
+                50,
+                100
+              ],
+              [
+                950,
+                100
+              ],
+              [
+                950,
+                950
+              ],
+              [
+                50,
+                950
+              ]
+            ],
+            [
+              [
+                300,
+                400
+              ],
+              [
+                700,
+                400
+              ],
+              [
+                700,
+                800
+              ],
+              [
+                300,
+                800
+              ]
+            ]
+          ]
+        },
+        {
+          "camera_code": "CAM-GJ-AHM-SNTL-000035",
+          "camera_name": "Camera 35 (Surat Ring Road Toll)",
+          "enable": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "usecases": [
+            "ANPR",
+            "FACE_RECOGNITION",
+            "PPE",
+            "FOOTFALL"
+          ],
+          "rtsp": "rtsp://admin%40zeexai.com:RCVN-BJ7U-UCA4@103.250.160.189:8554/stream/cam35",
+          "latitude": 21.1702,
+          "longitude": 72.8311,
+          "rois": [
+            [
+              [
+                100,
+                200
+              ],
+              [
+                800,
+                200
+              ],
+              [
+                900,
+                900
+              ],
+              [
+                50,
+                900
               ]
             ],
             [
@@ -3107,8 +3269,8 @@
           "camera_code": "CAM-GJ-AHM-TRF-000001",
           "camera_name": "SG Highway - Iscon Junction North",
           "enable": [
-            1,
-            1,
+            0,
+            0,
             0,
             0
           ],
@@ -3124,38 +3286,38 @@
           "rois": [
             [
               [
-                180,
-                400
-              ],
-              [
-                920,
-                400
-              ],
-              [
-                920,
-                980
-              ],
-              [
                 100,
-                980
+                200
+              ],
+              [
+                800,
+                200
+              ],
+              [
+                900,
+                900
+              ],
+              [
+                50,
+                900
               ]
             ],
             [
               [
-                550,
-                200
+                200,
+                150
               ],
               [
-                1370,
-                200
+                600,
+                150
               ],
               [
-                1370,
-                960
+                600,
+                750
               ],
               [
-                550,
-                960
+                200,
+                750
               ]
             ],
             [

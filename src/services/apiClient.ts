@@ -400,20 +400,30 @@ export class ApiClient {
     latitude?: number;
     longitude?: number;
   }): Promise<any> {
+    const code = cameraData.cameraCode;
     try {
-      const res = await fetch(`${API_BASE}/cameras/${encodeURIComponent(cameraData.cameraCode)}`, {
+      // 1. Try POST /cameras/update/{code} (primary endpoint on EC2)
+      const postRes = await fetch(`${API_BASE}/cameras/update/${encodeURIComponent(code)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(cameraData)
+      });
+      if (postRes.ok) return await postRes.json();
+
+      // 2. Try PUT /cameras/update/{code}
+      const putRes = await fetch(`${API_BASE}/cameras/update/${encodeURIComponent(code)}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(cameraData)
       });
-      if (!res.ok) {
-        const postRes = await fetch(`${API_BASE}/cameras/update`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(cameraData)
-        });
-        if (postRes.ok) return await postRes.json();
-      }
+      if (putRes.ok) return await putRes.json();
+
+      // 3. Try PUT /cameras/{code}
+      const res = await fetch(`${API_BASE}/cameras/${encodeURIComponent(code)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(cameraData)
+      });
       return await res.json();
     } catch (err) {
       console.warn('[API] updateCamera failed:', err);
@@ -444,7 +454,9 @@ export class ApiClient {
     camera_name?: string;
     resolution?: string;
     zone_name?: string;
-    points: { x: number; y: number; label?: string }[];
+    points: { x: number; y: number; label?: string; usecase?: string }[];
+    zones?: any[];
+    usecase_rois?: any;
     python_snippet?: string;
   }): Promise<any> {
     try {
@@ -462,10 +474,19 @@ export class ApiClient {
 
   static async getCameraRoi(cameraCode: string): Promise<any> {
     try {
-      const res = await fetch(`${API_BASE}/anpr/roi/${cameraCode}`);
-      if (!res.ok) return null;
-      const json = await res.json();
-      return json.data || null;
+      // 1. Try /anpr/roi/{cameraCode}
+      const res = await fetch(`${API_BASE}/anpr/roi/${encodeURIComponent(cameraCode)}`);
+      if (res.ok) {
+        const json = await res.json();
+        if (json.data) return json.data;
+      }
+      // 2. Try /cameras/{cameraCode}/roi
+      const res2 = await fetch(`${API_BASE}/cameras/${encodeURIComponent(cameraCode)}/roi`);
+      if (res2.ok) {
+        const json2 = await res2.json();
+        return json2.data || json2.roi || json2;
+      }
+      return null;
     } catch (err) {
       console.warn(`[API] GET /anpr/roi/${cameraCode} failed:`, err);
       return null;
@@ -473,50 +494,85 @@ export class ApiClient {
   }
 
   static async saveAiConfig(configData: any): Promise<any> {
+    const code = configData.camera_code || configData.cameraCode || 'CAM-001';
     try {
-      const res = await fetch(`${API_BASE}/anpr/ai-config`, {
+      // 1. Try /cameras/{code}/ai-config
+      const res = await fetch(`${API_BASE}/cameras/${encodeURIComponent(code)}/ai-config`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(configData)
       });
-      return await res.json();
+      if (res.ok) return await res.json();
+
+      // 2. Try /anpr/ai-config fallback
+      const res2 = await fetch(`${API_BASE}/anpr/ai-config`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(configData)
+      });
+      return await res2.json();
     } catch (err) {
-      console.warn('[API] POST /anpr/ai-config failed:', err);
+      console.warn('[API] POST AI config failed:', err);
       return null;
     }
   }
 
   static async getAiConfig(cameraCode: string): Promise<any> {
     try {
-      const res = await fetch(`${API_BASE}/anpr/ai-config/${cameraCode}`);
-      if (!res.ok) return null;
-      const json = await res.json();
-      return json.data || null;
+      // 1. Try /cameras/{code}/ai-config
+      const res = await fetch(`${API_BASE}/cameras/${encodeURIComponent(cameraCode)}/ai-config`);
+      if (res.ok) {
+        const json = await res.json();
+        return json.data || json.ai_config || json;
+      }
+      // 2. Try /anpr/ai-config/{cameraCode}
+      const res2 = await fetch(`${API_BASE}/anpr/ai-config/${encodeURIComponent(cameraCode)}`);
+      if (res2.ok) {
+        const json2 = await res2.json();
+        return json2.data || null;
+      }
+      return null;
     } catch (err) {
-      console.warn(`[API] GET /anpr/ai-config/${cameraCode} failed:`, err);
+      console.warn(`[API] GET AI config for ${cameraCode} failed:`, err);
       return null;
     }
   }
 
   static async getAllAiConfigs(): Promise<Record<string, any>> {
     try {
-      const res = await fetch(`${API_BASE}/anpr/all-ai-configs`);
-      if (!res.ok) return {};
-      const json = await res.json();
-      return json.data || {};
+      // 1. Try /cameras/ai-config/all
+      const res = await fetch(`${API_BASE}/cameras/ai-config/all`);
+      if (res.ok) {
+        const json = await res.json();
+        const list = json.ai_configs || json.data || (Array.isArray(json) ? json : []);
+        const map: Record<string, any> = {};
+        for (const item of list) {
+          if (item && item.camera_code) {
+            map[item.camera_code] = item;
+          }
+        }
+        return map;
+      }
+      // 2. Fallback to /anpr/all-ai-configs
+      const res2 = await fetch(`${API_BASE}/anpr/all-ai-configs`);
+      if (res2.ok) {
+        const json2 = await res2.json();
+        return json2.data || {};
+      }
+      return {};
     } catch (err) {
-      console.warn('[API] GET /anpr/all-ai-configs failed:', err);
+      console.warn('[API] GET all-ai-configs failed:', err);
       return {};
     }
   }
 
   static async undeployAiConfig(cameraCode: string): Promise<any> {
     try {
-      const res = await fetch(`${API_BASE}/anpr/ai-config/${cameraCode}/undeploy`, {
+      const res = await fetch(`${API_BASE}/anpr/ai-config/${encodeURIComponent(cameraCode)}/undeploy`, {
         method: 'POST'
       });
       if (!res.ok) {
-        const delRes = await fetch(`${API_BASE}/anpr/ai-config/${cameraCode}`, {
+        const delRes = await fetch(`${API_BASE}/anpr/ai-config/${encodeURIComponent(cameraCode)}`, {
           method: 'DELETE'
         });
         return await delRes.json();
