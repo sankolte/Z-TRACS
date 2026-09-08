@@ -83,7 +83,7 @@ export const ForensicAnalysisView: React.FC = () => {
   const [caseId, setCaseId] = useState('');
   const [footageName, setFootageName] = useState('');
   const [locationName, setLocationName] = useState('');
-  const [durationMinutes, setDurationMinutes] = useState(60);
+  const [durationMinutes, setDurationMinutes] = useState(2);
   const [selectedModels, setSelectedModels] = useState<string[]>(['ANPR']);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -137,6 +137,17 @@ export const ForensicAnalysisView: React.FC = () => {
     setFootageName(file.name);
     const objUrl = URL.createObjectURL(file);
     setPreviewUrl(objUrl);
+
+    // Auto-detect exact video duration from metadata
+    const tempVid = document.createElement('video');
+    tempVid.preload = 'metadata';
+    tempVid.src = objUrl;
+    tempVid.onloadedmetadata = () => {
+      if (tempVid.duration && !isNaN(tempVid.duration)) {
+        const mins = Math.max(1, Math.round(tempVid.duration / 60));
+        setDurationMinutes(mins);
+      }
+    };
   };
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
@@ -148,6 +159,17 @@ export const ForensicAnalysisView: React.FC = () => {
     setFootageName(file.name);
     const objUrl = URL.createObjectURL(file);
     setPreviewUrl(objUrl);
+
+    // Auto-detect exact video duration from metadata
+    const tempVid = document.createElement('video');
+    tempVid.preload = 'metadata';
+    tempVid.src = objUrl;
+    tempVid.onloadedmetadata = () => {
+      if (tempVid.duration && !isNaN(tempVid.duration)) {
+        const mins = Math.max(1, Math.round(tempVid.duration / 60));
+        setDurationMinutes(mins);
+      }
+    };
   };
 
   const toggleModel = (model: string) => {
@@ -200,7 +222,8 @@ export const ForensicAnalysisView: React.FC = () => {
 
       setIsSubmitting(false);
       setUploadProgress(0);
-      if (res && (res.status === 'success' || res.data)) {
+      if (res && (res.task_id || res.case_id || res.status === 'success' || res.data || res.success)) {
+        const newTask = res.data || (res.task_id ? res : null);
         setStatusMessage(`Forensic Job "${caseId}" deployed to GPU Batch Engine!`);
         setIsModalOpen(false);
         setCaseId('');
@@ -210,7 +233,7 @@ export const ForensicAnalysisView: React.FC = () => {
         if (previewUrl) URL.revokeObjectURL(previewUrl);
         setPreviewUrl(null);
         fetchTasks();
-        if (res.data) setSelectedTask(res.data);
+        if (newTask) setSelectedTask(newTask);
       }
       setTimeout(() => setStatusMessage(null), 4000);
     } catch (err: any) {
@@ -782,15 +805,16 @@ export const ForensicAnalysisView: React.FC = () => {
                 </div>
                 <input
                   type="range"
-                  min="15"
+                  min="1"
                   max="240"
-                  step="15"
+                  step="1"
                   value={durationMinutes}
                   onChange={(e) => setDurationMinutes(Number(e.target.value))}
                   className="w-full accent-cyan-400 cursor-pointer"
                 />
                 <div className="flex justify-between text-[9px] text-slate-500 font-mono mt-1">
-                  <span>15 Mins</span>
+                  <span>1 Min</span>
+                  <span>30 Mins</span>
                   <span>1 Hour</span>
                   <span>2 Hours</span>
                   <span>4 Hours</span>
