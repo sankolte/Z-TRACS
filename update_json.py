@@ -44,7 +44,13 @@ def get_code_aliases(code: str) -> List[str]:
     canonical = normalize_camera_code(code)
     m = re.search(r'(\d+)$', code)
     num = int(m.group(1)) if m else 1
-    aliases = [code, canonical, f"CAM-{num:03d}", f"CAM-{num}"]
+    aliases = [
+        code,
+        canonical,
+        f"CAM-{num:03d}",
+        f"CAM-GJ-AHM-SNTL-{num:06d}",
+        f"CAM-{num}"
+    ]
     return list(dict.fromkeys(aliases))
 
 STANDARD_USECASES = ["ANPR", "FACE_RECOGNITION", "PPE", "FOOTFALL"]
@@ -90,7 +96,7 @@ class ZTracsBuddyClient:
             status_forcelist=[500, 502, 503, 504],
             raise_on_status=False
         )
-        adapter = HTTPAdapter(max_retries=retry_strategy, pool_connections=10, pool_maxsize=20)
+        adapter = HTTPAdapter(max_retries=retry_strategy, pool_connections=20, pool_maxsize=50)
         self.session.mount("http://", adapter)
         self.session.mount("https://", adapter)
 
@@ -177,12 +183,17 @@ class ZTracsBuddyClient:
         if camera_codes:
             def _fetch_one_roi(c_code: str):
                 try:
-                    r = self._request_with_failover("GET", f"/anpr/roi/{c_code}")
-                    if r and r.status_code == 200:
-                        j = r.json()
-                        d = j.get("data") if isinstance(j, dict) and "data" in j else j
-                        if d and isinstance(d, dict) and (d.get("points") or d.get("zones") or d.get("usecase_rois") or d.get("roi")):
-                            return c_code, d
+                    for alias in [c_code, normalize_camera_code(c_code)]:
+                        for base_url in self.endpoints[:1]:
+                            try:
+                                r = requests.get(f"{base_url}/anpr/roi/{alias}", timeout=1.0)
+                                if r.status_code == 200:
+                                    j = r.json()
+                                    d = j.get("data") if isinstance(j, dict) and "data" in j else j
+                                    if d and isinstance(d, dict) and (d.get("points") or d.get("zones") or d.get("usecase_rois") or d.get("roi")):
+                                        return c_code, d
+                            except Exception:
+                                pass
                 except Exception:
                     pass
                 return c_code, None
@@ -220,12 +231,24 @@ class ZTracsBuddyClient:
         if camera_codes:
             def _fetch_one_ai(c_code: str):
                 try:
-                    r = self._request_with_failover("GET", f"/cameras/{c_code}/ai-config")
-                    if r and r.status_code == 200:
-                        j = r.json()
-                        d = j.get("data") if isinstance(j, dict) and "data" in j else (j.get("ai_config") if isinstance(j, dict) and "ai_config" in j else j)
-                        if d and isinstance(d, dict) and ("models" in d or "ai_models" in d or "enable" in d):
-                            return c_code, d
+                    best_cfg = None
+                    best_time = ""
+                    for alias in [c_code, normalize_camera_code(c_code)]:
+                        for base_url in self.endpoints[:1]:
+                            try:
+                                r = requests.get(f"{base_url}/cameras/{alias}/ai-config", timeout=1.0)
+                                if r.status_code == 200:
+                                    j = r.json()
+                                    d = j.get("data") if isinstance(j, dict) and "data" in j else (j.get("ai_config") if isinstance(j, dict) and "ai_config" in j else j)
+                                    if d and isinstance(d, dict) and ("models" in d or "ai_models" in d or "enable" in d):
+                                        u_time = str(d.get("updatedAt") or "")
+                                        if not best_cfg or u_time >= best_time:
+                                            best_cfg = d
+                                            best_time = u_time
+                            except Exception:
+                                pass
+                    if best_cfg:
+                        return c_code, best_cfg
                 except Exception:
                     pass
                 return c_code, None
