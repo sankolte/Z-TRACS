@@ -59,6 +59,30 @@ async def get_cameras(
         
     return ApiResponse.ok(cameras, page=1, page_size=len(cameras), total_records=len(cameras))
 
+import os
+
+CAMERA_OVERRIDES_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))), "data", "camera_overrides.json")
+CAMERA_OVERRIDES: Dict[str, Dict[str, Any]] = {}
+
+def _load_camera_overrides():
+    global CAMERA_OVERRIDES
+    if os.path.exists(CAMERA_OVERRIDES_FILE):
+        try:
+            with open(CAMERA_OVERRIDES_FILE, "r", encoding="utf-8") as f:
+                CAMERA_OVERRIDES = json.load(f)
+        except Exception:
+            CAMERA_OVERRIDES = {}
+
+def _save_camera_overrides():
+    try:
+        os.makedirs(os.path.dirname(CAMERA_OVERRIDES_FILE), exist_ok=True)
+        with open(CAMERA_OVERRIDES_FILE, "w", encoding="utf-8") as f:
+            json.dump(CAMERA_OVERRIDES, f, indent=2)
+    except Exception:
+        pass
+
+_load_camera_overrides()
+
 def _get_sentinel_catalog_feeds() -> List[Dict[str, Any]]:
     sentinel_locations = [
         ("Chiman Bhai Bridge", 23.0612, 72.5804, "Ahmedabad"),
@@ -98,22 +122,28 @@ def _get_sentinel_catalog_feeds() -> List[Dict[str, Any]]:
     catalog = []
     for i, loc in enumerate(sentinel_locations, 1):
         cam_id = f"cam{i:02d}"
+        code = f"CAM-GJ-AHM-SNTL-{i:06d}"
+        alias_short = f"CAM-{i:03d}"
+        
+        # Check overrides
+        override = CAMERA_OVERRIDES.get(code) or CAMERA_OVERRIDES.get(alias_short) or CAMERA_OVERRIDES.get(cam_id) or {}
+
         catalog.append({
             "id": cam_id,
             "number": i,
-            "name": f"Camera {i} ({loc[0]})",
-            "camera_code": f"CAM-GJ-AHM-SNTL-{i:06d}",
-            "rtsp_url": f"rtsp://103.250.160.189:8554/stream/{cam_id}",
-            "webrtc_url": f"http://103.250.160.189:8889/stream/{cam_id}/whep",
-            "hls_live_url": f"/api/v1/streams/corp8-proxy/{cam_id}/index.m3u8",
-            "hls_cdn_url": f"https://cctv.corp8.cloud/{cam_id}/index.m3u8",
-            "latitude": loc[1],
-            "longitude": loc[2],
-            "city": loc[3],
-            "district": "Ahmedabad",
-            "location": loc[0],
+            "name": override.get("name") or f"Camera {i} ({loc[0]})",
+            "camera_code": code,
+            "rtsp_url": override.get("rtsp_url") or override.get("endpointReference") or f"rtsp://103.250.160.189:8554/stream/{cam_id}",
+            "webrtc_url": override.get("webrtc_url") or f"http://103.250.160.189:8889/stream/{cam_id}/whep",
+            "hls_live_url": override.get("hls_live_url") or f"/api/v1/streams/corp8-proxy/{cam_id}/index.m3u8",
+            "hls_cdn_url": override.get("hls_cdn_url") or f"https://cctv.corp8.cloud/{cam_id}/index.m3u8",
+            "latitude": float(override.get("latitude", loc[1])),
+            "longitude": float(override.get("longitude", loc[2])),
+            "city": override.get("city") or loc[3],
+            "district": override.get("district") or "Ahmedabad",
+            "location": override.get("location") or loc[0],
             "codec": "h264",
-            "health_status": "ONLINE",
+            "health_status": override.get("health_status") or override.get("healthStatus") or "ONLINE",
             "fps": 25,
             "width": 1920,
             "height": 1080,
@@ -263,3 +293,50 @@ async def create_camera(cam_data: Dict[str, Any]):
         asyncio.create_task(asyncio.to_thread(_send_webhook_sync, BUDDY_WEBHOOK_CONFIG["url"], payload))
 
     return ApiResponse.ok(new_cam)
+
+@router.put("/{code}")
+@router.patch("/{code}")
+@router.post("/{code}/update")
+@router.post("/update")
+async def update_camera(code: Optional[str] = None, payload: Dict[str, Any] = Body(...)):
+    """
+    Update camera RTSP stream URL, name, coordinates, district, or health status.
+    Overrides are saved persistently and broadcasted to edge daemons via /cameras/export-feeds.
+    """
+    cam_code = str(code or payload.get("camera_code") or payload.get("cameraCode") or "").strip()
+    if not cam_code:
+        raise HTTPException(status_code=400, detail="camera_code is required")
+
+    aliases = [cam_code, cam_code.upper(), cam_code.lower()]
+    import re
+    m = re.search(r'(\d+)$', cam_code)
+    if m:
+        num = int(m.group(1))
+        aliases.extend([
+            f"CAM-{num:03d}",
+            f"CAM-{num}",
+            f"CAM-GJ-AHM-SNTL-{num:06d}",
+            f"cam{num:02d}",
+            str(num)
+        ])
+
+    for a in set(aliases):
+        if a not in CAMERA_OVERRIDES:
+            CAMERA_OVERRIDES[a] = {}
+        CAMERA_OVERRIDES[a].update(payload)
+
+    _save_camera_overrides()
+
+    # Update in camera_service if exists
+    try:
+        camera_service.update_camera(cam_code, payload)
+    except Exception:
+        pass
+
+    print(f"✅ [CAMERA UPDATED] '{cam_code}' -> RTSP: {payload.get('rtsp_url') or payload.get('endpointReference')}")
+    return ApiResponse.ok({
+        "status": "success",
+        "message": f"Camera {cam_code} updated successfully",
+        "camera_code": cam_code,
+        "data": CAMERA_OVERRIDES.get(cam_code) or payload
+    })

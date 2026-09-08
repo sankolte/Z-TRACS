@@ -554,15 +554,34 @@ export const CameraRegistryView: React.FC<CameraRegistryViewProps> = ({
             </div>
 
             <form 
-              onSubmit={(e) => {
+              onSubmit={async (e) => {
                 e.preventDefault();
-                if (onEditCamera && editingCamera) {
+                if (editingCamera) {
                   const updated: Camera = {
                     ...editingCamera,
                     ...editFormData,
                     updatedAt: new Date().toISOString().replace('T', ' ').slice(0, 19)
                   };
-                  onEditCamera(updated);
+                  if (onEditCamera) {
+                    onEditCamera(updated);
+                  }
+                  try {
+                    await ApiClient.updateCamera({
+                      cameraCode: updated.cameraCode,
+                      cameraUuid: updated.cameraUuid,
+                      name: updated.name,
+                      rtsp_url: updated.endpointReference,
+                      endpointReference: updated.endpointReference,
+                      hls_live_url: updated.hls_live_url,
+                      district: updated.district,
+                      city: updated.city,
+                      healthStatus: updated.healthStatus,
+                      latitude: updated.latitude,
+                      longitude: updated.longitude
+                    });
+                  } catch (err) {
+                    console.warn('[Camera Edit] API update error:', err);
+                  }
                 }
                 setEditingCamera(null);
               }}

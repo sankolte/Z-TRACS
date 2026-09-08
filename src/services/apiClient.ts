@@ -388,6 +388,40 @@ export class ApiClient {
     return sentinelCam;
   }
 
+  static async updateCamera(cameraData: {
+    cameraCode: string;
+    cameraUuid?: string;
+    name?: string;
+    rtsp_url?: string;
+    endpointReference?: string;
+    hls_live_url?: string;
+    district?: string;
+    city?: string;
+    healthStatus?: string;
+    latitude?: number;
+    longitude?: number;
+  }): Promise<any> {
+    try {
+      const res = await fetch(`${API_BASE}/cameras/${encodeURIComponent(cameraData.cameraCode)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(cameraData)
+      });
+      if (!res.ok) {
+        const postRes = await fetch(`${API_BASE}/cameras/update`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(cameraData)
+        });
+        if (postRes.ok) return await postRes.json();
+      }
+      return await res.json();
+    } catch (err) {
+      console.warn('[API] updateCamera failed:', err);
+      return null;
+    }
+  }
+
   static getBuddyExportApiUrl(format: 'json' | 'csv' = 'json'): string {
     return `${API_BASE}/cameras/export-feeds?format=${format}`;
   }
