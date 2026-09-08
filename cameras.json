@@ -2,7 +2,7 @@
   "status": "success",
   "total_locations": 1,
   "total_cameras": 37,
-  "export_timestamp": "2026-09-08T21:52:54Z",
+  "export_timestamp": "2026-09-08T22:00:13Z",
   "locations": [
     {
       "location_id": "LOC-AHMEDABAD",
@@ -107,7 +107,7 @@
           "camera_code": "CAM-GJ-AHM-SNTL-000002",
           "camera_name": "Camera 2 (Janpath Road)",
           "enable": [
-            1,
+            0,
             0,
             0,
             0
@@ -200,7 +200,7 @@
           "camera_code": "CAM-GJ-AHM-SNTL-000003",
           "camera_name": "Camera 3 (C.G. Road Axis)",
           "enable": [
-            1,
+            0,
             0,
             0,
             0
@@ -293,7 +293,7 @@
           "camera_code": "CAM-GJ-AHM-SNTL-000004",
           "camera_name": "Camera 4 (Paldi Junction)",
           "enable": [
-            1,
+            0,
             0,
             0,
             0
@@ -386,7 +386,7 @@
           "camera_code": "CAM-GJ-AHM-SNTL-000005",
           "camera_name": "Camera 5 (Narol Circle South)",
           "enable": [
-            1,
+            0,
             0,
             0,
             0
@@ -479,7 +479,7 @@
           "camera_code": "CAM-GJ-AHM-SNTL-000006",
           "camera_name": "Camera 6 (Asarwa Civil Corridor)",
           "enable": [
-            1,
+            0,
             0,
             0,
             0
@@ -572,7 +572,7 @@
           "camera_code": "CAM-GJ-AHM-SNTL-000007",
           "camera_name": "Camera 7 (Bapu Nagar Toll Gate)",
           "enable": [
-            1,
+            0,
             0,
             0,
             0
@@ -665,7 +665,7 @@
           "camera_code": "CAM-GJ-AHM-SNTL-000008",
           "camera_name": "Camera 8 (Memnagar Bus Shelter)",
           "enable": [
-            1,
+            0,
             0,
             0,
             0
@@ -758,7 +758,7 @@
           "camera_code": "CAM-GJ-AHM-SNTL-000009",
           "camera_name": "Camera 9 (Maninagar Station Square)",
           "enable": [
-            1,
+            0,
             0,
             0,
             0
@@ -851,7 +851,7 @@
           "camera_code": "CAM-GJ-AHM-SNTL-000010",
           "camera_name": "Camera 10 (Vastrapur Lake East)",
           "enable": [
-            1,
+            0,
             0,
             0,
             0
@@ -944,7 +944,7 @@
           "camera_code": "CAM-GJ-AHM-SNTL-000011",
           "camera_name": "Camera 11 (Drive-In Cinema Cross)",
           "enable": [
-            1,
+            0,
             0,
             0,
             0
@@ -1037,7 +1037,7 @@
           "camera_code": "CAM-GJ-AHM-SNTL-000012",
           "camera_name": "Camera 12 (Gota Highway Flyover)",
           "enable": [
-            1,
+            0,
             0,
             0,
             0
@@ -1130,7 +1130,7 @@
           "camera_code": "CAM-GJ-AHM-SNTL-000013",
           "camera_name": "Camera 13 (Sarkhej Rotary Junction)",
           "enable": [
-            1,
+            0,
             0,
             0,
             0
@@ -1223,7 +1223,7 @@
           "camera_code": "CAM-GJ-AHM-SNTL-000014",
           "camera_name": "Camera 14 (Iscon Cross Road)",
           "enable": [
-            1,
+            0,
             0,
             0,
             0
@@ -1316,7 +1316,7 @@
           "camera_code": "CAM-GJ-AHM-SNTL-000015",
           "camera_name": "Camera 15 (Pakwan Junction West)",
           "enable": [
-            1,
+            0,
             0,
             0,
             0
@@ -1409,7 +1409,7 @@
           "camera_code": "CAM-GJ-AHM-SNTL-000016",
           "camera_name": "Camera 16 (Thaltej Underpass)",
           "enable": [
-            1,
+            0,
             0,
             0,
             0
@@ -1502,7 +1502,7 @@
           "camera_code": "CAM-GJ-AHM-SNTL-000017",
           "camera_name": "Camera 17 (Science City Boulevard)",
           "enable": [
-            1,
+            0,
             0,
             0,
             0
@@ -1595,7 +1595,7 @@
           "camera_code": "CAM-GJ-AHM-SNTL-000018",
           "camera_name": "Camera 18 (Bhadra Plaza Heritage Zone)",
           "enable": [
-            1,
+            0,
             0,
             0,
             0
@@ -1688,7 +1688,7 @@
           "camera_code": "CAM-GJ-AHM-SNTL-000019",
           "camera_name": "Camera 19 (Ellis Bridge West End)",
           "enable": [
-            1,
+            0,
             0,
             0,
             0
@@ -1781,7 +1781,7 @@
           "camera_code": "CAM-GJ-AHM-SNTL-000020",
           "camera_name": "Camera 20 (Nehrunagar Circle)",
           "enable": [
-            1,
+            0,
             0,
             0,
             0
@@ -1874,7 +1874,7 @@
           "camera_code": "CAM-GJ-AHM-SNTL-000021",
           "camera_name": "Camera 21 (Law Garden Perimeter)",
           "enable": [
-            1,
+            0,
             0,
             0,
             0
@@ -1967,7 +1967,7 @@
           "camera_code": "CAM-GJ-AHM-SNTL-000022",
           "camera_name": "Camera 22 (S.P. Ring Road Boman)",
           "enable": [
-            1,
+            0,
             0,
             0,
             0
@@ -2060,7 +2060,7 @@
           "camera_code": "CAM-GJ-AHM-SNTL-000023",
           "camera_name": "Camera 23 (Kalupur Railway Terminal)",
           "enable": [
-            1,
+            0,
             0,
             0,
             0
@@ -2153,7 +2153,7 @@
           "camera_code": "CAM-GJ-AHM-SNTL-000024",
           "camera_name": "Camera 24 (Geeta Mandir Bus Hub)",
           "enable": [
-            1,
+            0,
             0,
             0,
             0
@@ -2246,7 +2246,7 @@
           "camera_code": "CAM-GJ-AHM-SNTL-000025",
           "camera_name": "Camera 25 (Subhash Bridge North)",
           "enable": [
-            1,
+            0,
             0,
             0,
             0
@@ -2339,7 +2339,7 @@
           "camera_code": "CAM-GJ-AHM-SNTL-000026",
           "camera_name": "Camera 26 (Sabarmati Ashram Gate)",
           "enable": [
-            1,
+            0,
             0,
             0,
             0
@@ -2432,7 +2432,7 @@
           "camera_code": "CAM-GJ-AHM-SNTL-000027",
           "camera_name": "Camera 27 (Ranip Cross Road)",
           "enable": [
-            1,
+            0,
             0,
             0,
             0
@@ -2525,7 +2525,7 @@
           "camera_code": "CAM-GJ-AHM-SNTL-000028",
           "camera_name": "Camera 28 (Chandkheda Highway Corner)",
           "enable": [
-            1,
+            0,
             0,
             0,
             0
@@ -2618,7 +2618,7 @@
           "camera_code": "CAM-GJ-AHM-SNTL-000029",
           "camera_name": "Camera 29 (Sola Civil Hospital Front)",
           "enable": [
-            1,
+            0,
             0,
             0,
             0
@@ -2711,7 +2711,7 @@
           "camera_code": "CAM-GJ-AHM-SNTL-000030",
           "camera_name": "Camera 30 (Bodakdev High Street)",
           "enable": [
-            1,
+            0,
             0,
             0,
             0
@@ -2804,7 +2804,7 @@
           "camera_code": "CAM-GJ-AHM-SNTL-000031",
           "camera_name": "Camera 31 (Prahladnagar Corporate Corridor)",
           "enable": [
-            1,
+            0,
             0,
             0,
             0
@@ -2897,7 +2897,7 @@
           "camera_code": "CAM-GJ-AHM-SNTL-000032",
           "camera_name": "Camera 32 (SG Highway - Iskcon Flyover South)",
           "enable": [
-            1,
+            0,
             0,
             0,
             0
@@ -2990,7 +2990,7 @@
           "camera_code": "CAM-GJ-AHM-SNTL-000033",
           "camera_name": "Camera 33 (SG Highway - Vaishnodevi Circle)",
           "enable": [
-            1,
+            0,
             0,
             0,
             0
@@ -3083,7 +3083,7 @@
           "camera_code": "CAM-GJ-AHM-SNTL-000034",
           "camera_name": "Camera 34 (Rajkot Highway Checkpost)",
           "enable": [
-            1,
+            0,
             0,
             0,
             0
@@ -3176,7 +3176,7 @@
           "camera_code": "CAM-GJ-AHM-SNTL-000035",
           "camera_name": "Camera 35 (Surat Ring Road Toll)",
           "enable": [
-            1,
+            0,
             0,
             0,
             0
