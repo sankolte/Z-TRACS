@@ -27,16 +27,42 @@ import os
 import sys
 from typing import Dict, Any, List, Optional, Callable
 
-# Import canonical camera utilities
-try:
-    from camera_utils import get_code_aliases, normalize_camera_code, get_sentinel_code
-except ImportError:
-    def normalize_camera_code(c: str) -> str:
-        return c
-    def get_sentinel_code(c: str) -> str:
-        return c
-    def get_code_aliases(c: str) -> List[str]:
-        return [c, c.upper(), c.lower()]
+import re
+
+def normalize_camera_code(code: str) -> str:
+    if not code:
+        return "CAM-001"
+    code = str(code).strip()
+    m = re.search(r'(\d+)$', code)
+    if m:
+        return f"CAM-{int(m.group(1)):03d}"
+    return code.upper()
+
+def get_sentinel_code(code: str) -> str:
+    m = re.search(r'(\d+)$', str(code).strip())
+    num = int(m.group(1)) if m else 1
+    return f"CAM-GJ-AHM-SNTL-{num:06d}"
+
+def get_code_aliases(code: str) -> List[str]:
+    if not code:
+        return []
+    code = str(code).strip()
+    canonical = normalize_camera_code(code)
+    m = re.search(r'(\d+)$', code)
+    num = int(m.group(1)) if m else 1
+    return list(dict.fromkeys([
+        canonical,                   # CAM-001
+        f"CAM-{num}",                # CAM-1
+        f"CAM-{num:02d}",            # CAM-01
+        f"CAM-{num:03d}",            # CAM-001
+        f"CAM-GJ-AHM-SNTL-{num:06d}",# CAM-GJ-AHM-SNTL-000001
+        str(num),                    # 1
+        f"{num:02d}",                # 01
+        f"{num:03d}",                # 001
+        code,
+        code.upper(),
+        code.lower()
+    ]))
 
 STANDARD_USECASES = ["ANPR", "FACE_RECOGNITION", "PPE", "FOOTFALL"]
 
@@ -211,34 +237,82 @@ class ZTracsBuddyClient:
                 enable_vector = [int(bool(x)) for x in ai_cfg["enable"]][:4]
                 while len(enable_vector) < 4:
                     enable_vector.append(0)
+            elif ai_cfg and "models" in ai_cfg and isinstance(ai_cfg["models"], dict):
+                m = ai_cfg["models"]
+                enable_vector = [
+                    1 if m.get("anpr") else 0,
+                    1 if m.get("frs") else 0,
+                    1 if m.get("ppe") else 0,
+                    1 if m.get("footfall") else 0
+                ]
             elif isinstance(raw_enable, list) and len(raw_enable) == 4:
                 enable_vector = [int(bool(x)) for x in raw_enable]
             elif isinstance(raw_enable, (int, bool)) and raw_enable:
                 enable_vector = [1, 0, 0, 0]
-            elif cam.get("health_status") == "ONLINE" and index in [5, 6]:
-                # Sample active ANPR cameras (Camera 6 and 7)
-                enable_vector = [1, 0, 0, 0]
             else:
                 enable_vector = [0, 0, 0, 0]
 
-            # Resolve custom ROI from batch map or fallback
+            # Resolve custom ROI from batch map or fallback (Multi-Usecase ROI Resolution)
             roi_info = None
             for alias in aliases:
                 if alias in all_rois_map:
                     roi_info = all_rois_map[alias]
                     break
 
-            custom_coords = []
-            if roi_info:
-                pts = roi_info.get("points") or roi_info.get("coordinates") or roi_info.get("roi", {}).get("coordinates")
-                if pts and isinstance(pts, list) and len(pts) >= 3:
-                    custom_coords = [[int(p.get("x", 0)), int(p.get("y", 0))] for p in pts if isinstance(p, dict)]
-
             # Build standardized ROIs array (1 polygon per usecase)
+            usecase_polygons: Dict[int, List[List[int]]] = {}
+
+            if roi_info and isinstance(roi_info, dict):
+                # 1. Check direct usecase-keyed dictionary (e.g. {"anpr": [...], "frs": [...], "ppe": [...], "footfall": [...]})
+                usecase_keys = [
+                    ["anpr", "anpr_roi", "lane", "zone_1", "zone1"],
+                    ["face_recognition", "frs", "entry", "zone_2", "zone2"],
+                    ["ppe", "safety", "zone_3", "zone3"],
+                    ["footfall", "crowd", "corridor", "zone_4", "zone4"]
+                ]
+                for u_idx, keys in enumerate(usecase_keys):
+                    for k in keys:
+                        if k in roi_info and roi_info[k]:
+                            val = roi_info[k]
+                            if isinstance(val, list) and len(val) >= 3 and isinstance(val[0], list):
+                                usecase_polygons[u_idx] = val
+                                break
+                            elif isinstance(val, dict) and "points" in val and isinstance(val["points"], list):
+                                usecase_polygons[u_idx] = [[int(p.get("x", 0)), int(p.get("y", 0))] for p in val["points"] if isinstance(p, dict)]
+                                break
+
+                # 2. Check multi-zone array (e.g. roi_info["zones"] = [zone1, zone2, ...])
+                zones = roi_info.get("zones") or roi_info.get("rois") or roi_info.get("polygons")
+                if zones and isinstance(zones, list):
+                    for z_idx, z in enumerate(zones):
+                        if z_idx < len(STANDARD_USECASES) and z_idx not in usecase_polygons:
+                            pts = z.get("points") or z.get("coordinates") if isinstance(z, dict) else z
+                            if pts and isinstance(pts, list) and len(pts) >= 3:
+                                if isinstance(pts[0], dict):
+                                    usecase_polygons[z_idx] = [[int(p.get("x", 0)), int(p.get("y", 0))] for p in pts if isinstance(p, dict)]
+                                elif isinstance(pts[0], list):
+                                    usecase_polygons[z_idx] = pts
+
+                # 3. Single polygon fallback
+                if not usecase_polygons:
+                    pts = roi_info.get("points") or roi_info.get("coordinates") or roi_info.get("roi", {}).get("coordinates")
+                    if pts and isinstance(pts, list) and len(pts) >= 3:
+                        if isinstance(pts[0], dict):
+                            coords = [[int(p.get("x", 0)), int(p.get("y", 0))] for p in pts if isinstance(p, dict)]
+                        else:
+                            coords = pts
+                        # Apply to first enabled usecase or ANPR
+                        first_active = 0
+                        for idx, en in enumerate(enable_vector):
+                            if en:
+                                first_active = idx
+                                break
+                        usecase_polygons[first_active] = coords
+
             camera_rois = []
             for roi_idx in range(len(STANDARD_USECASES)):
-                if roi_idx == 0 and custom_coords:
-                    camera_rois.append(custom_coords)
+                if roi_idx in usecase_polygons:
+                    camera_rois.append(usecase_polygons[roi_idx])
                 else:
                     camera_rois.append(DEFAULT_ROIS[roi_idx])
 
