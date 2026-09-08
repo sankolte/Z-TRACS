@@ -190,7 +190,7 @@ async def create_forensic_task(payload: Dict[str, Any] = Body(...)):
         "media_source": {
             "local_video_path": video_rel_path,
             "s3_key": s3_key,
-            "s3_streaming_url": streaming_url or f"https://z-tracs-media.s3.ap-south-1.amazonaws.com/{s3_key}"
+            "s3_streaming_url": streaming_url or f"https://z-tracs-media.s3.amazonaws.com/{s3_key}"
         },
         "models_requested": models_requested,
         "search_filters": search_filters,

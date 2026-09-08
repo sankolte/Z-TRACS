@@ -14,7 +14,7 @@ except ImportError:
     NoCredentialsError = Exception
 
 S3_BUCKET_NAME = os.getenv("AWS_S3_BUCKET_NAME", "z-tracs-media")
-AWS_REGION = os.getenv("AWS_REGION", "ap-south-1")
+AWS_REGION = os.getenv("AWS_S3_REGION", os.getenv("AWS_REGION", "us-east-1"))
 
 class S3StorageManager:
     _instance = None
