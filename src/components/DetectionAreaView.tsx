@@ -211,17 +211,39 @@ const ensureUsecaseZones = (rawZones?: DetectionZone[]): DetectionZone[] => {
     return defaults;
   }
   
-  // Check if existing zones have all 4 usecases
-  const usecaseMap: Record<string, DetectionZone> = {};
+  const usecaseMap: Partial<Record<DetectionUsecase, DetectionZone>> = {};
+
+  // First pass: identify zones by explicit usecase or zone id/name
   for (const z of rawZones) {
-    if (z.usecase) {
-      usecaseMap[z.usecase] = z;
+    if (!z) continue;
+    const tag = `${z.usecase || ''} ${z.id || ''} ${z.name || ''}`.toUpperCase();
+    if (tag.includes('FACE') || tag.includes('FRS')) {
+      usecaseMap['FACE_RECOGNITION'] = { ...defaults[1], ...z, usecase: 'FACE_RECOGNITION', id: 'zone-frs' };
+    } else if (tag.includes('PPE') || tag.includes('SAFETY') || tag.includes('HELMET')) {
+      usecaseMap['PPE'] = { ...defaults[2], ...z, usecase: 'PPE', id: 'zone-ppe' };
+    } else if (tag.includes('FOOTFALL') || tag.includes('CROWD') || tag.includes('CORRIDOR')) {
+      usecaseMap['FOOTFALL'] = { ...defaults[3], ...z, usecase: 'FOOTFALL', id: 'zone-footfall' };
+    } else if (tag.includes('ANPR') || tag.includes('LANE') || tag.includes('VEHICLE')) {
+      usecaseMap['ANPR'] = { ...defaults[0], ...z, usecase: 'ANPR', id: 'zone-anpr' };
     }
   }
 
-  // Merge with defaults to guarantee all 4 usecases are ALWAYS present
+  // Second pass: fill by positional index if missing
+  if (!usecaseMap['ANPR'] && rawZones[0]?.points?.length >= 3) {
+    usecaseMap['ANPR'] = { ...defaults[0], ...rawZones[0], usecase: 'ANPR', id: 'zone-anpr' };
+  }
+  if (!usecaseMap['FACE_RECOGNITION'] && rawZones[1]?.points?.length >= 3) {
+    usecaseMap['FACE_RECOGNITION'] = { ...defaults[1], ...rawZones[1], usecase: 'FACE_RECOGNITION', id: 'zone-frs' };
+  }
+  if (!usecaseMap['PPE'] && rawZones[2]?.points?.length >= 3) {
+    usecaseMap['PPE'] = { ...defaults[2], ...rawZones[2], usecase: 'PPE', id: 'zone-ppe' };
+  }
+  if (!usecaseMap['FOOTFALL'] && rawZones[3]?.points?.length >= 3) {
+    usecaseMap['FOOTFALL'] = { ...defaults[3], ...rawZones[3], usecase: 'FOOTFALL', id: 'zone-footfall' };
+  }
+
   return [
-    usecaseMap['ANPR'] || (rawZones[0]?.points?.length >= 3 ? { ...defaults[0], points: rawZones[0].points } : defaults[0]),
+    usecaseMap['ANPR'] || defaults[0],
     usecaseMap['FACE_RECOGNITION'] || defaults[1],
     usecaseMap['PPE'] || defaults[2],
     usecaseMap['FOOTFALL'] || defaults[3]
@@ -251,6 +273,7 @@ export const DetectionAreaView: React.FC<DetectionAreaViewProps> = ({
     }
   }, [initialCameraCode]);
   const [activeZoneId, setActiveZoneId] = useState<string>('zone-anpr');
+  const [activeUsecase, setActiveUsecase] = useState<DetectionUsecase>('ANPR');
   const [soloZoneMode, setSoloZoneMode] = useState<boolean>(true);
 
   const [isSaving, setIsSaving] = useState(false);
@@ -307,15 +330,16 @@ export const DetectionAreaView: React.FC<DetectionAreaViewProps> = ({
     lastPingTimestamp: 'Just now'
   } as any);
 
-  // Zones for current selected camera (Ensures Default Usecase Polygons are ALWAYS initialized instead of empty blank screen)
+  // Zones for current selected camera (Ensures all 4 Usecase Polygons are ALWAYS present and properly initialized)
   const zonesForCurrentCam = React.useMemo(() => {
     const existing = cameraZones[selectedCamCode];
-    if (existing && existing.length > 0) return existing;
-    return createDefaultUsecaseZones();
+    return ensureUsecaseZones(existing);
   }, [cameraZones, selectedCamCode]);
 
-  // Active Zone getter
-  const currentZone = zonesForCurrentCam.find(z => z.id === activeZoneId) || zonesForCurrentCam[0];
+  // Active Zone getter (matched primarily by activeUsecase, fallback to activeZoneId or first zone)
+  const currentZone = zonesForCurrentCam.find(z => z.usecase === activeUsecase) 
+    || zonesForCurrentCam.find(z => z.id === activeZoneId) 
+    || zonesForCurrentCam[0];
   const points = currentZone ? currentZone.points : [];
 
   // Compute HLS Stream URL for selected camera
@@ -483,7 +507,16 @@ export const DetectionAreaView: React.FC<DetectionAreaViewProps> = ({
         if (isMounted && remoteData) {
           if (remoteData.zones && Array.isArray(remoteData.zones) && remoteData.zones.length > 0) {
             const mappedZones: DetectionZone[] = remoteData.zones.map((z: any, idx: number) => {
-              const uKey: DetectionUsecase = z.usecase || (idx === 0 ? 'ANPR' : idx === 1 ? 'FACE_RECOGNITION' : idx === 2 ? 'PPE' : 'FOOTFALL');
+              const rawUsecase = String(z.usecase || '').toUpperCase();
+              let uKey: DetectionUsecase = 'ANPR';
+              if (rawUsecase.includes('FACE') || rawUsecase.includes('FRS')) uKey = 'FACE_RECOGNITION';
+              else if (rawUsecase.includes('PPE')) uKey = 'PPE';
+              else if (rawUsecase.includes('FOOTFALL') || rawUsecase.includes('CROWD')) uKey = 'FOOTFALL';
+              else if (idx === 1) uKey = 'FACE_RECOGNITION';
+              else if (idx === 2) uKey = 'PPE';
+              else if (idx === 3) uKey = 'FOOTFALL';
+              else uKey = 'ANPR';
+
               const zPts: Point[] = Array.isArray(z.points) && z.points.length > 0
                 ? z.points.map((p: any) => ({ x: Number(p.x || (Array.isArray(p) ? p[0] : 0)), y: Number(p.y || (Array.isArray(p) ? p[1] : 0)) }))
                 : (Array.isArray(z.coordinates) && z.coordinates.length > 0
@@ -491,7 +524,7 @@ export const DetectionAreaView: React.FC<DetectionAreaViewProps> = ({
                     : ((USECASE_META[uKey] as any)?.preset || PRESET_SHAPES.FULL_FRAME_80));
 
               return {
-                id: z.id || `zone-${uKey.toLowerCase()}-${idx}`,
+                id: z.id || (idx === 0 ? 'zone-anpr' : idx === 1 ? 'zone-frs' : idx === 2 ? 'zone-ppe' : 'zone-footfall'),
                 name: z.name || USECASE_META[uKey]?.name || `Zone ${idx + 1}`,
                 usecase: uKey,
                 color: z.color || USECASE_META[uKey]?.color || ZONE_COLORS[idx % ZONE_COLORS.length],
@@ -499,11 +532,13 @@ export const DetectionAreaView: React.FC<DetectionAreaViewProps> = ({
                 points: zPts
               };
             });
+            const guaranteed = ensureUsecaseZones(mappedZones);
             setCameraZones(prev => ({
               ...prev,
-              [selectedCamCode]: mappedZones
+              [selectedCamCode]: guaranteed
             }));
-            setActiveZoneId(mappedZones[0].id);
+            const active = guaranteed.find(z => z.usecase === activeUsecase) || guaranteed[0];
+            setActiveZoneId(active.id);
           } else if (remoteData.anpr || remoteData.frs || remoteData.ppe || remoteData.footfall || remoteData.usecase_rois) {
             const uRois = remoteData.usecase_rois || {};
             const anprPts = remoteData.anpr || uRois.anpr;
@@ -545,11 +580,13 @@ export const DetectionAreaView: React.FC<DetectionAreaViewProps> = ({
                 points: footfallPts ? footfallPts.map((p: any) => ({ x: Number(p[0]), y: Number(p[1]) })) : PRESET_SHAPES.LEFT_LANE
               }
             ];
+            const guaranteed = ensureUsecaseZones(constructedZones);
             setCameraZones(prev => ({
               ...prev,
-              [selectedCamCode]: constructedZones
+              [selectedCamCode]: guaranteed
             }));
-            setActiveZoneId(constructedZones[0].id);
+            const active = guaranteed.find(z => z.usecase === activeUsecase) || guaranteed[0];
+            setActiveZoneId(active.id);
           } else if (remoteData.points && remoteData.points.length > 0) {
             const rawPts = remoteData.points;
             const footfallPts = rawPts.filter((p: any) => String(p.usecase || p.label || '').toUpperCase().includes('FOOTFALL'));
@@ -565,11 +602,13 @@ export const DetectionAreaView: React.FC<DetectionAreaViewProps> = ({
             if (ppePts.length >= 3) defaultZones[2].points = ppePts.map((p: any) => ({ x: Number(p.x), y: Number(p.y) }));
             if (footfallPts.length >= 3) defaultZones[3].points = footfallPts.map((p: any) => ({ x: Number(p.x), y: Number(p.y) }));
 
+            const guaranteed = ensureUsecaseZones(defaultZones);
             setCameraZones(prev => ({
               ...prev,
-              [selectedCamCode]: defaultZones
+              [selectedCamCode]: guaranteed
             }));
-            setActiveZoneId(defaultZones[0].id);
+            const active = guaranteed.find(z => z.usecase === activeUsecase) || guaranteed[0];
+            setActiveZoneId(active.id);
           }
         }
       } catch (err) {
@@ -590,10 +629,10 @@ export const DetectionAreaView: React.FC<DetectionAreaViewProps> = ({
   // Update points for active zone
   const updatePoints = (newPoints: Point[], isClosed: boolean = currentZone.closed) => {
     setCameraZones(prev => {
-      const existingCamZones = prev[selectedCamCode] || zonesForCurrentCam;
+      const existingCamZones = ensureUsecaseZones(prev[selectedCamCode]);
 
       const updated = existingCamZones.map(z => {
-        if (z.id === currentZone.id) {
+        if (z.usecase === activeUsecase || z.id === currentZone.id) {
           return { ...z, points: newPoints, closed: isClosed };
         }
         return z;
@@ -710,7 +749,7 @@ export const DetectionAreaView: React.FC<DetectionAreaViewProps> = ({
       const zPts = zone.points;
       if (zPts.length === 0) return;
 
-      const isCurrentActive = zone.id === currentZone.id;
+      const isCurrentActive = zone.id === currentZone.id || zone.usecase === activeUsecase;
       if (soloZoneMode && !isCurrentActive) return;
       const zoneColor = zone.color || ZONE_COLORS[zoneIdx % ZONE_COLORS.length];
 
@@ -803,7 +842,7 @@ export const DetectionAreaView: React.FC<DetectionAreaViewProps> = ({
       ctx.fillStyle = currentZone.color || '#00FF00';
       ctx.fill();
     }
-  }, [zonesForCurrentCam, currentZone, mousePos, hoveredPointIdx, draggingPointIdx]);
+  }, [zonesForCurrentCam, currentZone, activeUsecase, soloZoneMode, mousePos, hoveredPointIdx, draggingPointIdx]);
 
   // Convert Mouse Event Coordinates to 1920x1080 Scale
   const getCanvasCoords = (e: React.MouseEvent<HTMLDivElement>): Point => {
@@ -1081,16 +1120,20 @@ export const DetectionAreaView: React.FC<DetectionAreaViewProps> = ({
 
             <div className="flex flex-wrap items-center gap-2">
               {[
-                { id: 'zone-anpr', name: 'ANPR Lane', icon: '🚗', color: '#10B981', border: 'border-emerald-500/50', activeBg: 'bg-emerald-600' },
-                { id: 'zone-frs', name: 'Face Recog (FRS)', icon: '👤', color: '#3B82F6', border: 'border-blue-500/50', activeBg: 'bg-blue-600' },
-                { id: 'zone-ppe', name: 'PPE Safety', icon: '🦺', color: '#F59E0B', border: 'border-amber-500/50', activeBg: 'bg-amber-600' },
-                { id: 'zone-footfall', name: 'Footfall / Crowd', icon: '🚶', color: '#8B5CF6', border: 'border-purple-500/50', activeBg: 'bg-purple-600' },
+                { usecase: 'ANPR' as DetectionUsecase, id: 'zone-anpr', name: 'ANPR Lane', icon: '🚗', color: '#10B981', border: 'border-emerald-500/50', activeBg: 'bg-emerald-600' },
+                { usecase: 'FACE_RECOGNITION' as DetectionUsecase, id: 'zone-frs', name: 'Face Recog (FRS)', icon: '👤', color: '#3B82F6', border: 'border-blue-500/50', activeBg: 'bg-blue-600' },
+                { usecase: 'PPE' as DetectionUsecase, id: 'zone-ppe', name: 'PPE Safety', icon: '🦺', color: '#F59E0B', border: 'border-amber-500/50', activeBg: 'bg-amber-600' },
+                { usecase: 'FOOTFALL' as DetectionUsecase, id: 'zone-footfall', name: 'Footfall / Crowd', icon: '🚶', color: '#8B5CF6', border: 'border-purple-500/50', activeBg: 'bg-purple-600' },
               ].map(u => {
-                const isSelected = (currentZone.id === u.id) || (currentZone.usecase === u.id.replace('zone-', '').toUpperCase());
+                const isSelected = activeUsecase === u.usecase || currentZone.usecase === u.usecase;
                 return (
                   <button
-                    key={u.id}
-                    onClick={() => setActiveZoneId(u.id)}
+                    key={u.usecase}
+                    onClick={() => {
+                      setActiveUsecase(u.usecase);
+                      const target = zonesForCurrentCam.find(z => z.usecase === u.usecase);
+                      if (target) setActiveZoneId(target.id);
+                    }}
                     className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center space-x-2 transition cursor-pointer border ${
                       isSelected
                         ? `${u.activeBg} text-white shadow-lg ring-2 ring-white/40 scale-[1.03]`
