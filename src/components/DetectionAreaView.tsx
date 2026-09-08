@@ -43,21 +43,61 @@ interface Point {
   y: number; // in 1920x1080 scale
 }
 
-interface DetectionZone {
+export type DetectionUsecase = 'ANPR' | 'FACE_RECOGNITION' | 'PPE' | 'FOOTFALL';
+
+export interface DetectionZone {
   id: string;
   name: string;
+  usecase: DetectionUsecase;
   points: Point[];
   color: string;
   closed: boolean;
 }
 
-interface DetectionAreaViewProps {
+export interface DetectionAreaViewProps {
   cameras?: Camera[];
   currentLang?: Language;
   initialCameraCode?: string;
   onSelectCameraCode?: (cameraCode: string) => void;
   onNavigateToAiModels?: (cameraCode?: string) => void;
 }
+
+export const USECASE_META: Record<DetectionUsecase, {
+  name: string;
+  badge: string;
+  color: string;
+  desc: string;
+  icon: string;
+}> = {
+  ANPR: {
+    name: 'ANPR Lane Polygon',
+    badge: '🚗 ANPR',
+    color: '#10B981', // Emerald
+    desc: 'Vehicle number plate OCR & speed trigger boundary',
+    icon: '🚗'
+  },
+  FACE_RECOGNITION: {
+    name: 'Face Recognition Gate',
+    badge: '👤 Face Recog (FRS)',
+    color: '#3B82F6', // Sapphire Blue
+    desc: 'Turnstile & facial biometric watchlist verification zone',
+    icon: '👤'
+  },
+  PPE: {
+    name: 'PPE Safety Compliance Zone',
+    badge: '🦺 PPE Safety',
+    color: '#F59E0B', // Amber Gold
+    desc: 'Hardhat, hi-vis vest & danger area compliance boundary',
+    icon: '🦺'
+  },
+  FOOTFALL: {
+    name: 'Footfall Counting Corridor',
+    badge: '🚶 Footfall / Crowd',
+    color: '#8B5CF6', // Vivid Purple
+    desc: 'Pedestrian density & unidirectional people counting line',
+    icon: '🚶'
+  }
+};
 
 // Baseline Canvas Native Resolution
 const BASE_WIDTH = 1920;
@@ -130,6 +170,41 @@ const SAMPLE_SNAPSHOTS: Record<string, string> = {
   'DEFAULT_HIGHWAY': 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=1920&q=80&auto=format&fit=crop',
 };
 
+const createDefaultUsecaseZones = (): DetectionZone[] => [
+  {
+    id: 'zone-anpr',
+    name: 'ANPR Lane Polygon',
+    usecase: 'ANPR',
+    color: USECASE_META.ANPR.color,
+    closed: true,
+    points: PRESET_SHAPES.HIGHWAY_CORRIDOR
+  },
+  {
+    id: 'zone-frs',
+    name: 'Face Recognition Gate',
+    usecase: 'FACE_RECOGNITION',
+    color: USECASE_META.FACE_RECOGNITION.color,
+    closed: true,
+    points: PRESET_SHAPES.ENTRY_GATE
+  },
+  {
+    id: 'zone-ppe',
+    name: 'PPE Safety Compliance',
+    usecase: 'PPE',
+    color: USECASE_META.PPE.color,
+    closed: true,
+    points: PRESET_SHAPES.FULL_FRAME_80
+  },
+  {
+    id: 'zone-footfall',
+    name: 'Footfall Corridor',
+    usecase: 'FOOTFALL',
+    color: USECASE_META.FOOTFALL.color,
+    closed: true,
+    points: PRESET_SHAPES.LEFT_LANE
+  }
+];
+
 export const DetectionAreaView: React.FC<DetectionAreaViewProps> = ({ 
   cameras: propCameras,
   initialCameraCode,
@@ -152,7 +227,7 @@ export const DetectionAreaView: React.FC<DetectionAreaViewProps> = ({
       setSelectedCamCode(initialCameraCode);
     }
   }, [initialCameraCode]);
-  const [activeZoneId, setActiveZoneId] = useState<string>('zone-1');
+  const [activeZoneId, setActiveZoneId] = useState<string>('zone-anpr');
 
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccessMsg, setSaveSuccessMsg] = useState<string | null>(null);
@@ -169,7 +244,7 @@ export const DetectionAreaView: React.FC<DetectionAreaViewProps> = ({
   const [hoveredPointIdx, setHoveredPointIdx] = useState<number | null>(null);
   const [cursorStyle, setCursorStyle] = useState<string>('crosshair');
 
-  // Multi-zone storage keyed by camera code (Defaults to Standard 80% Box to avoid blank screens)
+  // Multi-zone storage keyed by camera code (Defaults to Standard Usecase Zones to avoid blank screens)
   const [cameraZones, setCameraZones] = useState<Record<string, DetectionZone[]>>(() => {
     try {
       const saved = localStorage.getItem('ztracs_detection_roi_zones');
@@ -177,15 +252,8 @@ export const DetectionAreaView: React.FC<DetectionAreaViewProps> = ({
     } catch (_) {}
 
     return {
-      'CAM-033': [
-        {
-          id: 'zone-1',
-          name: 'Polygon Zone 1 (Highway Lane)',
-          color: '#10B981',
-          closed: true,
-          points: PRESET_SHAPES.HIGHWAY_CORRIDOR
-        }
-      ]
+      'CAM-001': createDefaultUsecaseZones(),
+      'CAM-033': createDefaultUsecaseZones()
     };
   });
 
@@ -211,19 +279,11 @@ export const DetectionAreaView: React.FC<DetectionAreaViewProps> = ({
     lastPingTimestamp: 'Just now'
   } as any);
 
-  // Zones for current selected camera (Ensures Default 80% Polygon is ALWAYS initialized instead of empty blank screen)
+  // Zones for current selected camera (Ensures Default Usecase Polygons are ALWAYS initialized instead of empty blank screen)
   const zonesForCurrentCam = React.useMemo(() => {
     const existing = cameraZones[selectedCamCode];
     if (existing && existing.length > 0) return existing;
-    return [
-      {
-        id: 'zone-1',
-        name: 'Polygon Zone 1 (Detection Area)',
-        color: '#10B981',
-        closed: true,
-        points: PRESET_SHAPES.FULL_FRAME_80
-      }
-    ];
+    return createDefaultUsecaseZones();
   }, [cameraZones, selectedCamCode]);
 
   // Active Zone getter
@@ -246,17 +306,18 @@ export const DetectionAreaView: React.FC<DetectionAreaViewProps> = ({
     return `/api/v1/streams/corp8-proxy/cam01/index.m3u8`;
   };
 
-  // Add New Polygon Zone for this camera feed
-  const handleAddNewZone = () => {
+  // Add New Polygon Zone with specific usecase for this camera feed
+  const handleAddNewZone = (usecaseKey: DetectionUsecase = 'ANPR') => {
     const existingZones = zonesForCurrentCam;
     const nextIdx = existingZones.length + 1;
-    const nextColor = ZONE_COLORS[(nextIdx - 1) % ZONE_COLORS.length];
+    const meta = USECASE_META[usecaseKey] || USECASE_META.ANPR;
     const newZone: DetectionZone = {
-      id: `zone-${Date.now()}`,
-      name: `Polygon Zone ${nextIdx}`,
-      color: nextColor,
+      id: `zone-${usecaseKey.toLowerCase()}-${Date.now()}`,
+      name: `${meta.name} ${nextIdx}`,
+      usecase: usecaseKey,
+      color: meta.color,
       closed: true,
-      points: PRESET_SHAPES.FULL_FRAME_80
+      points: meta.preset ? meta.preset : PRESET_SHAPES.FULL_FRAME_80
     };
 
     setCameraZones(prev => ({
@@ -264,6 +325,27 @@ export const DetectionAreaView: React.FC<DetectionAreaViewProps> = ({
       [selectedCamCode]: [...(prev[selectedCamCode] || existingZones), newZone]
     }));
     setActiveZoneId(newZone.id);
+  };
+
+  // Change usecase of active zone
+  const handleChangeZoneUsecase = (zoneId: string, newUsecase: DetectionUsecase) => {
+    const meta = USECASE_META[newUsecase];
+    setCameraZones(prev => {
+      const existing = prev[selectedCamCode] || zonesForCurrentCam;
+      const updated = existing.map(z => {
+        if (z.id === zoneId) {
+          return {
+            ...z,
+            usecase: newUsecase,
+            name: `${meta.name}`,
+            color: meta.color,
+            points: meta.preset ? meta.preset : z.points
+          };
+        }
+        return z;
+      });
+      return { ...prev, [selectedCamCode]: updated };
+    });
   };
 
   // Apply a Preset Shape to Active Zone
@@ -372,25 +454,83 @@ export const DetectionAreaView: React.FC<DetectionAreaViewProps> = ({
         const remoteData = await ApiClient.getCameraRoi(selectedCamCode);
         if (isMounted && remoteData) {
           if (remoteData.zones && Array.isArray(remoteData.zones) && remoteData.zones.length > 0) {
+            const mappedZones: DetectionZone[] = remoteData.zones.map((z: any, idx: number) => {
+              const uKey: DetectionUsecase = z.usecase || (idx === 0 ? 'ANPR' : idx === 1 ? 'FACE_RECOGNITION' : idx === 2 ? 'PPE' : 'FOOTFALL');
+              const zPts: Point[] = Array.isArray(z.points) && z.points.length > 0
+                ? z.points.map((p: any) => ({ x: Number(p.x || (Array.isArray(p) ? p[0] : 0)), y: Number(p.y || (Array.isArray(p) ? p[1] : 0)) }))
+                : (Array.isArray(z.coordinates) && z.coordinates.length > 0
+                    ? z.coordinates.map((c: any) => ({ x: Number(c[0]), y: Number(c[1]) }))
+                    : (USECASE_META[uKey]?.preset || PRESET_SHAPES.FULL_FRAME_80));
+
+              return {
+                id: z.id || `zone-${uKey.toLowerCase()}-${idx}`,
+                name: z.name || USECASE_META[uKey]?.name || `Zone ${idx + 1}`,
+                usecase: uKey,
+                color: z.color || USECASE_META[uKey]?.color || ZONE_COLORS[idx % ZONE_COLORS.length],
+                closed: zPts.length >= 3,
+                points: zPts
+              };
+            });
             setCameraZones(prev => ({
               ...prev,
-              [selectedCamCode]: remoteData.zones
+              [selectedCamCode]: mappedZones
             }));
-            setActiveZoneId(remoteData.zones[0].id);
+            setActiveZoneId(mappedZones[0].id);
+          } else if (remoteData.anpr || remoteData.frs || remoteData.ppe || remoteData.footfall || remoteData.usecase_rois) {
+            const uRois = remoteData.usecase_rois || {};
+            const anprPts = remoteData.anpr || uRois.anpr;
+            const frsPts = remoteData.frs || uRois.frs;
+            const ppePts = remoteData.ppe || uRois.ppe;
+            const footfallPts = remoteData.footfall || uRois.footfall;
+
+            const constructedZones: DetectionZone[] = [
+              {
+                id: 'zone-anpr',
+                name: 'ANPR Lane Polygon',
+                usecase: 'ANPR',
+                color: USECASE_META.ANPR.color,
+                closed: true,
+                points: anprPts ? anprPts.map((p: any) => ({ x: Number(p[0]), y: Number(p[1]) })) : PRESET_SHAPES.HIGHWAY_CORRIDOR
+              },
+              {
+                id: 'zone-frs',
+                name: 'Face Recognition Gate',
+                usecase: 'FACE_RECOGNITION',
+                color: USECASE_META.FACE_RECOGNITION.color,
+                closed: true,
+                points: frsPts ? frsPts.map((p: any) => ({ x: Number(p[0]), y: Number(p[1]) })) : PRESET_SHAPES.ENTRY_GATE
+              },
+              {
+                id: 'zone-ppe',
+                name: 'PPE Safety Compliance',
+                usecase: 'PPE',
+                color: USECASE_META.PPE.color,
+                closed: true,
+                points: ppePts ? ppePts.map((p: any) => ({ x: Number(p[0]), y: Number(p[1]) })) : PRESET_SHAPES.FULL_FRAME_80
+              },
+              {
+                id: 'zone-footfall',
+                name: 'Footfall Corridor',
+                usecase: 'FOOTFALL',
+                color: USECASE_META.FOOTFALL.color,
+                closed: true,
+                points: footfallPts ? footfallPts.map((p: any) => ({ x: Number(p[0]), y: Number(p[1]) })) : PRESET_SHAPES.LEFT_LANE
+              }
+            ];
+            setCameraZones(prev => ({
+              ...prev,
+              [selectedCamCode]: constructedZones
+            }));
+            setActiveZoneId(constructedZones[0].id);
           } else if (remoteData.points && remoteData.points.length > 0) {
             const remotePts: Point[] = remoteData.points.map((p: any) => ({ x: Number(p.x), y: Number(p.y) }));
-            const defaultZone: DetectionZone = {
-              id: 'zone-1',
-              name: 'Polygon Zone 1',
-              color: '#10B981',
-              closed: remotePts.length >= 3,
-              points: remotePts
-            };
+            const defaultZones = createDefaultUsecaseZones();
+            defaultZones[0].points = remotePts;
             setCameraZones(prev => ({
               ...prev,
-              [selectedCamCode]: [defaultZone]
+              [selectedCamCode]: defaultZones
             }));
-            setActiveZoneId('zone-1');
+            setActiveZoneId(defaultZones[0].id);
           }
         }
       } catch (err) {
@@ -432,13 +572,33 @@ export const DetectionAreaView: React.FC<DetectionAreaViewProps> = ({
     setIsSaving(true);
     setSaveSuccessMsg(null);
 
+    const usecaseRois: Record<string, number[][]> = {};
+    const anprZone = zonesForCurrentCam.find(z => z.usecase === 'ANPR');
+    const frsZone = zonesForCurrentCam.find(z => z.usecase === 'FACE_RECOGNITION');
+    const ppeZone = zonesForCurrentCam.find(z => z.usecase === 'PPE');
+    const footfallZone = zonesForCurrentCam.find(z => z.usecase === 'FOOTFALL');
+
+    if (anprZone && anprZone.points.length >= 3) {
+      usecaseRois.anpr = anprZone.points.map(p => [Math.round(p.x), Math.round(p.y)]);
+    }
+    if (frsZone && frsZone.points.length >= 3) {
+      usecaseRois.frs = frsZone.points.map(p => [Math.round(p.x), Math.round(p.y)]);
+    }
+    if (ppeZone && ppeZone.points.length >= 3) {
+      usecaseRois.ppe = ppeZone.points.map(p => [Math.round(p.x), Math.round(p.y)]);
+    }
+    if (footfallZone && footfallZone.points.length >= 3) {
+      usecaseRois.footfall = footfallZone.points.map(p => [Math.round(p.x), Math.round(p.y)]);
+    }
+
     const allPointsFlat = zonesForCurrentCam.flatMap((z, zIdx) =>
       z.points.map((p, pIdx) => ({
         x: p.x,
         y: p.y,
-        label: `Z${zIdx + 1}_A${pIdx + 1}`,
+        label: `${z.usecase || 'Z' + (zIdx + 1)}_P${pIdx + 1}`,
         zone_id: z.id,
-        zone_name: z.name
+        zone_name: z.name,
+        usecase: z.usecase
       }))
     );
 
@@ -446,8 +606,20 @@ export const DetectionAreaView: React.FC<DetectionAreaViewProps> = ({
       camera_code: selectedCamCode,
       camera_name: selectedCamera.name,
       resolution: '1920x1080',
-      zone_name: `${zonesForCurrentCam.length} Polygon Zones Configured`,
-      zones: zonesForCurrentCam,
+      zone_name: `${zonesForCurrentCam.length} Usecase Zones Configured`,
+      zones: zonesForCurrentCam.map(z => ({
+        id: z.id,
+        name: z.name,
+        usecase: z.usecase,
+        color: z.color,
+        coordinates: z.points.map(p => [Math.round(p.x), Math.round(p.y)]),
+        points: z.points
+      })),
+      usecase_rois: usecaseRois,
+      anpr: usecaseRois.anpr || (zonesForCurrentCam[0] ? zonesForCurrentCam[0].points.map(p => [Math.round(p.x), Math.round(p.y)]) : null),
+      frs: usecaseRois.frs || (zonesForCurrentCam[1] ? zonesForCurrentCam[1].points.map(p => [Math.round(p.x), Math.round(p.y)]) : null),
+      ppe: usecaseRois.ppe || (zonesForCurrentCam[2] ? zonesForCurrentCam[2].points.map(p => [Math.round(p.x), Math.round(p.y)]) : null),
+      footfall: usecaseRois.footfall || (zonesForCurrentCam[3] ? zonesForCurrentCam[3].points.map(p => [Math.round(p.x), Math.round(p.y)]) : null),
       points: allPointsFlat
     };
 
@@ -455,7 +627,7 @@ export const DetectionAreaView: React.FC<DetectionAreaViewProps> = ({
     setIsSaving(false);
 
     if (res && (res.status === 'success' || res.saved_to_rds)) {
-      setSaveSuccessMsg(`All ${zonesForCurrentCam.length} Polygon Zones for ${selectedCamCode} permanently saved to AWS RDS!`);
+      setSaveSuccessMsg(`All Usecase ROIs (ANPR, FRS, PPE, Footfall) for ${selectedCamCode} permanently saved to AWS RDS!`);
       setTimeout(() => setSaveSuccessMsg(null), 5000);
     } else {
       setSaveSuccessMsg(`Saved locally. RDS database sync complete.`);
@@ -534,10 +706,30 @@ export const DetectionAreaView: React.FC<DetectionAreaViewProps> = ({
 
       ctx.stroke();
 
-      // 3. Draw Interactive Vertex Handles (Anchor points with white borders)
+      // 3. Draw Usecase Center Badge on Polygon
+      if (zPts.length >= 3) {
+        const avgX = zPts.reduce((acc, p) => acc + p.x, 0) / zPts.length;
+        const avgY = zPts.reduce((acc, p) => acc + p.y, 0) / zPts.length;
+        const uMeta = USECASE_META[zone.usecase] || USECASE_META.ANPR;
+        const badgeLabel = `${uMeta.icon} ${zone.name}`;
+
+        ctx.font = isCurrentActive ? 'bold 20px Inter, sans-serif' : 'bold 16px Inter, sans-serif';
+        const textWidth = ctx.measureText(badgeLabel).width;
+        
+        ctx.fillStyle = isCurrentActive ? 'rgba(0, 0, 0, 0.85)' : 'rgba(0, 0, 0, 0.65)';
+        ctx.fillRect(avgX - (textWidth / 2) - 10, avgY - 14, textWidth + 20, 28);
+        ctx.strokeStyle = zoneColor;
+        ctx.lineWidth = isCurrentActive ? 2 : 1;
+        ctx.strokeRect(avgX - (textWidth / 2) - 10, avgY - 14, textWidth + 20, 28);
+
+        ctx.fillStyle = isCurrentActive ? '#FFFFFF' : '#CBD5E1';
+        ctx.fillText(badgeLabel, avgX - (textWidth / 2), avgY + 6);
+      }
+
+      // 4. Draw Interactive Vertex Handles (Anchor points with white borders)
       zPts.forEach((pt, index) => {
         const isHovered = isCurrentActive && (hoveredPointIdx === index || draggingPointIdx === index);
-        const pointLabel = `Z${zoneIdx + 1}-A${index + 1}`;
+        const pointLabel = `${zone.usecase || 'Z' + (zoneIdx + 1)}-P${index + 1}`;
 
         if (isCurrentActive) {
           ctx.beginPath();
@@ -556,7 +748,7 @@ export const DetectionAreaView: React.FC<DetectionAreaViewProps> = ({
         ctx.stroke();
 
         // Vertex Label Badge
-        ctx.font = 'bold 18px Inter, monospace, sans-serif';
+        ctx.font = 'bold 16px Inter, monospace, sans-serif';
         ctx.fillStyle = '#000000';
         ctx.fillText(pointLabel, pt.x + 15, pt.y - 10);
         ctx.fillStyle = '#FFFFFF';
@@ -564,7 +756,7 @@ export const DetectionAreaView: React.FC<DetectionAreaViewProps> = ({
       });
     });
 
-    // 4. Draw mouse cursor coordinate crosshair if hovering on active zone
+    // 5. Draw mouse cursor coordinate crosshair if hovering on active zone
     if (mousePos && !currentZone.closed) {
       ctx.beginPath();
       ctx.arc(mousePos.x, mousePos.y, 6, 0, 2 * Math.PI);
@@ -900,56 +1092,82 @@ export const DetectionAreaView: React.FC<DetectionAreaViewProps> = ({
             </div>
           </div>
 
-          {/* MULTI-POLYGON ZONES TOOLBAR */}
-          <div className="bg-[#041a2e] border border-[#0d3457] rounded-2xl p-2.5 flex items-center justify-between flex-wrap gap-2 text-white">
+          {/* USECASE-SPECIFIC MULTI-POLYGON ZONES TOOLBAR */}
+          <div className="bg-[#041a2e] border border-[#0d3457] rounded-2xl p-3 flex items-center justify-between flex-wrap gap-2.5 text-white shadow-lg">
             <div className="flex items-center space-x-2">
-              <Layers className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="text-[11px] font-bold uppercase tracking-wider">Zones ({zonesForCurrentCam.length}):</span>
+              <Layers className="w-4 h-4 text-emerald-400" />
+              <span className="text-[11px] font-black uppercase tracking-wider text-slate-300">AI Usecase ROIs:</span>
             </div>
 
-            {/* Zone Selector Pills */}
+            {/* Usecase Selector Pills */}
             <div className="flex flex-wrap items-center gap-1.5">
               {zonesForCurrentCam.map((zone, idx) => {
                 const isActive = zone.id === activeZoneId;
+                const uMeta = USECASE_META[zone.usecase] || USECASE_META.ANPR;
                 return (
                   <button
                     key={zone.id}
                     onClick={() => setActiveZoneId(zone.id)}
-                    className={`px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center space-x-1.5 transition cursor-pointer border ${
+                    className={`px-3 py-1.5 rounded-xl text-xs font-black flex items-center space-x-2 transition cursor-pointer border ${
                       isActive
-                        ? 'bg-slate-800 text-white shadow-md border-white/40 ring-1 ring-white/30'
-                        : 'bg-slate-950/60 text-slate-400 hover:text-white border-slate-800'
+                        ? 'bg-slate-800 text-white shadow-lg border-white/50 ring-2 ring-emerald-500/40'
+                        : 'bg-slate-950/70 text-slate-400 hover:text-white border-slate-800 hover:bg-slate-900'
                     }`}
                   >
                     <span 
-                      className="w-2 h-2 rounded-full shrink-0" 
-                      style={{ backgroundColor: zone.color || ZONE_COLORS[idx % ZONE_COLORS.length] }} 
+                      className="w-2.5 h-2.5 rounded-full shrink-0 shadow-sm" 
+                      style={{ backgroundColor: zone.color || uMeta.color }} 
                     />
-                    <span>{zone.name}</span>
-                    <span className="text-[10px] font-mono text-slate-400">({zone.points.length}p)</span>
+                    <span>{uMeta.badge || zone.name}</span>
+                    <span className="text-[10px] font-mono opacity-60">({zone.points.length}p)</span>
                   </button>
                 );
               })}
 
-              {/* Add Zone Button */}
-              <button
-                onClick={handleAddNewZone}
-                className="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center space-x-1 transition cursor-pointer shadow"
-                title="Add new polygon zone to this camera feed"
-              >
-                <Plus className="w-3 h-3" />
-                <span>Add</span>
-              </button>
+              {/* Add Zone Dropdown / Quick Add Buttons */}
+              <div className="flex items-center space-x-1 pl-1 border-l border-slate-700">
+                <button
+                  onClick={() => handleAddNewZone('ANPR')}
+                  className="px-2 py-1 rounded-lg bg-emerald-600/80 hover:bg-emerald-500 text-white text-[10px] font-extrabold flex items-center space-x-1 transition cursor-pointer"
+                  title="Add new ANPR Lane zone"
+                >
+                  <Plus className="w-2.5 h-2.5" />
+                  <span>ANPR</span>
+                </button>
+                <button
+                  onClick={() => handleAddNewZone('FACE_RECOGNITION')}
+                  className="px-2 py-1 rounded-lg bg-blue-600/80 hover:bg-blue-500 text-white text-[10px] font-extrabold flex items-center space-x-1 transition cursor-pointer"
+                  title="Add new Face Recognition Gate zone"
+                >
+                  <Plus className="w-2.5 h-2.5" />
+                  <span>FRS</span>
+                </button>
+                <button
+                  onClick={() => handleAddNewZone('PPE')}
+                  className="px-2 py-1 rounded-lg bg-amber-600/80 hover:bg-amber-500 text-white text-[10px] font-extrabold flex items-center space-x-1 transition cursor-pointer"
+                  title="Add new PPE Safety zone"
+                >
+                  <Plus className="w-2.5 h-2.5" />
+                  <span>PPE</span>
+                </button>
+                <button
+                  onClick={() => handleAddNewZone('FOOTFALL')}
+                  className="px-2 py-1 rounded-lg bg-purple-600/80 hover:bg-purple-500 text-white text-[10px] font-extrabold flex items-center space-x-1 transition cursor-pointer"
+                  title="Add new Footfall Corridor zone"
+                >
+                  <Plus className="w-2.5 h-2.5" />
+                  <span>Footfall</span>
+                </button>
+              </div>
 
               {/* Delete Active Zone Button */}
               {zonesForCurrentCam.length > 1 && (
                 <button
                   onClick={() => handleDeleteZone(currentZone.id)}
-                  className="px-2 py-1.5 rounded-lg bg-rose-950/80 hover:bg-rose-900 border border-rose-800/60 text-rose-300 text-xs font-semibold flex items-center space-x-1 transition cursor-pointer"
+                  className="px-2 py-1.5 rounded-lg bg-rose-950/80 hover:bg-rose-900 border border-rose-800/60 text-rose-300 text-xs font-semibold flex items-center space-x-1 transition cursor-pointer ml-1"
                   title="Delete selected polygon zone"
                 >
                   <Trash2 className="w-3 h-3" />
-                  <span>Delete</span>
                 </button>
               )}
             </div>

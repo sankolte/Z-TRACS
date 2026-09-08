@@ -390,17 +390,21 @@ async def get_all_rois():
             if rows:
                 db_rois = {}
                 for r in rows:
-                    pts = json.loads(r["points_json"]) if r["points_json"] else []
-                    coords = [[int(p.get("x", 0)), int(p.get("y", 0))] for p in pts if isinstance(p, dict)]
+                    raw_pts = json.loads(r["points_json"]) if r["points_json"] else []
                     rec = {
                         "camera_code": r["camera_code"],
                         "camera_name": r["camera_name"],
                         "resolution": r["resolution"],
                         "zone_name": r["zone_name"],
-                        "points": pts,
-                        "coordinates": coords,
                         "updated_at": r["updated_at"].isoformat() if r["updated_at"] else None
                     }
+                    if isinstance(raw_pts, dict):
+                        rec.update(raw_pts)
+                    elif isinstance(raw_pts, list):
+                        coords = [[int(p.get("x", 0)), int(p.get("y", 0))] for p in raw_pts if isinstance(p, dict)]
+                        rec["points"] = raw_pts
+                        rec["coordinates"] = coords
+
                     for alias in get_code_aliases(r["camera_code"]):
                         db_rois[alias] = rec
                 # Update cache
@@ -415,7 +419,7 @@ async def get_all_rois():
 @router.post("/roi/save")
 @router.post("/roi/{camera_code}")
 async def save_camera_roi(camera_code: Optional[str] = None, payload: Dict[str, Any] = Body(...)):
-    """Save camera ROI polygon coordinates to RDS and memory."""
+    """Save camera ROI polygon coordinates and usecase mappings to RDS and memory."""
     cam_code = str(camera_code or payload.get("camera_code") or payload.get("cameraCode") or "").strip()
     if not cam_code:
         raise HTTPException(status_code=400, detail="camera_code is required")
@@ -424,10 +428,28 @@ async def save_camera_roi(camera_code: Optional[str] = None, payload: Dict[str, 
     aliases = get_code_aliases(cam_code)
 
     points = payload.get("points") or []
-    if points and isinstance(points, list) and isinstance(points[0], dict):
+    if points and isinstance(points, list) and len(points) > 0 and isinstance(points[0], dict):
         coords = [[int(p.get("x", 0)), int(p.get("y", 0))] for p in points]
     else:
         coords = points
+
+    zones = payload.get("zones") or []
+    usecase_rois = payload.get("usecase_rois") or {}
+    anpr_roi = payload.get("anpr") or usecase_rois.get("anpr")
+    frs_roi = payload.get("frs") or usecase_rois.get("frs")
+    ppe_roi = payload.get("ppe") or usecase_rois.get("ppe")
+    footfall_roi = payload.get("footfall") or usecase_rois.get("footfall")
+
+    structured_data = {
+        "points": points,
+        "coordinates": coords,
+        "zones": zones,
+        "usecase_rois": usecase_rois,
+        "anpr": anpr_roi,
+        "frs": frs_roi,
+        "ppe": ppe_roi,
+        "footfall": footfall_roi
+    }
 
     roi_record = {
         "camera_code": canonical_code,
@@ -436,6 +458,12 @@ async def save_camera_roi(camera_code: Optional[str] = None, payload: Dict[str, 
         "zone_name": payload.get("zone_name", "Detection Zone 1"),
         "points": points,
         "coordinates": coords,
+        "zones": zones,
+        "usecase_rois": usecase_rois,
+        "anpr": anpr_roi,
+        "frs": frs_roi,
+        "ppe": ppe_roi,
+        "footfall": footfall_roi,
         "saved_to_rds": False
     }
 
@@ -447,7 +475,7 @@ async def save_camera_roi(camera_code: Optional[str] = None, payload: Dict[str, 
     conn = await get_db_connection()
     if conn:
         try:
-            pts_json = json.dumps(points)
+            pts_json = json.dumps(structured_data)
             await conn.execute("""
                 INSERT INTO anpr_camera_rois (camera_code, camera_name, resolution, zone_name, points_json, updated_at)
                 VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
@@ -478,17 +506,21 @@ async def get_camera_roi(camera_code: str):
                 WHERE camera_code = $1 OR camera_code = $2;
             """, normalize_camera_code(cam_code), get_sentinel_code(cam_code))
             if row:
-                pts = json.loads(row["points_json"]) if row["points_json"] else []
-                coords = [[int(p.get("x", 0)), int(p.get("y", 0))] for p in pts if isinstance(p, dict)]
+                raw_pts = json.loads(row["points_json"]) if row["points_json"] else []
                 rec = {
                     "camera_code": row["camera_code"],
                     "camera_name": row["camera_name"],
                     "resolution": row["resolution"],
                     "zone_name": row["zone_name"],
-                    "points": pts,
-                    "coordinates": coords,
                     "updated_at": row["updated_at"].isoformat() if row["updated_at"] else None
                 }
+                if isinstance(raw_pts, dict):
+                    rec.update(raw_pts)
+                elif isinstance(raw_pts, list):
+                    coords = [[int(p.get("x", 0)), int(p.get("y", 0))] for p in raw_pts if isinstance(p, dict)]
+                    rec["points"] = raw_pts
+                    rec["coordinates"] = coords
+
                 for alias in get_code_aliases(row["camera_code"]):
                     SAVED_ROIS[alias] = rec
                 await conn.close()
@@ -497,7 +529,7 @@ async def get_camera_roi(camera_code: str):
         except Exception:
             pass
 
-    return ApiResponse.ok({"camera_code": cam_code, "points": [], "coordinates": []})
+    return ApiResponse.ok({"camera_code": cam_code, "points": [], "coordinates": [], "zones": [], "usecase_rois": {}})
 
 # ─────────────────────────────────────────────────────────────────────────────
 # AI VISION MODEL CONFIGURATIONS (AWS RDS BACKED)

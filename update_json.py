@@ -263,6 +263,18 @@ class ZTracsBuddyClient:
             usecase_polygons: Dict[int, List[List[int]]] = {}
 
             if roi_info and isinstance(roi_info, dict):
+                # 0. Check structured usecase_rois map
+                u_rois = roi_info.get("usecase_rois")
+                if u_rois and isinstance(u_rois, dict):
+                    if u_rois.get("anpr") and isinstance(u_rois["anpr"], list) and len(u_rois["anpr"]) >= 3:
+                        usecase_polygons[0] = u_rois["anpr"]
+                    if u_rois.get("frs") and isinstance(u_rois["frs"], list) and len(u_rois["frs"]) >= 3:
+                        usecase_polygons[1] = u_rois["frs"]
+                    if u_rois.get("ppe") and isinstance(u_rois["ppe"], list) and len(u_rois["ppe"]) >= 3:
+                        usecase_polygons[2] = u_rois["ppe"]
+                    if u_rois.get("footfall") and isinstance(u_rois["footfall"], list) and len(u_rois["footfall"]) >= 3:
+                        usecase_polygons[3] = u_rois["footfall"]
+
                 # 1. Check direct usecase-keyed dictionary (e.g. {"anpr": [...], "frs": [...], "ppe": [...], "footfall": [...]})
                 usecase_keys = [
                     ["anpr", "anpr_roi", "lane", "zone_1", "zone1"],
@@ -271,6 +283,8 @@ class ZTracsBuddyClient:
                     ["footfall", "crowd", "corridor", "zone_4", "zone4"]
                 ]
                 for u_idx, keys in enumerate(usecase_keys):
+                    if u_idx in usecase_polygons:
+                        continue
                     for k in keys:
                         if k in roi_info and roi_info[k]:
                             val = roi_info[k]
@@ -281,19 +295,52 @@ class ZTracsBuddyClient:
                                 usecase_polygons[u_idx] = [[int(p.get("x", 0)), int(p.get("y", 0))] for p in val["points"] if isinstance(p, dict)]
                                 break
 
-                # 2. Check multi-zone array (e.g. roi_info["zones"] = [zone1, zone2, ...])
+                # 2. Check multi-zone array with explicit usecase tags (e.g. roi_info["zones"] = [{usecase: 'ANPR', points: [...]}, ...])
                 zones = roi_info.get("zones") or roi_info.get("rois") or roi_info.get("polygons")
                 if zones and isinstance(zones, list):
                     for z_idx, z in enumerate(zones):
-                        if z_idx < len(STANDARD_USECASES) and z_idx not in usecase_polygons:
-                            pts = z.get("points") or z.get("coordinates") if isinstance(z, dict) else z
-                            if pts and isinstance(pts, list) and len(pts) >= 3:
-                                if isinstance(pts[0], dict):
-                                    usecase_polygons[z_idx] = [[int(p.get("x", 0)), int(p.get("y", 0))] for p in pts if isinstance(p, dict)]
-                                elif isinstance(pts[0], list):
-                                    usecase_polygons[z_idx] = pts
+                        if not isinstance(z, dict):
+                            continue
+                        u_tag = str(z.get("usecase") or "").upper()
+                        pts = z.get("points") or z.get("coordinates")
+                        if not pts or not isinstance(pts, list) or len(pts) < 3:
+                            continue
+                        
+                        parsed_pts = [[int(p.get("x", 0)), int(p.get("y", 0))] for p in pts if isinstance(p, dict)] if isinstance(pts[0], dict) else pts
 
-                # 3. Single polygon fallback
+                        if "ANPR" in u_tag or "LANE" in u_tag:
+                            usecase_polygons[0] = parsed_pts
+                        elif "FACE" in u_tag or "FRS" in u_tag or "ENTRY" in u_tag:
+                            usecase_polygons[1] = parsed_pts
+                        elif "PPE" in u_tag or "SAFETY" in u_tag:
+                            usecase_polygons[2] = parsed_pts
+                        elif "FOOTFALL" in u_tag or "CROWD" in u_tag or "CORRIDOR" in u_tag:
+                            usecase_polygons[3] = parsed_pts
+                        elif z_idx < len(STANDARD_USECASES) and z_idx not in usecase_polygons:
+                            usecase_polygons[z_idx] = parsed_pts
+
+                # 3. Check flat points list if tagged with usecase or zone_id
+                flat_pts = roi_info.get("points")
+                if flat_pts and isinstance(flat_pts, list) and len(flat_pts) >= 3 and isinstance(flat_pts[0], dict):
+                    grouped_by_tag: Dict[str, List[List[int]]] = {}
+                    for p in flat_pts:
+                        tag = str(p.get("usecase") or p.get("zone_id") or p.get("label") or "").upper()
+                        x, y = int(p.get("x", 0)), int(p.get("y", 0))
+                        if tag:
+                            grouped_by_tag.setdefault(tag, []).append([x, y])
+
+                    for tag, pts_list in grouped_by_tag.items():
+                        if len(pts_list) >= 3:
+                            if "ANPR" in tag or "LANE" in tag or "Z1" in tag:
+                                usecase_polygons.setdefault(0, pts_list)
+                            elif "FACE" in tag or "FRS" in tag or "ENTRY" in tag or "Z2" in tag:
+                                usecase_polygons.setdefault(1, pts_list)
+                            elif "PPE" in tag or "SAFETY" in tag or "Z3" in tag:
+                                usecase_polygons.setdefault(2, pts_list)
+                            elif "FOOTFALL" in tag or "CROWD" in tag or "CORRIDOR" in tag or "Z4" in tag:
+                                usecase_polygons.setdefault(3, pts_list)
+
+                # 4. Single polygon fallback
                 if not usecase_polygons:
                     pts = roi_info.get("points") or roi_info.get("coordinates") or roi_info.get("roi", {}).get("coordinates")
                     if pts and isinstance(pts, list) and len(pts) >= 3:

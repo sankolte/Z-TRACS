@@ -1,7 +1,54 @@
 {
   "status": "success",
-  "total_tasks": 0,
+  "total_tasks": 1,
   "active_processing": 0,
-  "export_timestamp": "2026-09-07T20:31:10Z",
-  "tasks": []
+  "export_timestamp": "2026-09-08T08:30:02Z",
+  "tasks": [
+    {
+      "task_id": "TSK-FOR-49834",
+      "case_id": "FIR-AHMEDABAD-2026-901",
+      "slug": "tsk-for-49834_fir_ahmedabad_2026_901",
+      "footage_name": "Traffic_Junction_North_Cam02.mp4",
+      "location_name": "SG Highway Iskcon Flyover",
+      "video_path": "forensics/tsk-for-49834_fir_ahmedabad_2026_901/footage.mp4",
+      "s3_key": "forensics/tasks/TSK-FOR-49834/footage.mp4",
+      "media_source": {
+        "local_video_path": "forensics/tsk-for-49834_fir_ahmedabad_2026_901/footage.mp4",
+        "s3_key": "forensics/tasks/TSK-FOR-49834/footage.mp4",
+        "s3_streaming_url": "https://z-tracs-media.s3.amazonaws.com/forensics/tasks/TSK-FOR-49834/footage.mp4?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAVY2PHCLSZQN2PXNB%2F20260908%2Fap-south-1%2Fs3%2Faws4_request&X-Amz-Date=20260908T064354Z&X-Amz-Expires=86400&X-Amz-SignedHeaders=host&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEIf%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCmFwLXNvdXRoLTEiRzBFAiEAl7QbE31mEpyXwSZC8RoSuQXDIarbnF08HwHYu4COf%2BwCIGhWcBLqibJnPOrIqZInkXL4RtAv%2FArMOTDmf4MXmU88Kr8FCFAQABoMMzk2OTEzNzQyNTY1IgxDY7k3haqsC7islyMqnAULbjT0j4xVvsQsizmTnKjySLP8zWLsta1gT85JWsYJdnRI5gbbNmzeJJ609YLmBAbFA2vc9uYdXqw%2BBuc%2B8NXnS0I6C3Ues9dtM%2F4Z9sZaBOkBt63ux05VF35y4S4%2FxkJQM77Co0CkasFAaYh4e3DUVziXCXzVKyTfiYcJs2Yh%2FirvjiNITN8akCZZfm6otTnHVx9TmlQT%2BYIFKKmDSoFe74G9UeNcooPk8beqzSlblyQUVvOKUib4I47E%2B9JsnX3QWdm9j0uYj2w6nOL0A7OFlzd2r5tid%2FVHTTkwteGjpRBxmtFn%2Fko%2FP06EPils2pTnGoWaR2PHlOcQQs%2Fg7Ikj%2FDE5JGOvwvphOW1SfjkwhdN6f1EgsZAQpJhd3jgmg6nlEXz4dGtqSaZMEiG%2BD2%2B3cbhTyzXXSWGkUD%2BARttXkcsVdeMCiFvAFbePYg2WZ6dQQKwcR2bpXIzY5HKoe6NzBkRyI9UCdoWDuRYlMI7SH2VaQVCbW4JRcvULsKmCsJ1luH53W4LNTZ9stmbBt8mFjPvH4seI1iAjCcNxeHyvtN188VDYTZAR%2Bg3eg89lNLybq5p%2BAWPAMp6mq5xqEJq%2Bd8uSRpEb6Mfc3q9GP4tnsJB%2Fv1AS6x7MquaBdPFyP2NUXPIsAwiVfVFUw9bh7bABOva2RhahREmzJnP5AMQoef3Bo23PNTq6Ijrht9bHVfRGBtwWDooL6JuXsQYhiM%2FRV7kZLpJKrYdAKWpPj9M9qX3b3os09V0iUu75ByaCS%2FBX%2FjirW8azxHLX%2BEk76eLwzDqDA88VdVPBcZgxvmRkhUwsHHJ5IbV%2FRqi9b%2BtIRGG5MSrl90tu4E4NzjAUav%2BXBB5BYhiq8M9MGm9XvBaCCReyYXjh7axX78s6TTCX2P7UBjqxAeof3cZoMTIEiH5D2Jw6G%2FpN8SMcVeuUoWEKz6Bv343nsTsyrFsI8B3I5QUGAcSuQ7fRvR3nC4FzugJPDTrO2jv3pjBSaTY%2FDQ7P%2FEmuli1z0QDkaGvUGb%2Fa65sCe0eR2eaEHfovF4S%2F%2B5o8tXs1%2BgIcBZF9nYlUHfFjQWROVmsf%2Bajtjf75JR70HuEeydZ41w0FtlWrUkCIuPTrdShP8bHgdMLwkiBipkH5wowOnRapiA%3D%3D&X-Amz-Signature=2b20dbaa1867530a55ec326d29336d3b5d3ee452a96f7aca5bbeeefb55ba51b9"
+      },
+      "models_requested": [
+        "ANPR",
+        "VEHICLE_CLASSIFICATION",
+        "COLOR_SEARCH"
+      ],
+      "search_filters": {},
+      "status": "COMPLETED",
+      "progress_percent": 100.0,
+      "duration_seconds": 2700,
+      "duration_formatted": "45:00",
+      "total_frames": 67500,
+      "processed_frames": 67500,
+      "processing_fps": 34.2,
+      "total_detections": 1,
+      "watchlist_hits": 1,
+      "detections": [
+        {
+          "detection_id": "DET-AUTO-001",
+          "plate_number": "GJ01AB1234",
+          "vehicle_type": "Car (White Swift)",
+          "color": "White",
+          "video_timestamp_sec": 12.5,
+          "video_timestamp_formatted": "00:12",
+          "confidence": 98.6,
+          "plate_confidence": 99.2,
+          "watchlist_hit": true,
+          "watchlist_reason": "CRIME BRANCH STOLEN HOTLIST"
+        }
+      ],
+      "created_at": "2026-09-08T06:43:54Z",
+      "updated_at": "2026-09-08T06:45:50Z",
+      "total_frames_processed": 67500
+    }
+  ]
 }
