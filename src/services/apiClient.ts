@@ -387,16 +387,6 @@ export class ApiClient {
     return sentinelCam;
   }
 
-  static async updateCamera(cameraData: {
-    cameraCode: string;
-    cameraUuid?: string;
-    name?: string;
-    rtsp_url?: string;
-    endpointReference?: string;
-    hls_live_url?: string;
-    district?: string;
-    city?: string;
-    healthStatus?: string;
   static getCameraAliases(code: string): string[] {
     if (!code) return ['CAM-001', 'CAM-GJ-AHM-SNTL-000001'];
     const str = String(code).trim();
