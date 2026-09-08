@@ -195,21 +195,38 @@ export const FaceRecognitionView: React.FC<FaceRecognitionViewProps> = ({
     });
   }, [cameras, aiConfigs]);
 
-  // 1-Click Quick Enable FRS Handler
+  // 1-Click Quick Enable FRS Handler (Preserves existing models accurately without defaulting ANPR to 1)
   const handleQuickEnableFrs = async (cameraCode: string) => {
     setEnablingCamCode(cameraCode);
     setQuickEnableSuccess(null);
     try {
-      const existingCfg = aiConfigs[cameraCode] || {};
-      const existingModels = existingCfg.models || { anpr: true };
-      const updatedModels = { ...existingModels, frs: true };
+      const camObj = cameras.find(c => (c.cameraCode || c.id) === cameraCode);
+      const existingCfg = aiConfigs[cameraCode] || aiConfigs[cameraCode.toUpperCase()] || aiConfigs[cameraCode.toLowerCase()] || {};
+      
+      // Determine existing enable array from aiConfigs or camera, preserving existing 0/1 bits exactly
+      const currentEnable = Array.isArray(existingCfg.enable) 
+        ? existingCfg.enable 
+        : (Array.isArray(camObj?.enable) ? camObj.enable : [0, 0, 0, 0]);
+
       const updatedEnable = [
-        updatedModels.anpr ? 1 : 0,
-        1, // FRS is now enabled
-        updatedModels.ppe ? 1 : 0,
-        updatedModels.footfall ? 1 : 0
+        currentEnable[0] === 1 ? 1 : 0, // ANPR: strictly preserve existing
+        1,                              // FRS: enable
+        currentEnable[2] === 1 ? 1 : 0, // PPE: strictly preserve existing
+        currentEnable[3] === 1 ? 1 : 0  // Footfall: strictly preserve existing
       ];
-      const updatedUsecases = Array.from(new Set([...(existingCfg.usecases || ['ANPR']), 'FACE_RECOGNITION']));
+
+      const updatedModels = {
+        anpr: updatedEnable[0] === 1,
+        frs: true,
+        ppe: updatedEnable[2] === 1,
+        footfall: updatedEnable[3] === 1
+      };
+
+      const existingUsecases = Array.isArray(existingCfg.usecases) 
+        ? existingCfg.usecases 
+        : (Array.isArray(camObj?.usecases) ? camObj.usecases : []);
+      
+      const updatedUsecases = Array.from(new Set([...existingUsecases, 'FACE_RECOGNITION']));
 
       const payload = {
         camera_code: cameraCode,
@@ -891,94 +908,6 @@ export const FaceRecognitionView: React.FC<FaceRecognitionViewProps> = ({
                   </div>
                 </div>
               </div>
-
-                {/* QUICK-ENABLE FRS INLINE DRAWER */}
-                <div className="mt-3 border border-[#0e3b63] bg-[#021324] rounded-2xl p-3">
-                  <button
-                    type="button"
-                    onClick={() => setIsQuickEnableOpen(!isQuickEnableOpen)}
-                    className="w-full flex items-center justify-between text-xs font-bold text-cyan-300 hover:text-cyan-200 transition cursor-pointer"
-                  >
-                    <div className="flex items-center space-x-2">
-                      <Zap className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
-                      <span>Quick-Enable FRS on Camera ({frsEnabledCameras.length}/{cameras.length} Active)</span>
-                    </div>
-                    <span className="text-[10px] bg-cyan-500/15 border border-cyan-500/30 px-2 py-0.5 rounded-full text-cyan-300">
-                      {isQuickEnableOpen ? 'Hide ▲' : '⚡ 1-Click Enable ▼'}
-                    </span>
-                  </button>
-
-                  {/* Success Banner */}
-                  {quickEnableSuccess && (
-                    <div className="mt-2.5 px-3 py-1.5 bg-emerald-500/15 border border-emerald-500/30 rounded-xl text-[11px] text-emerald-300 flex items-center space-x-2 font-mono">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>{quickEnableSuccess}</span>
-                    </div>
-                  )}
-
-                  {isQuickEnableOpen && (
-                    <div className="mt-3 pt-3 border-t border-[#0e3b63] space-y-2.5 animate-in fade-in duration-150">
-                      {/* Search Filter */}
-                      <input
-                        type="text"
-                        placeholder="Filter cameras by code, junction name, district..."
-                        value={quickEnableSearch}
-                        onChange={(e) => setQuickEnableSearch(e.target.value)}
-                        className="w-full bg-[#010c17] border border-[#0e3b63] rounded-xl px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-cyan-400"
-                      />
-
-                      <div className="max-h-40 overflow-y-auto space-y-1.5 pr-1">
-                        {cameras
-                          .filter(c => {
-                            if (!quickEnableSearch.trim()) return true;
-                            const q = quickEnableSearch.toLowerCase();
-                            return (
-                              c.cameraCode.toLowerCase().includes(q) ||
-                              c.name.toLowerCase().includes(q) ||
-                              c.district.toLowerCase().includes(q)
-                            );
-                          })
-                          .map(c => {
-                            const isFrsActive = frsEnabledCameras.some(fc => fc.cameraCode === c.cameraCode);
-                            const isProcessing = enablingCamCode === c.cameraCode;
-
-                            return (
-                              <div
-                                key={c.cameraCode}
-                                className="flex items-center justify-between p-2 rounded-xl bg-[#010e1c] border border-[#0b2d4c] hover:border-cyan-500/40 text-xs transition"
-                              >
-                                <div className="min-w-0 flex-1 pr-2">
-                                  <div className="font-bold text-white text-xs truncate">{c.cameraCode} — {c.name}</div>
-                                  <div className="text-[10px] text-slate-400 truncate">{c.district}</div>
-                                </div>
-
-                                {isFrsActive ? (
-                                  <span className="px-2.5 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-bold text-[10px] flex items-center space-x-1 shrink-0">
-                                    <CheckCircle2 className="w-3 h-3" />
-                                    <span>FRS Active</span>
-                                  </span>
-                                ) : (
-                                  <button
-                                    type="button"
-                                    disabled={isProcessing}
-                                    onClick={() => handleQuickEnableFrs(c.cameraCode)}
-                                    className="px-2.5 py-1 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-[10px] transition cursor-pointer shrink-0 disabled:opacity-50 flex items-center space-x-1 shadow"
-                                  >
-                                    {isProcessing ? (
-                                      <RefreshCw className="w-3 h-3 animate-spin" />
-                                    ) : (
-                                      <Plus className="w-3 h-3 stroke-[3]" />
-                                    )}
-                                    <span>Enable FRS</span>
-                                  </button>
-                                )}
-                              </div>
-                            );
-                          })}
-                      </div>
-                    </div>
-                  )}
-                </div>
 
               {/* Notes */}
               <div>
