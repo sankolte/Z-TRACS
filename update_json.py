@@ -291,7 +291,7 @@ class ZTracsBuddyClient:
                     if alias in all_ai_map:
                         ai_cfg = all_ai_map[alias]
                         break
-            if not ai_cfg:
+            elif not all_ai_map:
                 ai_cfg = self.get_camera_ai_config(code)
 
             if ai_cfg and "enable" in ai_cfg and isinstance(ai_cfg["enable"], list):
@@ -328,7 +328,7 @@ class ZTracsBuddyClient:
                     if alias in all_rois_map:
                         roi_info = all_rois_map[alias]
                         break
-            if not roi_info:
+            elif not all_rois_map:
                 roi_info = self.get_camera_roi(code)
 
             # Build standardized ROIs array (1 polygon per usecase)
