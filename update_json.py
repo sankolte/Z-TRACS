@@ -69,6 +69,21 @@ def get_code_aliases(code: str) -> List[str]:
 
 STANDARD_USECASES = ["ANPR", "FACE_RECOGNITION", "PPE", "FOOTFALL"]
 
+ZEEX_RTSP_AUTH = "admin%40zeexai.com:RCVN-BJ7U-UCA4@"
+
+def format_rtsp_url(raw_url: str) -> str:
+    """
+    Formats RTSP stream URLs for Nvidia Jetson / DeepStream edge workers.
+    Injects required media credentials if pointing to zeex server (103.250.160.189)
+    and preserves custom user-specified RTSP links intact.
+    """
+    if not raw_url:
+        return ""
+    url = str(raw_url).strip()
+    if "103.250.160.189" in url and "@" not in url:
+        return url.replace("rtsp://", f"rtsp://{ZEEX_RTSP_AUTH}")
+    return url
+
 DEFAULT_ROIS = [
     # 0. ANPR Lane Polygon
     [[100, 200], [800, 200], [900, 900], [50, 900]],
@@ -462,7 +477,7 @@ class ZTracsBuddyClient:
                 "camera_name": cam.get("name") or f"Camera {code}",
                 "enable": enable_vector,
                 "usecases": STANDARD_USECASES,
-                "rtsp": cam.get("rtsp_url") or "",
+                "rtsp": format_rtsp_url(cam.get("rtsp_url") or cam.get("endpointReference") or ""),
                 "latitude": float(cam.get("latitude", 23.0612)),
                 "longitude": float(cam.get("longitude", 72.5804)),
                 "rois": camera_rois
@@ -649,21 +664,24 @@ class ZTracsActiveCameraListener:
                     current_codes.add(code)
                     self.missing_counts[code] = 0
 
+                    rtsp_clean = format_rtsp_url(cam.get("rtsp_url") or cam.get("endpointReference") or "")
+                    cam_clean = {**cam, "rtsp_url": rtsp_clean}
+
                     if code not in self.active_cameras:
-                        self.active_cameras[code] = cam
+                        self.active_cameras[code] = cam_clean
                         streams_changed = True
                         if not initial_load:
-                            print(f"\n[EVENT] [NEW CAMERA ADDED] '{code}' | RTSP: {cam.get('rtsp_url')}")
+                            print(f"\n[EVENT] [NEW CAMERA ADDED] '{code}' | RTSP: {rtsp_clean}")
                             if self.on_added_cb:
-                                self.on_added_cb(cam)
+                                self.on_added_cb(cam_clean)
                     else:
                         old_cam = self.active_cameras[code]
-                        if old_cam.get("rtsp_url") != cam.get("rtsp_url"):
-                            print(f"\n[EVENT] [RTSP URL UPDATED] '{code}': {old_cam.get('rtsp_url')} -> {cam.get('rtsp_url')}")
-                            self.active_cameras[code] = cam
+                        if old_cam.get("rtsp_url") != rtsp_clean:
+                            print(f"\n[EVENT] [RTSP URL UPDATED] '{code}': {old_cam.get('rtsp_url')} -> {rtsp_clean}")
+                            self.active_cameras[code] = cam_clean
                             streams_changed = True
                             if self.on_updated_cb:
-                                self.on_updated_cb(cam)
+                                self.on_updated_cb(cam_clean)
 
                 if not initial_load:
                     candidate_deleted = set(self.active_cameras.keys()) - current_codes
