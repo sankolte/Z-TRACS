@@ -145,6 +145,7 @@ async def get_live_alerts(limit: int = Query(6000, description="Max alerts to re
                     status, 
                     title, 
                     notes, 
+                    snapshot,
                     received_at::text as timestamp
                 FROM anpr_alerts 
                 ORDER BY received_at DESC 
@@ -160,6 +161,7 @@ async def get_live_alerts(limit: int = Query(6000, description="Max alerts to re
                     rec["cameraCode"] = rec.get("camera_code")
                     rec["cameraName"] = rec.get("camera_name")
                     rec["receivedAt"] = rec.get("timestamp")
+                    rec["snapshot"] = rec.get("snapshot")
                     db_alerts.append(rec)
                 
                 # Merge DB alerts with any fresh in-memory events
