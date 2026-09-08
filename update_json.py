@@ -22,6 +22,7 @@ import time
 import json
 import queue
 import threading
+import concurrent.futures
 import os
 import sys
 from typing import Dict, Any, List, Optional, Callable
@@ -153,15 +154,15 @@ class ZTracsBuddyClient:
         return []
 
     # Batch fetch all custom ROIs
-    def get_all_rois(self) -> Dict[str, Any]:
-        """Batch fetch all stored camera ROIs directly from RDS PostgreSQL."""
+    def get_all_rois(self, camera_codes: Optional[List[str]] = None) -> Dict[str, Any]:
+        """Batch fetch all stored camera ROIs directly from RDS PostgreSQL in parallel."""
+        roi_map = {}
         # 1. Primary endpoint /cameras/roi/all
         res = self._request_with_failover("GET", "/cameras/roi/all")
         if res and res.status_code == 200:
             try:
                 data = res.json()
                 rois_list = data.get("rois", []) if isinstance(data, dict) else (data if isinstance(data, list) else [])
-                roi_map = {}
                 for item in rois_list:
                     if isinstance(item, dict):
                         code = item.get("camera_code")
@@ -169,31 +170,42 @@ class ZTracsBuddyClient:
                             roi_map[code] = item
                             for alias in get_code_aliases(code):
                                 roi_map[alias] = item
-                if roi_map:
-                    return roi_map
             except Exception:
                 pass
 
-        # 2. Fallback /anpr/all-rois
-        res = self._request_with_failover("GET", "/anpr/all-rois")
-        if res and res.status_code == 200:
-            try:
-                data = res.json()
-                return data.get("data", {}) if isinstance(data, dict) and "data" in data else data
-            except Exception:
-                pass
-        return {}
+        # 2. Parallel fetch for all camera codes
+        if camera_codes:
+            def _fetch_one_roi(c_code: str):
+                try:
+                    r = self._request_with_failover("GET", f"/anpr/roi/{c_code}")
+                    if r and r.status_code == 200:
+                        j = r.json()
+                        d = j.get("data") if isinstance(j, dict) and "data" in j else j
+                        if d and isinstance(d, dict) and (d.get("points") or d.get("zones") or d.get("usecase_rois") or d.get("roi")):
+                            return c_code, d
+                except Exception:
+                    pass
+                return c_code, None
+
+            with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
+                for c_code, roi in executor.map(_fetch_one_roi, camera_codes):
+                    if roi:
+                        roi_map[c_code] = roi
+                        for alias in get_code_aliases(c_code):
+                            roi_map[alias] = roi
+
+        return roi_map
 
     # Batch fetch all custom AI Vision Model configs
-    def get_all_ai_configs(self) -> Dict[str, Any]:
-        """Batch fetch all stored camera AI Model configs directly from RDS PostgreSQL."""
+    def get_all_ai_configs(self, camera_codes: Optional[List[str]] = None) -> Dict[str, Any]:
+        """Batch fetch all stored camera AI Model configs directly from RDS PostgreSQL in parallel."""
+        ai_map = {}
         # 1. Primary endpoint /cameras/ai-config/all
         res = self._request_with_failover("GET", "/cameras/ai-config/all")
         if res and res.status_code == 200:
             try:
                 data = res.json()
                 configs_list = data.get("ai_configs", []) if isinstance(data, dict) else (data if isinstance(data, list) else [])
-                ai_map = {}
                 for item in configs_list:
                     if isinstance(item, dict):
                         code = item.get("camera_code")
@@ -201,20 +213,31 @@ class ZTracsBuddyClient:
                             ai_map[code] = item
                             for alias in get_code_aliases(code):
                                 ai_map[alias] = item
-                if ai_map:
-                    return ai_map
             except Exception:
                 pass
 
-        # 2. Fallback /anpr/all-ai-configs
-        res = self._request_with_failover("GET", "/anpr/all-ai-configs")
-        if res and res.status_code == 200:
-            try:
-                data = res.json()
-                return data.get("data", {}) if isinstance(data, dict) and "data" in data else data
-            except Exception:
-                pass
-        return {}
+        # 2. Parallel fetch for all camera codes
+        if camera_codes:
+            def _fetch_one_ai(c_code: str):
+                try:
+                    r = self._request_with_failover("GET", f"/cameras/{c_code}/ai-config")
+                    if r and r.status_code == 200:
+                        j = r.json()
+                        d = j.get("data") if isinstance(j, dict) and "data" in j else (j.get("ai_config") if isinstance(j, dict) and "ai_config" in j else j)
+                        if d and isinstance(d, dict) and ("models" in d or "ai_models" in d or "enable" in d):
+                            return c_code, d
+                except Exception:
+                    pass
+                return c_code, None
+
+            with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
+                for c_code, cfg in executor.map(_fetch_one_ai, camera_codes):
+                    if cfg:
+                        ai_map[c_code] = cfg
+                        for alias in get_code_aliases(c_code):
+                            ai_map[alias] = cfg
+
+        return ai_map
 
     # 2b. Build and Export Multi-Usecase Location Grouped Catalog
     def get_grouped_location_catalog(
@@ -230,10 +253,12 @@ class ZTracsBuddyClient:
         """
         feeds = self.get_export_feeds()
         locations_map: Dict[str, Dict[str, Any]] = {}
+        codes = [cam.get("camera_code") or f"CAM-{idx+1:03d}" for idx, cam in enumerate(feeds)]
+
         if all_rois_map is None:
-            all_rois_map = self.get_all_rois()
+            all_rois_map = self.get_all_rois(camera_codes=codes)
         if all_ai_map is None:
-            all_ai_map = self.get_all_ai_configs()
+            all_ai_map = self.get_all_ai_configs(camera_codes=codes)
 
         for index, cam in enumerate(feeds):
             district = cam.get("district") or cam.get("city") or "Ahmedabad"
@@ -264,6 +289,14 @@ class ZTracsBuddyClient:
                 enable_vector = [int(bool(x)) for x in ai_cfg["enable"]][:4]
                 while len(enable_vector) < 4:
                     enable_vector.append(0)
+            elif ai_cfg and "ai_models" in ai_cfg and isinstance(ai_cfg["ai_models"], list):
+                models_list = [str(x).upper() for x in ai_cfg["ai_models"]]
+                enable_vector = [
+                    1 if any("ANPR" in m or "VEHICLE" in m or "PLATE" in m for m in models_list) else 0,
+                    1 if any("FACE" in m or "FRS" in m or "PERSON" in m for m in models_list) else 0,
+                    1 if any("PPE" in m or "SAFETY" in m or "HELMET" in m for m in models_list) else 0,
+                    1 if any("FOOTFALL" in m or "CROWD" in m or "COUNT" in m for m in models_list) else 0
+                ]
             elif ai_cfg and "models" in ai_cfg and isinstance(ai_cfg["models"], dict):
                 m = ai_cfg["models"]
                 enable_vector = [
