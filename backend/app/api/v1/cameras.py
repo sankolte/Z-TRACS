@@ -1,5 +1,5 @@
 from typing import Optional, Dict, Any, List
-from fastapi import APIRouter, Depends, Query, HTTPException, Response
+from fastapi import APIRouter, Depends, Query, HTTPException, Response, Body
 from app.schemas.api_response import ApiResponse
 from app.services.camera_service import CameraService
 import json
