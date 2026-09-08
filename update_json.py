@@ -601,8 +601,15 @@ if __name__ == "__main__":
     print("Press Ctrl+C to stop.")
     print("=================================================================\n")
 
+    poll_time = 5.0
+    if len(sys.argv) > 1:
+        try:
+            poll_time = float(sys.argv[1])
+        except ValueError:
+            pass
+
     client = ZTracsBuddyClient()
-    listener = ZTracsActiveCameraListener(client=client, poll_interval=1.0)
+    listener = ZTracsActiveCameraListener(client=client, poll_interval=poll_time)
 
     # Initial sync
     listener.sync_cameras_json(force=True)
