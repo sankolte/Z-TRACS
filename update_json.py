@@ -41,15 +41,17 @@ def get_code_aliases(code: str) -> List[str]:
         return []
     code = str(code).strip()
     canonical = normalize_camera_code(code)
+    aliases = [code, canonical]
     m = re.search(r'(\d+)$', code)
-    num = int(m.group(1)) if m else 1
-    aliases = [
-        code,
-        canonical,
-        f"CAM-{num:03d}",
-        f"CAM-GJ-AHM-SNTL-{num:06d}",
-        f"CAM-{num}"
-    ]
+    if m:
+        num = int(m.group(1))
+        aliases.extend([f"CAM-{num:03d}", f"CAM-{num}"])
+        if "SNTL" in code:
+            aliases.append(f"CAM-GJ-AHM-SNTL-{num:06d}")
+        elif "TRF" in code:
+            aliases.append(f"CAM-GJ-AHM-TRF-{num:06d}")
+        elif "MNC" in code:
+            aliases.append(f"CAM-GJ-AHM-MNC-{num:06d}")
     return list(dict.fromkeys(aliases))
 
 STANDARD_USECASES = ["ANPR", "FACE_RECOGNITION", "PPE", "FOOTFALL"]
@@ -148,8 +150,6 @@ class ZTracsBuddyClient:
                         code = item.get("camera_code")
                         if code:
                             roi_map[code] = item
-                            for alias in get_code_aliases(code):
-                                roi_map[alias] = item
             except Exception:
                 pass
 
@@ -163,8 +163,6 @@ class ZTracsBuddyClient:
                     for code, roi in rois_dict.items():
                         if isinstance(roi, dict):
                             roi_map[code] = roi
-                            for alias in get_code_aliases(code):
-                                roi_map[alias] = roi
             except Exception:
                 pass
 
@@ -186,8 +184,6 @@ class ZTracsBuddyClient:
                         code = item.get("camera_code")
                         if code:
                             ai_map[code] = item
-                            for alias in get_code_aliases(code):
-                                ai_map[alias] = item
             except Exception:
                 pass
 
@@ -201,8 +197,6 @@ class ZTracsBuddyClient:
                     for code, cfg in configs_dict.items():
                         if isinstance(cfg, dict):
                             ai_map[code] = cfg
-                            for alias in get_code_aliases(code):
-                                ai_map[alias] = cfg
             except Exception:
                 pass
 
@@ -276,6 +270,8 @@ class ZTracsBuddyClient:
                     if alias in all_ai_map:
                         ai_cfg = all_ai_map[alias]
                         break
+            if not ai_cfg:
+                ai_cfg = self.get_camera_ai_config(code)
 
             if ai_cfg and "enable" in ai_cfg and isinstance(ai_cfg["enable"], list):
                 enable_vector = [int(bool(x)) for x in ai_cfg["enable"]][:4]
@@ -311,6 +307,8 @@ class ZTracsBuddyClient:
                     if alias in all_rois_map:
                         roi_info = all_rois_map[alias]
                         break
+            if not roi_info:
+                roi_info = self.get_camera_roi(code)
 
             # Build standardized ROIs array (1 polygon per usecase)
             usecase_polygons: Dict[int, List[List[int]]] = {}
