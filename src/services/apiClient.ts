@@ -522,15 +522,38 @@ export class ApiClient {
 
     for (const code of aliases) {
       try {
-        const payload = { ...configData, camera_code: code, cameraCode: code };
-        const res = await fetch(`${API_BASE}/cameras/${encodeURIComponent(code)}/ai-config`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        if (res.ok && !result) {
-          result = await res.json();
-        }
+        const payload = { 
+          ...configData, 
+          camera_code: code, 
+          cameraCode: code,
+          ai_models: configData.usecases || configData.ai_models || [],
+          models: configData.models || {},
+          enable: configData.enable || [1, 0, 0, 0]
+        };
+
+        // 1. Primary endpoint: /anpr/ai-config
+        try {
+          const res = await fetch(`${API_BASE}/anpr/ai-config`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          if (res.ok && !result) {
+            result = await res.json();
+          }
+        } catch (_) {}
+
+        // 2. Secondary endpoint: /cameras/{code}/ai-config
+        try {
+          const res2 = await fetch(`${API_BASE}/cameras/${encodeURIComponent(code)}/ai-config`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          if (res2.ok && !result) {
+            result = await res2.json();
+          }
+        } catch (_) {}
       } catch (_) {}
     }
     return result || { status: 'success' };
@@ -540,16 +563,16 @@ export class ApiClient {
     const aliases = ApiClient.getCameraAliases(cameraCode);
     for (const code of aliases) {
       try {
-        const res = await fetch(`${API_BASE}/cameras/${encodeURIComponent(code)}/ai-config`);
+        const res = await fetch(`${API_BASE}/anpr/ai-config/${encodeURIComponent(code)}`);
         if (res.ok) {
           const json = await res.json();
           const d = json.data || json.ai_config || json;
           if (d && (d.models || d.ai_models || d.enable)) return d;
         }
-        const res2 = await fetch(`${API_BASE}/anpr/ai-config/${encodeURIComponent(code)}`);
+        const res2 = await fetch(`${API_BASE}/cameras/${encodeURIComponent(code)}/ai-config`);
         if (res2.ok) {
           const json2 = await res2.json();
-          const d2 = json2.data || json2;
+          const d2 = json2.data || json2.ai_config || json2;
           if (d2 && (d2.models || d2.ai_models || d2.enable)) return d2;
         }
       } catch (_) {}
@@ -559,11 +582,21 @@ export class ApiClient {
 
   static async getAllAiConfigs(): Promise<Record<string, any>> {
     try {
-      // 1. Try /cameras/ai-config/all
-      const res = await fetch(`${API_BASE}/cameras/ai-config/all`);
+      // 1. Try /anpr/all-ai-configs
+      const res = await fetch(`${API_BASE}/anpr/all-ai-configs`);
       if (res.ok) {
         const json = await res.json();
-        const list = json.ai_configs || json.data || (Array.isArray(json) ? json : []);
+        const data = json.data || json;
+        if (data && typeof data === 'object' && !Array.isArray(data)) {
+          return data;
+        }
+      }
+
+      // 2. Try /cameras/ai-config/all
+      const res2 = await fetch(`${API_BASE}/cameras/ai-config/all`);
+      if (res2.ok) {
+        const json2 = await res2.json();
+        const list = json2.ai_configs || json2.data || (Array.isArray(json2) ? json2 : []);
         const map: Record<string, any> = {};
         for (const item of list) {
           if (item && item.camera_code) {
@@ -572,13 +605,6 @@ export class ApiClient {
         }
         return map;
       }
-      // 2. Fallback to /anpr/all-ai-configs
-      const res2 = await fetch(`${API_BASE}/anpr/all-ai-configs`);
-      if (res2.ok) {
-        const json2 = await res2.json();
-        return json2.data || {};
-      }
-      return {};
     } catch (err) {
       console.warn('[API] GET all-ai-configs failed:', err);
       return {};

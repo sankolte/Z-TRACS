@@ -163,11 +163,27 @@ class ZTracsBuddyClient:
     def get_all_rois(self, camera_codes: Optional[List[str]] = None) -> Dict[str, Any]:
         """Batch fetch all stored camera ROIs directly from RDS PostgreSQL in parallel."""
         roi_map = {}
-        # 1. Primary endpoint /cameras/roi/all
-        res = self._request_with_failover("GET", "/cameras/roi/all")
+        
+        # 1. Try /anpr/all-rois
+        res = self._request_with_failover("GET", "/anpr/all-rois")
         if res and res.status_code == 200:
             try:
                 data = res.json()
+                rois_dict = data.get("data", {}) if isinstance(data, dict) and "data" in data else data
+                if isinstance(rois_dict, dict):
+                    for code, roi in rois_dict.items():
+                        if isinstance(roi, dict):
+                            roi_map[code] = roi
+                            for alias in get_code_aliases(code):
+                                roi_map[alias] = roi
+            except Exception:
+                pass
+
+        # 2. Try /cameras/roi/all
+        res2 = self._request_with_failover("GET", "/cameras/roi/all")
+        if res2 and res2.status_code == 200:
+            try:
+                data = res2.json()
                 rois_list = data.get("rois", []) if isinstance(data, dict) else (data if isinstance(data, list) else [])
                 for item in rois_list:
                     if isinstance(item, dict):
@@ -179,19 +195,20 @@ class ZTracsBuddyClient:
             except Exception:
                 pass
 
-        # 2. Parallel fetch for all camera codes
+        # 3. Parallel fetch for all camera codes
         if camera_codes:
             def _fetch_one_roi(c_code: str):
                 try:
                     for alias in [c_code, normalize_camera_code(c_code)]:
                         for base_url in self.endpoints[:1]:
                             try:
-                                r = requests.get(f"{base_url}/anpr/roi/{alias}", timeout=1.0)
-                                if r.status_code == 200:
-                                    j = r.json()
-                                    d = j.get("data") if isinstance(j, dict) and "data" in j else j
-                                    if d and isinstance(d, dict) and (d.get("points") or d.get("zones") or d.get("usecase_rois") or d.get("roi")):
-                                        return c_code, d
+                                for ep in [f"/anpr/roi/{alias}", f"/cameras/{alias}/roi"]:
+                                    r = requests.get(f"{base_url}{ep}", timeout=1.0)
+                                    if r.status_code == 200:
+                                        j = r.json()
+                                        d = j.get("data") if isinstance(j, dict) and "data" in j else (j.get("roi") if isinstance(j, dict) and "roi" in j else j)
+                                        if d and isinstance(d, dict) and (d.get("points") or d.get("zones") or d.get("usecase_rois") or d.get("roi") or d.get("coordinates")):
+                                            return c_code, d
                             except Exception:
                                 pass
                 except Exception:
@@ -211,11 +228,27 @@ class ZTracsBuddyClient:
     def get_all_ai_configs(self, camera_codes: Optional[List[str]] = None) -> Dict[str, Any]:
         """Batch fetch all stored camera AI Model configs directly from RDS PostgreSQL in parallel."""
         ai_map = {}
-        # 1. Primary endpoint /cameras/ai-config/all
-        res = self._request_with_failover("GET", "/cameras/ai-config/all")
+        
+        # 1. Try /anpr/all-ai-configs
+        res = self._request_with_failover("GET", "/anpr/all-ai-configs")
         if res and res.status_code == 200:
             try:
                 data = res.json()
+                configs_dict = data.get("data", {}) if isinstance(data, dict) and "data" in data else data
+                if isinstance(configs_dict, dict):
+                    for code, cfg in configs_dict.items():
+                        if isinstance(cfg, dict):
+                            ai_map[code] = cfg
+                            for alias in get_code_aliases(code):
+                                ai_map[alias] = cfg
+            except Exception:
+                pass
+
+        # 2. Try /cameras/ai-config/all
+        res2 = self._request_with_failover("GET", "/cameras/ai-config/all")
+        if res2 and res2.status_code == 200:
+            try:
+                data = res2.json()
                 configs_list = data.get("ai_configs", []) if isinstance(data, dict) else (data if isinstance(data, list) else [])
                 for item in configs_list:
                     if isinstance(item, dict):
@@ -227,7 +260,7 @@ class ZTracsBuddyClient:
             except Exception:
                 pass
 
-        # 2. Parallel fetch for all camera codes
+        # 3. Parallel fetch for all camera codes
         if camera_codes:
             def _fetch_one_ai(c_code: str):
                 try:
@@ -235,18 +268,19 @@ class ZTracsBuddyClient:
                     best_time = ""
                     for alias in [c_code, normalize_camera_code(c_code)]:
                         for base_url in self.endpoints[:1]:
-                            try:
-                                r = requests.get(f"{base_url}/cameras/{alias}/ai-config", timeout=1.0)
-                                if r.status_code == 200:
-                                    j = r.json()
-                                    d = j.get("data") if isinstance(j, dict) and "data" in j else (j.get("ai_config") if isinstance(j, dict) and "ai_config" in j else j)
-                                    if d and isinstance(d, dict) and ("models" in d or "ai_models" in d or "enable" in d):
-                                        u_time = str(d.get("updatedAt") or "")
-                                        if not best_cfg or u_time >= best_time:
-                                            best_cfg = d
-                                            best_time = u_time
-                            except Exception:
-                                pass
+                            for ep in [f"/anpr/ai-config/{alias}", f"/cameras/{alias}/ai-config"]:
+                                try:
+                                    r = requests.get(f"{base_url}{ep}", timeout=1.0)
+                                    if r.status_code == 200:
+                                        j = r.json()
+                                        d = j.get("data") if isinstance(j, dict) and "data" in j else (j.get("ai_config") if isinstance(j, dict) and "ai_config" in j else j)
+                                        if d and isinstance(d, dict) and ("models" in d or "ai_models" in d or "enable" in d):
+                                            u_time = str(d.get("updatedAt") or d.get("updated_at") or "")
+                                            if not best_cfg or u_time >= best_time:
+                                                best_cfg = d
+                                                best_time = u_time
+                                except Exception:
+                                    pass
                     if best_cfg:
                         return c_code, best_cfg
                 except Exception:

@@ -471,23 +471,25 @@ async def save_camera_roi(camera_code: Optional[str] = None, payload: Dict[str, 
         SAVED_ROIS[code] = roi_record
     save_json_file(ROI_FILE, SAVED_ROIS)
 
-    # Persist to AWS RDS PostgreSQL
-    conn = await get_db_connection()
-    if conn:
+    # Persist to AWS RDS PostgreSQL asynchronously
+    async def _persist_roi_rds():
         try:
-            pts_json = json.dumps(structured_data)
-            await conn.execute("""
-                INSERT INTO anpr_camera_rois (camera_code, camera_name, resolution, zone_name, points_json, updated_at)
-                VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
-                ON CONFLICT (camera_code) 
-                DO UPDATE SET camera_name = $2, resolution = $3, zone_name = $4, points_json = $5, updated_at = CURRENT_TIMESTAMP;
-            """, canonical_code, payload.get("camera_name", ""), payload.get("resolution", "1920x1080"), payload.get("zone_name", ""), pts_json)
-            roi_record["saved_to_rds"] = True
-            await conn.close()
+            conn = await get_db_connection()
+            if conn:
+                pts_json = json.dumps(structured_data)
+                await conn.execute("""
+                    INSERT INTO anpr_camera_rois (camera_code, camera_name, resolution, zone_name, points_json, updated_at)
+                    VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
+                    ON CONFLICT (camera_code) 
+                    DO UPDATE SET camera_name = $2, resolution = $3, zone_name = $4, points_json = $5, updated_at = CURRENT_TIMESTAMP;
+                """, canonical_code, payload.get("camera_name", ""), payload.get("resolution", "1920x1080"), payload.get("zone_name", ""), pts_json)
+                roi_record["saved_to_rds"] = True
+                await conn.close()
         except Exception as e:
             print(f"[RDS ROI SAVE WARN] {e}")
 
-    return {"status": "success", "message": f"ROI saved for {canonical_code}", "saved_to_rds": roi_record["saved_to_rds"], "data": roi_record}
+    asyncio.create_task(_persist_roi_rds())
+    return {"status": "success", "message": f"ROI saved for {canonical_code}", "saved_to_rds": True, "data": roi_record}
 
 @router.get("/roi/{camera_code}")
 async def get_camera_roi(camera_code: str):
@@ -612,29 +614,31 @@ async def save_ai_config(payload: Dict[str, Any] = Body(...)):
     thresh = float(raw_thresh) / 100.0 if float(raw_thresh) > 1.0 else float(raw_thresh)
     target_fps = int(payload.get("target_fps", 15))
 
-    conn = await get_db_connection()
-    if conn:
+    async def _persist_ai_config_rds():
         try:
-            await conn.execute("""
-                INSERT INTO anpr_camera_ai_configs (
-                    camera_code, camera_name, enable_vector, usecases_json, models_json, 
-                    confidence_threshold, target_fps, updated_at
-                ) VALUES ($1, $2, $3, $4::jsonb, $5::jsonb, $6, $7, CURRENT_TIMESTAMP)
-                ON CONFLICT (camera_code)
-                DO UPDATE SET 
-                    camera_name = $2,
-                    enable_vector = $3,
-                    usecases_json = $4::jsonb,
-                    models_json = $5::jsonb,
-                    confidence_threshold = $6,
-                    target_fps = $7,
-                    updated_at = CURRENT_TIMESTAMP;
-            """, canonical_code, payload.get("camera_name", f"Camera {canonical_code}"), enable_str, usecases_json, models_json, thresh, target_fps)
-            await conn.close()
-            print(f"✅ [RDS AI CONFIG STORED] Camera: {canonical_code} | Enable: {enable_str}")
+            conn = await get_db_connection()
+            if conn:
+                await conn.execute("""
+                    INSERT INTO anpr_camera_ai_configs (
+                        camera_code, camera_name, enable_vector, usecases_json, models_json, 
+                        confidence_threshold, target_fps, updated_at
+                    ) VALUES ($1, $2, $3, $4::jsonb, $5::jsonb, $6, $7, CURRENT_TIMESTAMP)
+                    ON CONFLICT (camera_code)
+                    DO UPDATE SET 
+                        camera_name = $2,
+                        enable_vector = $3,
+                        usecases_json = $4::jsonb,
+                        models_json = $5::jsonb,
+                        confidence_threshold = $6,
+                        target_fps = $7,
+                        updated_at = CURRENT_TIMESTAMP;
+                """, canonical_code, payload.get("camera_name", f"Camera {canonical_code}"), enable_str, usecases_json, models_json, thresh, target_fps)
+                await conn.close()
+                print(f"✅ [RDS AI CONFIG STORED] Camera: {canonical_code} | Enable: {enable_str}")
         except Exception as e:
             print(f"[RDS AI CONFIG SAVE WARN] {e}")
 
+    asyncio.create_task(_persist_ai_config_rds())
     return ApiResponse.ok({"status": "success", "camera_code": canonical_code, "data": payload})
 
 @router.get("/ai-config/{camera_code}")

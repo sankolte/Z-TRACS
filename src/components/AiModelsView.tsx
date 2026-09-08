@@ -124,10 +124,52 @@ export const AiModelCardsSection: React.FC<AiModelCardsSectionProps> = ({
   onConfigSaved,
   compact = false
 }) => {
+  // Helper function to extract models map from backend response
+  const parseModelsFromConfig = (cfg: any): Record<string, boolean> => {
+    let result: Record<string, boolean> = {
+      anpr: false,
+      frs: false,
+      crowd: false,
+      ppe: false,
+      footfall: false,
+      perimeter: false
+    };
+
+    if (!cfg) return result;
+
+    if (cfg.models && typeof cfg.models === 'object') {
+      return { ...result, ...cfg.models };
+    }
+
+    const modelsList: string[] = Array.isArray(cfg.ai_models)
+      ? cfg.ai_models.map((m: any) => String(m).toUpperCase())
+      : (Array.isArray(cfg.usecases) ? cfg.usecases.map((m: any) => String(m).toUpperCase()) : []);
+
+    if (modelsList.length > 0) {
+      result.anpr = modelsList.some(m => m.includes('ANPR') || m.includes('VEHICLE') || m.includes('PLATE'));
+      result.frs = modelsList.some(m => m.includes('FACE') || m.includes('FRS') || m.includes('BIOMETRIC'));
+      result.crowd = modelsList.some(m => m.includes('CROWD') || m.includes('DENSITY'));
+      result.ppe = modelsList.some(m => m.includes('PPE') || m.includes('SAFETY') || m.includes('HELMET'));
+      result.footfall = modelsList.some(m => m.includes('FOOTFALL') || m.includes('HEATMAP'));
+      result.perimeter = modelsList.some(m => m.includes('PERIMETER') || m.includes('INTRUSION'));
+      return result;
+    }
+
+    if (Array.isArray(cfg.enable)) {
+      result.anpr = Boolean(cfg.enable[0]);
+      result.frs = Boolean(cfg.enable[1]);
+      result.ppe = Boolean(cfg.enable[2]);
+      result.footfall = Boolean(cfg.enable[3]);
+      return result;
+    }
+
+    return result;
+  };
+
   // Synchronous initialization from module cache to prevent initial-mount flickering
   const [enabledModels, setEnabledModels] = useState<Record<string, boolean>>(() => {
-    if (GLOBAL_AI_CONFIG_CACHE[selectedCamCode]?.models) {
-      return { ...GLOBAL_AI_CONFIG_CACHE[selectedCamCode].models };
+    if (GLOBAL_AI_CONFIG_CACHE[selectedCamCode]) {
+      return parseModelsFromConfig(GLOBAL_AI_CONFIG_CACHE[selectedCamCode]);
     }
     return {
       anpr: false,
@@ -155,8 +197,9 @@ export const AiModelCardsSection: React.FC<AiModelCardsSectionProps> = ({
     let isMounted = true;
 
     // Instantly check cache first
-    if (GLOBAL_AI_CONFIG_CACHE[selectedCamCode]?.models) {
-      setEnabledModels(GLOBAL_AI_CONFIG_CACHE[selectedCamCode].models);
+    if (GLOBAL_AI_CONFIG_CACHE[selectedCamCode]) {
+      const cached = parseModelsFromConfig(GLOBAL_AI_CONFIG_CACHE[selectedCamCode]);
+      setEnabledModels(cached);
       if (GLOBAL_AI_CONFIG_CACHE[selectedCamCode].confidence_threshold) {
         setConfidenceThreshold(GLOBAL_AI_CONFIG_CACHE[selectedCamCode].confidence_threshold);
       }
@@ -170,13 +213,8 @@ export const AiModelCardsSection: React.FC<AiModelCardsSectionProps> = ({
         const cfg = await ApiClient.getAiConfig(selectedCamCode);
         if (isMounted && cfg) {
           GLOBAL_AI_CONFIG_CACHE[selectedCamCode] = cfg;
-          if (cfg.models) {
-            setEnabledModels(prev => {
-              // Deep equality check to prevent needless re-render flicker
-              const isDifferent = Object.keys(cfg.models).some(k => prev[k] !== cfg.models[k]);
-              return isDifferent ? cfg.models : prev;
-            });
-          }
+          const parsed = parseModelsFromConfig(cfg);
+          setEnabledModels(parsed);
           if (cfg.confidence_threshold) setConfidenceThreshold(cfg.confidence_threshold);
           if (cfg.target_fps) setTargetFps(cfg.target_fps);
         }
@@ -220,6 +258,7 @@ export const AiModelCardsSection: React.FC<AiModelCardsSectionProps> = ({
       models: enabledModels,
       enable: enableVector,
       usecases: activeUsecasesList.length > 0 ? activeUsecasesList : [],
+      ai_models: activeUsecasesList.length > 0 ? activeUsecasesList : [],
       confidence_threshold: confidenceThreshold,
       target_fps: targetFps
     };

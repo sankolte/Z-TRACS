@@ -342,3 +342,44 @@ async def update_camera(code: Optional[str] = None, payload: Dict[str, Any] = Bo
         "camera_code": cam_code,
         "data": CAMERA_OVERRIDES.get(cam_code) or payload
     })
+
+# Direct AI Model Config Handlers on /cameras
+@router.post("/{code}/ai-config")
+@router.post("/ai-config")
+async def save_camera_ai_config(code: Optional[str] = None, payload: Dict[str, Any] = Body(...)):
+    from app.api.v1.anpr import save_ai_config as anpr_save_ai
+    if code and "camera_code" not in payload:
+        payload["camera_code"] = code
+    return await anpr_save_ai(payload)
+
+@router.get("/{code}/ai-config")
+async def get_camera_ai_config(code: str):
+    from app.api.v1.anpr import get_ai_config as anpr_get_ai
+    return await anpr_get_ai(code)
+
+@router.get("/ai-config/all")
+async def get_all_camera_ai_configs():
+    from app.api.v1.anpr import get_all_ai_configs as anpr_get_all_ai
+    res = await anpr_get_all_ai()
+    return res
+
+# Direct ROI Handlers on /cameras
+@router.post("/{code}/roi")
+@router.post("/roi")
+async def save_camera_roi(code: Optional[str] = None, payload: Dict[str, Any] = Body(...)):
+    from app.api.v1.anpr import save_camera_roi as anpr_save_roi
+    if code and "camera_code" not in payload:
+        payload["camera_code"] = code
+    return await anpr_save_roi(payload)
+
+@router.get("/{code}/roi")
+async def get_camera_roi(code: str):
+    from app.api.v1.anpr import get_camera_roi as anpr_get_roi
+    return await anpr_get_roi(code)
+
+@router.get("/roi/all")
+async def get_all_camera_rois():
+    from app.api.v1.anpr import get_all_rois as anpr_get_all_rois
+    res = await anpr_get_all_rois()
+    return res
+
