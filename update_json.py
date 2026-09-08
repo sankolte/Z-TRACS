@@ -368,7 +368,7 @@ class ZTracsBuddyClient:
                 "camera_name": cam.get("name") or f"Camera {code}",
                 "enable": enable_vector,
                 "usecases": STANDARD_USECASES,
-                "rtsp": cam.get("rtsp_url") or "",
+                "rtsp": cam.get("rtsp_url") or cam.get("rtsp") or cam.get("endpointReference") or cam.get("rtspUrl") or "",
                 "latitude": float(cam.get("latitude", 23.0612)),
                 "longitude": float(cam.get("longitude", 72.5804)),
                 "rois": camera_rois

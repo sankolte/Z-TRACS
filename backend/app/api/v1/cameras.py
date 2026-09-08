@@ -127,13 +127,14 @@ def _get_sentinel_catalog_feeds() -> List[Dict[str, Any]]:
         
         # Check overrides
         override = CAMERA_OVERRIDES.get(code) or CAMERA_OVERRIDES.get(alias_short) or CAMERA_OVERRIDES.get(cam_id) or {}
+        custom_rtsp = override.get("rtsp_url") or override.get("rtspUrl") or override.get("endpointReference") or override.get("rtsp")
 
         catalog.append({
             "id": cam_id,
             "number": i,
             "name": override.get("name") or f"Camera {i} ({loc[0]})",
             "camera_code": code,
-            "rtsp_url": override.get("rtsp_url") or override.get("endpointReference") or f"rtsp://103.250.160.189:8554/stream/{cam_id}",
+            "rtsp_url": custom_rtsp or f"rtsp://103.250.160.189:8554/stream/{cam_id}",
             "webrtc_url": override.get("webrtc_url") or f"http://103.250.160.189:8889/stream/{cam_id}/whep",
             "hls_live_url": override.get("hls_live_url") or f"/api/v1/streams/corp8-proxy/{cam_id}/index.m3u8",
             "hls_cdn_url": override.get("hls_cdn_url") or f"https://cctv.corp8.cloud/{cam_id}/index.m3u8",
