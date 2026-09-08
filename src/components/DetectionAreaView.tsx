@@ -251,6 +251,7 @@ export const DetectionAreaView: React.FC<DetectionAreaViewProps> = ({
     }
   }, [initialCameraCode]);
   const [activeZoneId, setActiveZoneId] = useState<string>('zone-anpr');
+  const [soloZoneMode, setSoloZoneMode] = useState<boolean>(true);
 
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccessMsg, setSaveSuccessMsg] = useState<string | null>(null);
@@ -550,9 +551,20 @@ export const DetectionAreaView: React.FC<DetectionAreaViewProps> = ({
             }));
             setActiveZoneId(constructedZones[0].id);
           } else if (remoteData.points && remoteData.points.length > 0) {
-            const remotePts: Point[] = remoteData.points.map((p: any) => ({ x: Number(p.x), y: Number(p.y) }));
+            const rawPts = remoteData.points;
+            const footfallPts = rawPts.filter((p: any) => String(p.usecase || p.label || '').toUpperCase().includes('FOOTFALL'));
+            const anprPts = rawPts.filter((p: any) => String(p.usecase || p.label || '').toUpperCase().includes('ANPR'));
+            const frsPts = rawPts.filter((p: any) => String(p.usecase || p.label || '').toUpperCase().includes('FACE') || String(p.usecase || p.label || '').toUpperCase().includes('FRS'));
+            const ppePts = rawPts.filter((p: any) => String(p.usecase || p.label || '').toUpperCase().includes('PPE'));
+
             const defaultZones = createDefaultUsecaseZones();
-            defaultZones[0].points = remotePts;
+            if (anprPts.length >= 3) defaultZones[0].points = anprPts.map((p: any) => ({ x: Number(p.x), y: Number(p.y) }));
+            else if (rawPts.length >= 3 && footfallPts.length === 0) defaultZones[0].points = rawPts.map((p: any) => ({ x: Number(p.x), y: Number(p.y) }));
+
+            if (frsPts.length >= 3) defaultZones[1].points = frsPts.map((p: any) => ({ x: Number(p.x), y: Number(p.y) }));
+            if (ppePts.length >= 3) defaultZones[2].points = ppePts.map((p: any) => ({ x: Number(p.x), y: Number(p.y) }));
+            if (footfallPts.length >= 3) defaultZones[3].points = footfallPts.map((p: any) => ({ x: Number(p.x), y: Number(p.y) }));
+
             setCameraZones(prev => ({
               ...prev,
               [selectedCamCode]: defaultZones
@@ -699,6 +711,7 @@ export const DetectionAreaView: React.FC<DetectionAreaViewProps> = ({
       if (zPts.length === 0) return;
 
       const isCurrentActive = zone.id === currentZone.id;
+      if (soloZoneMode && !isCurrentActive) return;
       const zoneColor = zone.color || ZONE_COLORS[zoneIdx % ZONE_COLORS.length];
 
       // 1. Draw semi-transparent filled polygon with neon glow
@@ -1057,6 +1070,54 @@ export const DetectionAreaView: React.FC<DetectionAreaViewProps> = ({
               </button>
             </div>
 
+          </div>
+
+          {/* 4 AI USECASE SELECTION TABS (Clean, Uncluttered Workflow) */}
+          <div className="bg-[#031527] border border-[#00385C] rounded-2xl p-3 flex flex-wrap items-center justify-between gap-3 text-white shadow-md">
+            <div className="flex items-center space-x-2">
+              <Layers className="w-4 h-4 text-sky-400" />
+              <span className="text-xs font-black uppercase tracking-wider text-slate-200">Active AI Model Zone:</span>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              {[
+                { id: 'zone-anpr', name: 'ANPR Lane', icon: '🚗', color: '#10B981', border: 'border-emerald-500/50', activeBg: 'bg-emerald-600' },
+                { id: 'zone-frs', name: 'Face Recog (FRS)', icon: '👤', color: '#3B82F6', border: 'border-blue-500/50', activeBg: 'bg-blue-600' },
+                { id: 'zone-ppe', name: 'PPE Safety', icon: '🦺', color: '#F59E0B', border: 'border-amber-500/50', activeBg: 'bg-amber-600' },
+                { id: 'zone-footfall', name: 'Footfall / Crowd', icon: '🚶', color: '#8B5CF6', border: 'border-purple-500/50', activeBg: 'bg-purple-600' },
+              ].map(u => {
+                const isSelected = (currentZone.id === u.id) || (currentZone.usecase === u.id.replace('zone-', '').toUpperCase());
+                return (
+                  <button
+                    key={u.id}
+                    onClick={() => setActiveZoneId(u.id)}
+                    className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center space-x-2 transition cursor-pointer border ${
+                      isSelected
+                        ? `${u.activeBg} text-white shadow-lg ring-2 ring-white/40 scale-[1.03]`
+                        : 'bg-slate-900/90 hover:bg-slate-800 text-slate-300 ' + u.border
+                    }`}
+                  >
+                    <span>{u.icon}</span>
+                    <span>{u.name}</span>
+                    {isSelected && <span className="w-2 h-2 rounded-full bg-white animate-pulse" />}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Solo Mode Toggle (Removes Clutter) */}
+            <button
+              onClick={() => setSoloZoneMode(!soloZoneMode)}
+              className={`px-3 py-1.5 rounded-xl text-[11px] font-bold flex items-center space-x-1.5 transition cursor-pointer border ${
+                soloZoneMode
+                  ? 'bg-sky-500/20 text-sky-300 border-sky-500/40'
+                  : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'
+              }`}
+              title="Toggle between showing only the active zone (clean & focused) or all 4 zones overlaid"
+            >
+              <Activity className="w-3.5 h-3.5 text-sky-400" />
+              <span>{soloZoneMode ? '🎯 Solo Focus: ON' : '👁️ Show All 4'}</span>
+            </button>
           </div>
 
           {/* PRESET QUICK-SHAPES BAR (1-Click ROI Templates) */}
