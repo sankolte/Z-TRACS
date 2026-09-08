@@ -135,14 +135,41 @@ class ZTracsBuddyClient:
 
     # Check sync version (lightweight timestamp call)
     def get_sync_version(self) -> Dict[str, Any]:
-        """Fetch lightweight modification timestamps for change-detection."""
+        """Fetch modification timestamps for change-detection."""
+        # 1. Try /anpr/sync-version
         res = self._request_with_failover("GET", "/anpr/sync-version")
         if res and res.status_code == 200:
             try:
-                return res.json()
+                d = res.json()
+                if d.get("ai_configs_updated_at") or d.get("rois_updated_at"):
+                    return d
             except Exception:
                 pass
-        return {}
+
+        # 2. Resilient Direct Timestamps Fallback (Detects changes regardless of EC2 version)
+        ai_ver = None
+        roi_ver = None
+        try:
+            r_ai = self._request_with_failover("GET", "/cameras/CAM-GJ-AHM-SNTL-000001/ai-config", timeout=0.8)
+            if r_ai and r_ai.status_code == 200:
+                d_ai = r_ai.json()
+                ai_ver = d_ai.get("updatedAt") or d_ai.get("updated_at")
+        except Exception:
+            pass
+
+        try:
+            r_roi = self._request_with_failover("GET", "/anpr/roi/CAM-GJ-AHM-SNTL-000001", timeout=0.8)
+            if r_roi and r_roi.status_code == 200:
+                d_roi = r_roi.json().get("data", {})
+                roi_ver = d_roi.get("updated_at") or d_roi.get("updatedAt")
+        except Exception:
+            pass
+
+        return {
+            "status": "success",
+            "ai_configs_updated_at": str(ai_ver) if ai_ver else None,
+            "rois_updated_at": str(roi_ver) if roi_ver else None
+        }
 
     # 1. Fetch Active Watchlist
     def get_watchlist(self) -> List[str]:
