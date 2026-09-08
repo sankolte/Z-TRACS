@@ -601,7 +601,7 @@ if __name__ == "__main__":
     print("Press Ctrl+C to stop.")
     print("=================================================================\n")
 
-    poll_time = 5.0
+    poll_time = 0.5
     if len(sys.argv) > 1:
         try:
             poll_time = float(sys.argv[1])
