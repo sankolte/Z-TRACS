@@ -363,12 +363,20 @@ class ZTracsBuddyClient:
                 else:
                     camera_rois.append(DEFAULT_ROIS[roi_idx])
 
+            rtsp_link = cam.get("rtsp_url") or cam.get("rtsp") or cam.get("endpointReference") or cam.get("rtspUrl") or ""
+            if "103.250.160.189:8554" in rtsp_link and "@" not in rtsp_link:
+                rtsp_link = rtsp_link.replace("103.250.160.189:8554", "admin%40zeexai.com:RCVN-BJ7U-UCA4@103.250.160.189:8554")
+            elif not rtsp_link:
+                m_idx = re.search(r'(\d+)$', code)
+                cam_num = int(m_idx.group(1)) if m_idx else index + 1
+                rtsp_link = f"rtsp://admin%40zeexai.com:RCVN-BJ7U-UCA4@103.250.160.189:8554/stream/cam{cam_num:02d}"
+
             locations_map[loc_id]["cameras"].append({
                 "camera_code": code,
                 "camera_name": cam.get("name") or f"Camera {code}",
                 "enable": enable_vector,
                 "usecases": STANDARD_USECASES,
-                "rtsp": cam.get("rtsp_url") or cam.get("rtsp") or cam.get("endpointReference") or cam.get("rtspUrl") or "",
+                "rtsp": rtsp_link,
                 "latitude": float(cam.get("latitude", 23.0612)),
                 "longitude": float(cam.get("longitude", 72.5804)),
                 "rois": camera_rois

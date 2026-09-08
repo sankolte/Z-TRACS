@@ -109,7 +109,7 @@ export class ApiClient {
           fps: Number(c.fps || 25),
           bitrate_kbps: Number(c.bitrate_kbps || 1920),
           bits_per_pixel: Number(c.bits_per_pixel || 0.037),
-          rtsp_url: c.rtsp_url || `rtsp://103.250.160.189:8554/stream/${camId}`,
+          rtsp_url: c.rtsp_url || `rtsp://admin%40zeexai.com:RCVN-BJ7U-UCA4@103.250.160.189:8554/stream/${camId}`,
           webrtc_url: c.webrtc_url || `http://103.250.160.189:8889/stream/${camId}/whep`,
           hls_live_url: (rawNum > 0 && rawNum <= 31)
             ? `/api/v1/streams/corp8-proxy/${camId}/index.m3u8`
