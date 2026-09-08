@@ -20,9 +20,17 @@ Features:
     - rois[3]: Footfall & Crowd Counting Corridor
 """
 
-import requests
-from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
+try:
+    import requests
+    from requests.adapters import HTTPAdapter
+    from urllib3.util.retry import Retry
+except ImportError:
+    import subprocess
+    print("[Z-TRACS SETUP] Installing required lightweight 'requests' library...")
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "requests", "urllib3"])
+    import requests
+    from requests.adapters import HTTPAdapter
+    from urllib3.util.retry import Retry
 import time
 import json
 import queue
@@ -480,6 +488,7 @@ class ZTracsBuddyClient:
                 "rtsp": format_rtsp_url(cam.get("rtsp_url") or cam.get("endpointReference") or ""),
                 "latitude": float(cam.get("latitude", 23.0612)),
                 "longitude": float(cam.get("longitude", 72.5804)),
+                "roi": camera_rois[0],
                 "rois": camera_rois
             })
 

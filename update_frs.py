@@ -16,9 +16,17 @@ Features:
  4. Clean ASCII Terminal Output (Control Room Grade)
 """
 
-import requests
-from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
+try:
+    import requests
+    from requests.adapters import HTTPAdapter
+    from urllib3.util.retry import Retry
+except ImportError:
+    import subprocess
+    print("[Z-TRACS SETUP] Installing required lightweight 'requests' library...")
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "requests", "urllib3"])
+    import requests
+    from requests.adapters import HTTPAdapter
+    from urllib3.util.retry import Retry
 import time
 import json
 import os
