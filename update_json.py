@@ -602,7 +602,7 @@ if __name__ == "__main__":
     print("=================================================================\n")
 
     client = ZTracsBuddyClient()
-    listener = ZTracsActiveCameraListener(client=client, poll_interval=3.0)
+    listener = ZTracsActiveCameraListener(client=client, poll_interval=1.0)
 
     # Initial sync
     listener.sync_cameras_json(force=True)
