@@ -205,6 +205,29 @@ const createDefaultUsecaseZones = (): DetectionZone[] => [
   }
 ];
 
+const ensureUsecaseZones = (rawZones?: DetectionZone[]): DetectionZone[] => {
+  const defaults = createDefaultUsecaseZones();
+  if (!rawZones || !Array.isArray(rawZones) || rawZones.length === 0) {
+    return defaults;
+  }
+  
+  // Check if existing zones have all 4 usecases
+  const usecaseMap: Record<string, DetectionZone> = {};
+  for (const z of rawZones) {
+    if (z.usecase) {
+      usecaseMap[z.usecase] = z;
+    }
+  }
+
+  // Merge with defaults to guarantee all 4 usecases are ALWAYS present
+  return [
+    usecaseMap['ANPR'] || (rawZones[0]?.points?.length >= 3 ? { ...defaults[0], points: rawZones[0].points } : defaults[0]),
+    usecaseMap['FACE_RECOGNITION'] || defaults[1],
+    usecaseMap['PPE'] || defaults[2],
+    usecaseMap['FOOTFALL'] || defaults[3]
+  ];
+};
+
 export const DetectionAreaView: React.FC<DetectionAreaViewProps> = ({ 
   cameras: propCameras,
   initialCameraCode,
@@ -247,8 +270,11 @@ export const DetectionAreaView: React.FC<DetectionAreaViewProps> = ({
   // Multi-zone storage keyed by camera code (Defaults to Standard Usecase Zones to avoid blank screens)
   const [cameraZones, setCameraZones] = useState<Record<string, DetectionZone[]>>(() => {
     try {
-      const saved = localStorage.getItem('ztracs_detection_roi_zones');
+      const saved = localStorage.getItem('ztracs_detection_roi_zones_v2');
       if (saved) return JSON.parse(saved);
+      // Auto-migrate legacy if exists
+      const legacy = localStorage.getItem('ztracs_detection_roi_zones');
+      if (legacy) return { 'CAM-001': JSON.parse(legacy) };
     } catch (_) {}
 
     return {
