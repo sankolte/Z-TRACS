@@ -197,24 +197,24 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
     return {
       id: String(a.id),
       plateNumber: p,
-      vehicleType: 'Car',
-      color: 'Silver',
-      speedKmh: 48,
-      confidence: 96.5,
-      plateConfidence: 98.0,
+      vehicleType: a.vehicleType || a.vehicle_type || 'Car (Sedan)',
+      color: a.color || 'Silver',
+      speedKmh: a.speedKmh || a.speed || 48,
+      confidence: a.confidence || 97.2,
+      plateConfidence: a.plateConfidence || a.plate_confidence || 98.6,
       cameraUuid: a.cameraUuid || camCode,
       cameraCode: camCode,
       cameraName: camName,
       district: dist,
-      departmentId: 'DEPT-POL-01',
-      departmentName: 'Gujarat Police Traffic Division',
-      locationDescription: a.notes || `Detected at ${camName} (${dist})`,
-      latitude: 23.0225,
-      longitude: 72.5714,
+      departmentId: a.departmentId || 'DEPT-POL-01',
+      departmentName: a.departmentName || 'Gujarat Police Traffic Division',
+      locationDescription: a.locationDescription || a.location || a.notes || `Detected at ${camName} (${dist})`,
+      latitude: a.latitude || 23.0225,
+      longitude: a.longitude || 72.5714,
       timestamp: a.timestamp || new Date().toISOString(),
-      direction: 'Northbound',
+      direction: a.direction || 'Northbound',
       watchlistFlag: isWatchlist,
-      watchlistReason: isWatchlist ? 'CRIME BRANCH WATCHLIST MATCH' : undefined,
+      watchlistReason: isWatchlist ? (a.watchlistReason || 'CRIME BRANCH WATCHLIST MATCH') : undefined,
       imageCropUrl: snapUrl,
       vehicleImageUrl: snapUrl,
     };
@@ -223,8 +223,8 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
   // 2. Map live detections fetched directly from backend
   const liveEventsMapped: AnprEvent[] = liveDetections.map(a => {
     const p = (a.plateNumber || a.number_plate || a.plate || a.title?.replace(/.*:\s*/, '') || 'UNKNOWN').trim().toUpperCase();
-    const camCode = a.cameraCode || (a.camera_id ? `CAM-GJ-AHM-00${a.camera_id}` : 'CAM-ANPR-INGEST');
-    const camName = a.cameraName || (a.camera_id ? `ANPR Node #${a.camera_id}` : 'Gujarat ANPR Corridor Node');
+    const camCode = a.cameraCode || (a.camera_id ? `CAM-${String(a.camera_id).padStart(3, '0')}` : 'CAM-ANPR-INGEST');
+    const camName = a.cameraName || (a.camera_id ? `Camera ${a.camera_id} (${a.location || 'Gujarat Corridor'})` : 'Gujarat ANPR Corridor Node');
     const dist = a.district || 'Ahmedabad';
     const snapUrl = formatSnapshotUrl(a.snapshot) || DEFAULT_PLATE_CROP;
     const isWatchlist = a.category === 'WATCHLIST_MATCH' || a.category === 'WATCHLIST_HIT' || a.severity === 'CRITICAL' || Boolean(a.watchlist) || String(a.title || '').toLowerCase().includes('watchlist');
@@ -233,24 +233,24 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
     return {
       id: String(a.id || `evt-${Math.random()}`),
       plateNumber: p,
-      vehicleType: 'Car',
-      color: 'Silver',
-      speedKmh: 48,
-      confidence: 96.5,
-      plateConfidence: 98.0,
+      vehicleType: a.vehicleType || a.vehicle_type || 'Car (Sedan)',
+      color: a.color || 'White',
+      speedKmh: a.speedKmh || a.speed || 52,
+      confidence: a.confidence || 98.4,
+      plateConfidence: a.plateConfidence || a.plate_confidence || 99.1,
       cameraUuid: a.cameraUuid || camCode,
       cameraCode: camCode,
       cameraName: camName,
       district: dist,
-      departmentId: 'DEPT-POL-01',
-      departmentName: 'Gujarat Police Traffic Division',
-      locationDescription: a.notes || `Detected at ${camName} (${dist})`,
-      latitude: 23.0225,
-      longitude: 72.5714,
+      departmentId: a.departmentId || 'DEPT-POL-01',
+      departmentName: a.departmentName || 'Gujarat Police Traffic Division',
+      locationDescription: a.locationDescription || a.location || a.notes || `Detected at ${camName} (${dist})`,
+      latitude: a.latitude || 23.0225,
+      longitude: a.longitude || 72.5714,
       timestamp: ts,
-      direction: 'Northbound',
+      direction: a.direction || 'Northbound',
       watchlistFlag: isWatchlist,
-      watchlistReason: isWatchlist ? 'CRIME BRANCH WATCHLIST MATCH' : undefined,
+      watchlistReason: isWatchlist ? (a.watchlistReason || 'CRIME BRANCH WATCHLIST MATCH') : undefined,
       imageCropUrl: snapUrl,
       vehicleImageUrl: snapUrl,
     };

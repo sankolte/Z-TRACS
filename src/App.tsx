@@ -428,6 +428,31 @@ function MainApp() {
     setAuditLogs(prev => [newLog, ...prev]);
   };
 
+  const handleEditCamera = (updatedCamera: Camera) => {
+    setCameras(prev => prev.map(c => c.cameraUuid === updatedCamera.cameraUuid ? updatedCamera : c));
+    const newLog: AuditLog = {
+      id: `aud-${Date.now().toString().slice(-4)}`,
+      timestamp: new Date().toISOString().replace('T', ' ').slice(0, 19),
+      user: {
+        name: currentUser.name,
+        badge: currentUser.badge,
+        role: currentRole,
+        avatar: currentUser.avatar,
+      },
+      action: 'UPDATE_CAMERA_CONFIG' as any,
+      resource: `${updatedCamera.cameraCode} (${updatedCamera.name})`,
+      district: updatedCamera.district || 'Statewide',
+      result: 'Success',
+      ip: '10.142.1.25 (State WAN)',
+      diffPayload: [
+        { field: 'endpointReference', before: 'Original Stream', after: updatedCamera.endpointReference },
+        { field: 'hls_live_url', before: 'Original HLS', after: updatedCamera.hls_live_url || 'N/A' },
+      ],
+    };
+    setAuditLogs(prev => [newLog, ...prev]);
+  };
+
+
   const handleAcknowledgeAlert = (alertId: string) => {
     setAlerts(prev => prev.map(a => a.id === alertId ? { ...a, status: 'ACKNOWLEDGED', acknowledgedBy: currentUser.name } : a));
   };
@@ -672,6 +697,7 @@ function MainApp() {
               setSelectedConfigCamCode(cam.cameraCode);
               setActiveTab('ai-models');
             }}
+            onEditCamera={handleEditCamera}
             onMarkMaintenance={handleMarkMaintenance}
             onArchiveCamera={handleArchiveCamera}
             onRestoreCamera={handleRestoreCamera}

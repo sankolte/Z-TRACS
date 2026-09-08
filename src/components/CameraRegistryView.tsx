@@ -17,7 +17,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Layers,
-  Cpu
+  Cpu,
+  Pencil,
+  X,
+  Save
 } from 'lucide-react';
 import { ArchiveConfirmModal } from './ArchiveConfirmModal';
 
@@ -28,6 +31,7 @@ interface CameraRegistryViewProps {
   onNavigateToGis: (camera: Camera) => void;
   onConfigureRoi?: (camera: Camera) => void;
   onConfigureAi?: (camera: Camera) => void;
+  onEditCamera?: (camera: Camera) => void;
   onOpenOnboarding: () => void;
   onMarkMaintenance: (cameraId: string) => void;
   onArchiveCamera: (cameraId: string) => void;
@@ -42,6 +46,7 @@ export const CameraRegistryView: React.FC<CameraRegistryViewProps> = ({
   onNavigateToGis,
   onConfigureRoi,
   onConfigureAi,
+  onEditCamera,
   onOpenOnboarding,
   onMarkMaintenance,
   onArchiveCamera,
@@ -63,6 +68,8 @@ export const CameraRegistryView: React.FC<CameraRegistryViewProps> = ({
   // Modal State
   const [modalTargetCamera, setModalTargetCamera] = useState<Camera | null>(null);
   const [modalMode, setModalMode] = useState<'archive' | 'restore'>('archive');
+  const [editingCamera, setEditingCamera] = useState<Camera | null>(null);
+  const [editFormData, setEditFormData] = useState<Partial<Camera>>({});
 
   // Filtered dataset memoized for 80,000 node scale
   const filteredCameras = React.useMemo(() => {
@@ -435,6 +442,16 @@ export const CameraRegistryView: React.FC<CameraRegistryViewProps> = ({
                           </button>
                         )}
                         <button
+                          title="Edit Camera Configuration & RTSP Streams"
+                          onClick={() => {
+                            setEditingCamera(camera);
+                            setEditFormData({ ...camera });
+                          }}
+                          className="p-1.5 rounded text-slate-500 hover:text-blue-700 hover:bg-blue-50 transition"
+                        >
+                          <Pencil className="w-4 h-4 text-blue-600" />
+                        </button>
+                        <button
                           title="View on GIS Viewport"
                           onClick={() => onNavigateToGis(camera)}
                           className="p-1.5 rounded text-slate-500 hover:text-[#0052CC] hover:bg-blue-50 transition"
@@ -513,6 +530,190 @@ export const CameraRegistryView: React.FC<CameraRegistryViewProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Edit Camera Configuration Modal */}
+      {editingCamera && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150 my-8">
+            <div className="px-6 py-4 bg-gradient-to-r from-[#003366] to-[#0052CC] text-white flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-white/10 rounded-lg">
+                  <Pencil className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base">Edit Camera Configurations</h3>
+                  <p className="text-xs text-blue-100 font-mono">{editingCamera.cameraCode} • {editingCamera.name}</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setEditingCamera(null)}
+                className="p-1.5 rounded-lg hover:bg-white/10 text-white transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form 
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (onEditCamera && editingCamera) {
+                  const updated: Camera = {
+                    ...editingCamera,
+                    ...editFormData,
+                    updatedAt: new Date().toISOString().replace('T', ' ').slice(0, 19)
+                  };
+                  onEditCamera(updated);
+                }
+                setEditingCamera(null);
+              }}
+              className="p-6 space-y-4 max-h-[75vh] overflow-y-auto"
+            >
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Camera Code (Asset Tag)</label>
+                  <input
+                    type="text"
+                    disabled
+                    value={editFormData.cameraCode || ''}
+                    className="w-full px-3 py-2 bg-slate-100 border border-slate-300 rounded-lg text-xs font-mono text-slate-600 cursor-not-allowed"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Camera Display Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={editFormData.name || ''}
+                    onChange={(e) => setEditFormData(prev => ({ ...prev, name: e.target.value }))}
+                    className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-800 focus:ring-2 focus:ring-[#0052CC] focus:outline-none"
+                    placeholder="e.g. Camera 1 (Chiman Bhai Bridge)"
+                  />
+                </div>
+              </div>
+
+              {/* RTSP Stream URL */}
+              <div className="p-3.5 bg-blue-50/60 border border-blue-200 rounded-xl space-y-2">
+                <label className="block text-xs font-bold text-[#003366] flex items-center justify-between">
+                  <span>RTSP Stream Endpoint (AI Ingestion)</span>
+                  <span className="text-[10px] text-blue-600 font-normal">Port 8554 / TCP</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editFormData.endpointReference || ''}
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, endpointReference: e.target.value }))}
+                  className="w-full px-3 py-2 bg-white border border-blue-300 rounded-lg text-xs font-mono text-slate-900 focus:ring-2 focus:ring-[#0052CC] focus:outline-none"
+                  placeholder="rtsp://103.250.160.189:8554/stream/cam01"
+                />
+              </div>
+
+              {/* HLS Stream URL */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">HLS Live Stream URL (Browser & CDN)</label>
+                <input
+                  type="text"
+                  value={editFormData.hls_live_url || ''}
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, hls_live_url: e.target.value }))}
+                  className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-mono text-slate-800 focus:ring-2 focus:ring-[#0052CC] focus:outline-none"
+                  placeholder="https://cctv.corp8.cloud/cam01/index.m3u8"
+                />
+              </div>
+
+              {/* Location & District */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Landmark / Address</label>
+                  <input
+                    type="text"
+                    value={editFormData.address || ''}
+                    onChange={(e) => setEditFormData(prev => ({ ...prev, address: e.target.value }))}
+                    className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-800 focus:ring-2 focus:ring-[#0052CC] focus:outline-none"
+                    placeholder="e.g. 01 Chiman bhai Bridge, Ahmedabad"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">District</label>
+                  <select
+                    value={editFormData.district || 'Ahmedabad'}
+                    onChange={(e) => setEditFormData(prev => ({ ...prev, district: e.target.value }))}
+                    className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-800 focus:ring-2 focus:ring-[#0052CC] focus:outline-none"
+                  >
+                    <option value="Ahmedabad">Ahmedabad</option>
+                    <option value="Rajkot">Rajkot</option>
+                    <option value="Junagadh">Junagadh</option>
+                    <option value="Surat">Surat</option>
+                    <option value="Gandhinagar">Gandhinagar</option>
+                    <option value="Navsari">Navsari</option>
+                    <option value="Patan">Patan</option>
+                    <option value="Vadodara">Vadodara</option>
+                    <option value="Banaskantha">Banaskantha</option>
+                    <option value="Gir-Somnath">Gir-Somnath</option>
+                    <option value="Kutch">Kutch / Gandhidham</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Resolution & FPS */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Resolution</label>
+                  <select
+                    value={editFormData.resolution || '1920x1080'}
+                    onChange={(e) => setEditFormData(prev => ({ ...prev, resolution: e.target.value }))}
+                    className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-800 focus:ring-2 focus:ring-[#0052CC] focus:outline-none"
+                  >
+                    <option value="1920x1080">1920x1080 (1080p FHD)</option>
+                    <option value="2560x1440">2560x1440 (2K QHD)</option>
+                    <option value="1280x720">1280x720 (720p HD)</option>
+                    <option value="3840x2160">3840x2160 (4K UHD)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Lifecycle Status</label>
+                  <select
+                    value={editFormData.lifecycle || 'ACTIVE'}
+                    onChange={(e) => setEditFormData(prev => ({ ...prev, lifecycle: e.target.value as any }))}
+                    className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-800 focus:ring-2 focus:ring-[#0052CC] focus:outline-none"
+                  >
+                    <option value="ACTIVE">Active (Online Operational)</option>
+                    <option value="MAINTENANCE">Maintenance Mode</option>
+                    <option value="ARCHIVED">Archived / Decommissioned</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Health Status</label>
+                  <select
+                    value={editFormData.healthStatus || 'ONLINE'}
+                    onChange={(e) => setEditFormData(prev => ({ ...prev, healthStatus: e.target.value as any }))}
+                    className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-800 focus:ring-2 focus:ring-[#0052CC] focus:outline-none"
+                  >
+                    <option value="ONLINE">Online (Nominal)</option>
+                    <option value="DEGRADED">Degraded Telemetry</option>
+                    <option value="OFFLINE">Offline</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-slate-200 flex items-center justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setEditingCamera(null)}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-[#0052CC] hover:bg-[#003d99] text-white rounded-xl text-xs font-bold flex items-center space-x-1.5 shadow-sm transition"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>Save Configurations</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Archive / Restore Modal */}
       {modalTargetCamera && (
