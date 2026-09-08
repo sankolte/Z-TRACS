@@ -176,6 +176,12 @@ async def upload_forensic_task_video(
     if sum(enable_vector) == 0:
         enable_vector = [1, 0, 0, 0]
 
+    try:
+        dur_mins = float(duration_minutes)
+    except Exception:
+        dur_mins = 60.0
+    total_seconds = max(1, int(dur_mins * 60))
+
     slug = f"{task_id.lower()}_{sanitize_slug(case_id)}"
     # Strictly empty detections: Real detections will be posted when offline GPU worker runs
     detections = []
@@ -298,6 +304,8 @@ async def create_forensic_task(payload: Dict[str, Any] = Body(...)):
     ]
     if sum(enable_vector) == 0:
         enable_vector = [1, 0, 0, 0]
+
+    total_seconds = max(1, int(duration_minutes * 60))
 
     task_obj = {
         "task_id": task_id,
