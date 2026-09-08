@@ -467,27 +467,30 @@ export class ApiClient {
     usecase_rois?: any;
     python_snippet?: string;
   }): Promise<any> {
-    const aliases = ApiClient.getCameraAliases(roiData.camera_code);
-    let result: any = null;
+    const rawCode = roiData.camera_code;
+    const aliases = ApiClient.getCameraAliases(rawCode);
 
-    for (const code of aliases) {
+    // Fast parallel dispatch across endpoints
+    const promises = aliases.map(async (code) => {
       try {
+        const payload = { ...roiData, camera_code: code };
         const res = await fetch(`${API_BASE}/anpr/roi`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...roiData, camera_code: code })
+          body: JSON.stringify(payload)
         });
-        if (res.ok && !result) {
-          result = await res.json();
-        }
+        if (res.ok) return await res.json();
       } catch (_) {}
-    }
-    return result || { status: 'success' };
+      return null;
+    });
+
+    const results = await Promise.all(promises);
+    return results.find(r => r !== null) || { status: 'success' };
   }
 
   static async getCameraRoi(cameraCode: string): Promise<any> {
     const aliases = ApiClient.getCameraAliases(cameraCode);
-    for (const code of aliases) {
+    const promises = aliases.map(async (code) => {
       try {
         const res = await fetch(`${API_BASE}/anpr/roi/${encodeURIComponent(code)}`);
         if (res.ok) {
@@ -501,73 +504,78 @@ export class ApiClient {
           if (d2 && (d2.points || d2.zones || d2.usecase_rois || d2.coordinates)) return d2;
         }
       } catch (_) {}
-    }
-    return null;
+      return null;
+    });
+
+    const results = await Promise.all(promises);
+    return results.find(r => r !== null) || null;
   }
 
   static async saveAiConfig(configData: any): Promise<any> {
     const rawCode = configData.camera_code || configData.cameraCode || 'CAM-001';
     const aliases = ApiClient.getCameraAliases(rawCode);
-    let result: any = null;
 
-    for (const code of aliases) {
+    const promises = aliases.map(async (code) => {
+      const payload = { 
+        ...configData, 
+        camera_code: code, 
+        cameraCode: code,
+        ai_models: configData.usecases || configData.ai_models || [],
+        models: configData.models || {},
+        enable: configData.enable || [1, 0, 0, 0]
+      };
+
       try {
-        const payload = { 
-          ...configData, 
-          camera_code: code, 
-          cameraCode: code,
-          ai_models: configData.usecases || configData.ai_models || [],
-          models: configData.models || {},
-          enable: configData.enable || [1, 0, 0, 0]
-        };
-
-        // 1. Primary endpoint: /anpr/ai-config
-        try {
-          const res = await fetch(`${API_BASE}/anpr/ai-config`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          });
-          if (res.ok && !result) {
-            result = await res.json();
-          }
-        } catch (_) {}
-
-        // 2. Secondary endpoint: /cameras/{code}/ai-config
-        try {
-          const res2 = await fetch(`${API_BASE}/cameras/${encodeURIComponent(code)}/ai-config`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          });
-          if (res2.ok && !result) {
-            result = await res2.json();
-          }
-        } catch (_) {}
+        const res = await fetch(`${API_BASE}/cameras/${encodeURIComponent(code)}/ai-config`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) return await res.json();
       } catch (_) {}
-    }
-    return result || { status: 'success' };
+
+      try {
+        const res2 = await fetch(`${API_BASE}/anpr/ai-config`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (res2.ok) return await res2.json();
+      } catch (_) {}
+
+      return null;
+    });
+
+    const results = await Promise.all(promises);
+    return results.find(r => r !== null) || { status: 'success' };
   }
 
   static async getAiConfig(cameraCode: string): Promise<any> {
     const aliases = ApiClient.getCameraAliases(cameraCode);
-    for (const code of aliases) {
+    const promises = aliases.map(async (code) => {
       try {
-        const res = await fetch(`${API_BASE}/anpr/ai-config/${encodeURIComponent(code)}`);
+        const res = await fetch(`${API_BASE}/cameras/${encodeURIComponent(code)}/ai-config`);
         if (res.ok) {
           const json = await res.json();
           const d = json.data || json.ai_config || json;
           if (d && (d.models || d.ai_models || d.enable)) return d;
         }
-        const res2 = await fetch(`${API_BASE}/cameras/${encodeURIComponent(code)}/ai-config`);
+      } catch (_) {}
+
+      try {
+        const res2 = await fetch(`${API_BASE}/anpr/ai-config/${encodeURIComponent(code)}`);
         if (res2.ok) {
           const json2 = await res2.json();
           const d2 = json2.data || json2.ai_config || json2;
           if (d2 && (d2.models || d2.ai_models || d2.enable)) return d2;
         }
       } catch (_) {}
-    }
-    return null;
+
+      return null;
+    });
+
+    const results = await Promise.all(promises);
+    return results.find(r => r !== null) || null;
   }
 
   static async getAllAiConfigs(): Promise<Record<string, any>> {
