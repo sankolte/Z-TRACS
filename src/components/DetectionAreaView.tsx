@@ -211,42 +211,86 @@ const ensureUsecaseZones = (rawZones?: DetectionZone[]): DetectionZone[] => {
     return defaults;
   }
   
-  const usecaseMap: Partial<Record<DetectionUsecase, DetectionZone>> = {};
+  const byUsecase: Partial<Record<DetectionUsecase, DetectionZone>> = {};
 
-  // First pass: identify zones by explicit usecase or zone id/name
-  for (const z of rawZones) {
-    if (!z) continue;
-    const tag = `${z.usecase || ''} ${z.id || ''} ${z.name || ''}`.toUpperCase();
-    if (tag.includes('FACE') || tag.includes('FRS')) {
-      usecaseMap['FACE_RECOGNITION'] = { ...defaults[1], ...z, usecase: 'FACE_RECOGNITION', id: 'zone-frs' };
-    } else if (tag.includes('PPE') || tag.includes('SAFETY') || tag.includes('HELMET')) {
-      usecaseMap['PPE'] = { ...defaults[2], ...z, usecase: 'PPE', id: 'zone-ppe' };
-    } else if (tag.includes('FOOTFALL') || tag.includes('CROWD') || tag.includes('CORRIDOR')) {
-      usecaseMap['FOOTFALL'] = { ...defaults[3], ...z, usecase: 'FOOTFALL', id: 'zone-footfall' };
-    } else if (tag.includes('ANPR') || tag.includes('LANE') || tag.includes('VEHICLE')) {
-      usecaseMap['ANPR'] = { ...defaults[0], ...z, usecase: 'ANPR', id: 'zone-anpr' };
+  rawZones.forEach((z, idx) => {
+    if (!z) return;
+    let uc: DetectionUsecase | null = null;
+    const rawUc = String(z.usecase || '').toUpperCase();
+    if (rawUc === 'ANPR') uc = 'ANPR';
+    else if (rawUc === 'FACE_RECOGNITION' || rawUc === 'FRS' || rawUc === 'FACE') uc = 'FACE_RECOGNITION';
+    else if (rawUc === 'PPE' || rawUc === 'SAFETY') uc = 'PPE';
+    else if (rawUc === 'FOOTFALL' || rawUc === 'CROWD') uc = 'FOOTFALL';
+    else {
+      const rawId = String(z.id || '').toUpperCase();
+      if (rawId.includes('ANPR')) uc = 'ANPR';
+      else if (rawId.includes('FRS') || rawId.includes('FACE')) uc = 'FACE_RECOGNITION';
+      else if (rawId.includes('PPE')) uc = 'PPE';
+      else if (rawId.includes('FOOTFALL')) uc = 'FOOTFALL';
+      else if (idx === 0) uc = 'ANPR';
+      else if (idx === 1) uc = 'FACE_RECOGNITION';
+      else if (idx === 2) uc = 'PPE';
+      else if (idx === 3) uc = 'FOOTFALL';
     }
-  }
 
-  // Second pass: fill by positional index if missing
-  if (!usecaseMap['ANPR'] && rawZones[0]?.points?.length >= 3) {
-    usecaseMap['ANPR'] = { ...defaults[0], ...rawZones[0], usecase: 'ANPR', id: 'zone-anpr' };
-  }
-  if (!usecaseMap['FACE_RECOGNITION'] && rawZones[1]?.points?.length >= 3) {
-    usecaseMap['FACE_RECOGNITION'] = { ...defaults[1], ...rawZones[1], usecase: 'FACE_RECOGNITION', id: 'zone-frs' };
-  }
-  if (!usecaseMap['PPE'] && rawZones[2]?.points?.length >= 3) {
-    usecaseMap['PPE'] = { ...defaults[2], ...rawZones[2], usecase: 'PPE', id: 'zone-ppe' };
-  }
-  if (!usecaseMap['FOOTFALL'] && rawZones[3]?.points?.length >= 3) {
-    usecaseMap['FOOTFALL'] = { ...defaults[3], ...rawZones[3], usecase: 'FOOTFALL', id: 'zone-footfall' };
+    if (uc && !byUsecase[uc]) {
+      byUsecase[uc] = z;
+    }
+  });
+
+  const frsPts = byUsecase['FACE_RECOGNITION']?.points;
+  let ppePts = byUsecase['PPE']?.points;
+
+  // If PPE points accidentally duplicated FRS points, give PPE its own default shape
+  if (
+    ppePts && frsPts &&
+    ppePts.length >= 3 && ppePts.length === frsPts.length &&
+    ppePts.every((p, i) => Math.abs(p.x - (frsPts[i]?.x ?? -999)) < 1 && Math.abs(p.y - (frsPts[i]?.y ?? -999)) < 1)
+  ) {
+    ppePts = defaults[2].points;
   }
 
   return [
-    usecaseMap['ANPR'] || defaults[0],
-    usecaseMap['FACE_RECOGNITION'] || defaults[1],
-    usecaseMap['PPE'] || defaults[2],
-    usecaseMap['FOOTFALL'] || defaults[3]
+    {
+      id: 'zone-anpr',
+      name: USECASE_META.ANPR.name,
+      usecase: 'ANPR',
+      color: USECASE_META.ANPR.color,
+      closed: true,
+      points: (byUsecase['ANPR']?.points && byUsecase['ANPR'].points.length >= 3)
+        ? byUsecase['ANPR'].points
+        : defaults[0].points
+    },
+    {
+      id: 'zone-frs',
+      name: USECASE_META.FACE_RECOGNITION.name,
+      usecase: 'FACE_RECOGNITION',
+      color: USECASE_META.FACE_RECOGNITION.color,
+      closed: true,
+      points: (frsPts && frsPts.length >= 3)
+        ? frsPts
+        : defaults[1].points
+    },
+    {
+      id: 'zone-ppe',
+      name: USECASE_META.PPE.name,
+      usecase: 'PPE',
+      color: USECASE_META.PPE.color,
+      closed: true,
+      points: (ppePts && ppePts.length >= 3)
+        ? ppePts
+        : defaults[2].points
+    },
+    {
+      id: 'zone-footfall',
+      name: USECASE_META.FOOTFALL.name,
+      usecase: 'FOOTFALL',
+      color: USECASE_META.FOOTFALL.color,
+      closed: true,
+      points: (byUsecase['FOOTFALL']?.points && byUsecase['FOOTFALL'].points.length >= 3)
+        ? byUsecase['FOOTFALL'].points
+        : defaults[3].points
+    }
   ];
 };
 
@@ -294,11 +338,8 @@ export const DetectionAreaView: React.FC<DetectionAreaViewProps> = ({
   // Multi-zone storage keyed by camera code (Defaults to Standard Usecase Zones to avoid blank screens)
   const [cameraZones, setCameraZones] = useState<Record<string, DetectionZone[]>>(() => {
     try {
-      const saved = localStorage.getItem('ztracs_detection_roi_zones_v2');
+      const saved = localStorage.getItem('ztracs_detection_roi_zones_v3');
       if (saved) return JSON.parse(saved);
-      // Auto-migrate legacy if exists
-      const legacy = localStorage.getItem('ztracs_detection_roi_zones');
-      if (legacy) return { 'CAM-001': JSON.parse(legacy) };
     } catch (_) {}
 
     return {
@@ -510,7 +551,7 @@ export const DetectionAreaView: React.FC<DetectionAreaViewProps> = ({
               const rawUsecase = String(z.usecase || '').toUpperCase();
               let uKey: DetectionUsecase = 'ANPR';
               if (rawUsecase.includes('FACE') || rawUsecase.includes('FRS')) uKey = 'FACE_RECOGNITION';
-              else if (rawUsecase.includes('PPE')) uKey = 'PPE';
+              else if (rawUsecase.includes('PPE') || rawUsecase.includes('SAFETY')) uKey = 'PPE';
               else if (rawUsecase.includes('FOOTFALL') || rawUsecase.includes('CROWD')) uKey = 'FOOTFALL';
               else if (idx === 1) uKey = 'FACE_RECOGNITION';
               else if (idx === 2) uKey = 'PPE';
@@ -524,10 +565,10 @@ export const DetectionAreaView: React.FC<DetectionAreaViewProps> = ({
                     : ((USECASE_META[uKey] as any)?.preset || PRESET_SHAPES.FULL_FRAME_80));
 
               return {
-                id: z.id || (idx === 0 ? 'zone-anpr' : idx === 1 ? 'zone-frs' : idx === 2 ? 'zone-ppe' : 'zone-footfall'),
-                name: z.name || USECASE_META[uKey]?.name || `Zone ${idx + 1}`,
+                id: (uKey === 'ANPR' ? 'zone-anpr' : uKey === 'FACE_RECOGNITION' ? 'zone-frs' : uKey === 'PPE' ? 'zone-ppe' : 'zone-footfall'),
+                name: USECASE_META[uKey].name,
                 usecase: uKey,
-                color: z.color || USECASE_META[uKey]?.color || ZONE_COLORS[idx % ZONE_COLORS.length],
+                color: USECASE_META[uKey].color,
                 closed: zPts.length >= 3,
                 points: zPts
               };
@@ -549,7 +590,7 @@ export const DetectionAreaView: React.FC<DetectionAreaViewProps> = ({
             const constructedZones: DetectionZone[] = [
               {
                 id: 'zone-anpr',
-                name: 'ANPR Lane Polygon',
+                name: USECASE_META.ANPR.name,
                 usecase: 'ANPR',
                 color: USECASE_META.ANPR.color,
                 closed: true,
@@ -557,7 +598,7 @@ export const DetectionAreaView: React.FC<DetectionAreaViewProps> = ({
               },
               {
                 id: 'zone-frs',
-                name: 'Face Recognition Gate',
+                name: USECASE_META.FACE_RECOGNITION.name,
                 usecase: 'FACE_RECOGNITION',
                 color: USECASE_META.FACE_RECOGNITION.color,
                 closed: true,
@@ -565,7 +606,7 @@ export const DetectionAreaView: React.FC<DetectionAreaViewProps> = ({
               },
               {
                 id: 'zone-ppe',
-                name: 'PPE Safety Compliance',
+                name: USECASE_META.PPE.name,
                 usecase: 'PPE',
                 color: USECASE_META.PPE.color,
                 closed: true,
@@ -573,7 +614,7 @@ export const DetectionAreaView: React.FC<DetectionAreaViewProps> = ({
               },
               {
                 id: 'zone-footfall',
-                name: 'Footfall Corridor',
+                name: USECASE_META.FOOTFALL.name,
                 usecase: 'FOOTFALL',
                 color: USECASE_META.FOOTFALL.color,
                 closed: true,
@@ -622,7 +663,7 @@ export const DetectionAreaView: React.FC<DetectionAreaViewProps> = ({
   // Sync to localStorage
   useEffect(() => {
     try {
-      localStorage.setItem('ztracs_detection_roi_zones', JSON.stringify(cameraZones));
+      localStorage.setItem('ztracs_detection_roi_zones_v3', JSON.stringify(cameraZones));
     } catch (_) {}
   }, [cameraZones]);
 
@@ -632,7 +673,7 @@ export const DetectionAreaView: React.FC<DetectionAreaViewProps> = ({
       const existingCamZones = ensureUsecaseZones(prev[selectedCamCode]);
 
       const updated = existingCamZones.map(z => {
-        if (z.usecase === activeUsecase || z.id === currentZone.id) {
+        if (z.usecase === activeUsecase) {
           return { ...z, points: newPoints, closed: isClosed };
         }
         return z;
