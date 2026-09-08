@@ -493,9 +493,29 @@ export const AiModelsView: React.FC<AiModelsViewProps> = ({
     }
   };
 
-  // Compute list of configured cameras with active models
-  const configuredList = Object.entries(allAiConfigs).map(([code, cfg]) => {
-    const matchedCam = cameras.find(c => c.cameraCode === code || code.includes(c.cameraCode) || c.cameraCode.includes(code));
+  // Helper to normalize any camera code alias to standard format (e.g. 5, CAM5, cam05 -> CAM-005)
+  const toCanonicalCode = (raw: string): string => {
+    if (!raw) return 'CAM-001';
+    const clean = raw.trim().toUpperCase();
+    const match = clean.match(/(\d+)$/);
+    if (match) {
+      const num = parseInt(match[1], 10);
+      if (!isNaN(num) && num >= 1 && num <= 35) {
+        return `CAM-${num.toString().padStart(3, '0')}`;
+      }
+    }
+    return clean;
+  };
+
+  // Compute list of configured cameras with active models (Deduplicated by Canonical Camera Code)
+  const canonicalConfigMap = new Map<string, any>();
+
+  Object.entries(allAiConfigs).forEach(([code, cfg]) => {
+    const canonicalCode = toCanonicalCode(code);
+    const matchedCam = cameras.find(c => 
+      c.cameraCode === canonicalCode || 
+      toCanonicalCode(c.cameraCode) === canonicalCode
+    );
     
     // Check which models are enabled
     const enabledModelKeys: string[] = [];
@@ -510,17 +530,22 @@ export const AiModelsView: React.FC<AiModelsViewProps> = ({
       });
     }
 
-    return {
-      cameraCode: code,
-      cameraName: matchedCam ? matchedCam.name : `Camera (${code})`,
-      district: matchedCam ? matchedCam.district : 'Gujarat Statewide',
-      location: matchedCam ? matchedCam.location : 'Surveillance Grid Node',
-      targetFps: cfg.target_fps || 15,
-      confidence: cfg.confidence_threshold || 85,
-      enabledModelKeys,
-      rawConfig: cfg
-    };
-  }).filter(item => item.enabledModelKeys.length > 0);
+    if (enabledModelKeys.length > 0) {
+      // Overwrite or update with latest config
+      canonicalConfigMap.set(canonicalCode, {
+        cameraCode: canonicalCode,
+        cameraName: matchedCam ? matchedCam.name : `Camera ${canonicalCode}`,
+        district: matchedCam ? matchedCam.district : 'Gujarat Statewide',
+        location: matchedCam ? matchedCam.location : 'Surveillance Grid Node',
+        targetFps: cfg.target_fps || 15,
+        confidence: cfg.confidence_threshold || 85,
+        enabledModelKeys,
+        rawConfig: cfg
+      });
+    }
+  });
+
+  const configuredList = Array.from(canonicalConfigMap.values());
 
   // Filter configured cameras based on search query
   const filteredConfigured = configuredList.filter(item => {
@@ -533,6 +558,7 @@ export const AiModelsView: React.FC<AiModelsViewProps> = ({
       item.location.toLowerCase().includes(q) ||
       item.enabledModelKeys.some(k => k.toLowerCase().includes(q))
     );
+
   });
 
   // Calculate telemetry counts

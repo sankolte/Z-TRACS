@@ -527,7 +527,7 @@ async def get_all_ai_configs():
                     conf = float(r["confidence_threshold"]) if r["confidence_threshold"] is not None else 0.500
 
                     rec = {
-                        "camera_code": r["camera_code"],
+                        "camera_code": normalize_camera_code(r["camera_code"]),
                         "camera_name": r["camera_name"],
                         "enable": vec,
                         "usecases": usecases,
@@ -536,14 +536,23 @@ async def get_all_ai_configs():
                         "target_fps": r["target_fps"] or 15,
                         "updated_at": r["updated_at"].isoformat() if r["updated_at"] else None
                     }
+                    canonical_key = normalize_camera_code(r["camera_code"])
+                    db_configs[canonical_key] = rec
+                    # Also keep internal alias cache for edge listeners
                     for alias in get_code_aliases(r["camera_code"]):
-                        db_configs[alias] = rec
-                AI_CONFIGS.update(db_configs)
+                        AI_CONFIGS[alias] = rec
                 return ApiResponse.ok(db_configs)
         except Exception as e:
             print(f"[RDS ALL AI CONFIGS FETCH WARN] {e}")
 
-    return ApiResponse.ok(AI_CONFIGS)
+    # Return canonical filtered AI_CONFIGS
+    canonical_configs = {}
+    for k, v in AI_CONFIGS.items():
+        can = normalize_camera_code(k)
+        if can not in canonical_configs:
+            canonical_configs[can] = v
+    return ApiResponse.ok(canonical_configs)
+
 
 @router.post("/ai-config")
 async def save_ai_config(payload: Dict[str, Any] = Body(...)):
