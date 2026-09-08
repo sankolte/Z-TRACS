@@ -175,88 +175,101 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
     if (s.includes('/api/v1/anpr/alerts/')) {
       s = s.substring(s.indexOf('/api/v1/anpr/alerts/'));
     }
-    if (s.startsWith('http://') || s.startsWith('https://')) return s;
+    if (s.startsWith('http://') || s.startsWith('https://')) {
+      if (s.includes('unsplash.com')) return undefined; // Filter out mock stock photos
+      return s;
+    }
     if (s.startsWith('data:image')) return s;
     if (s.startsWith('/api/')) {
       const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
       return isHttps ? `${window.location.origin}${s}` : `http://43.204.235.231:8000${s}`;
     }
-    if (s.length < 50 || s.endsWith('.jpg') || s.endsWith('.png')) return undefined;
-    return `data:image/jpeg;base64,${s}`;
+    if (s.length > 200) {
+      return `data:image/jpeg;base64,${s}`;
+    }
+    return undefined;
   };
 
-  // 1. Map system alerts passed from App state
-  const alertsMapped: AnprEvent[] = alerts.map(a => {
-    const p = (a.plateNumber || a.title.replace(/.*:\s*/, '') || 'UNKNOWN').trim().toUpperCase();
-    const camCode = a.cameraCode || 'CAM-ANPR-INGEST';
-    const camName = a.cameraName || `ANPR Node (${a.district || 'Ahmedabad'})`;
-    const dist = a.district || 'Ahmedabad';
-    const snapUrl = formatSnapshotUrl(a.snapshot) || DEFAULT_PLATE_CROP;
-    const isWatchlist = a.category === 'WATCHLIST_MATCH' || a.category === 'WATCHLIST_HIT' || a.severity === 'CRITICAL' || a.title.toLowerCase().includes('watchlist');
+  // 1. Map system alerts passed from App state (only with real CCTV snapshots)
+  const alertsMapped: AnprEvent[] = alerts
+    .map(a => {
+      const p = (a.plateNumber || a.title.replace(/.*:\s*/, '') || 'UNKNOWN').trim().toUpperCase();
+      const camCode = a.cameraCode || 'CAM-001';
+      const camName = a.cameraName || `Camera ${camCode}`;
+      const dist = a.district || 'Ahmedabad';
+      const snapUrl = formatSnapshotUrl(a.snapshot);
+      const isWatchlist = a.category === 'WATCHLIST_MATCH' || a.category === 'WATCHLIST_HIT' || a.severity === 'CRITICAL' || a.title.toLowerCase().includes('watchlist');
 
-    return {
-      id: String(a.id),
-      plateNumber: p,
-      vehicleType: a.vehicleType || a.vehicle_type || 'Car (Sedan)',
-      color: a.color || 'Silver',
-      speedKmh: a.speedKmh || a.speed || 48,
-      confidence: a.confidence || 97.2,
-      plateConfidence: a.plateConfidence || a.plate_confidence || 98.6,
-      cameraUuid: a.cameraUuid || camCode,
-      cameraCode: camCode,
-      cameraName: camName,
-      district: dist,
-      departmentId: a.departmentId || 'DEPT-POL-01',
-      departmentName: a.departmentName || 'Gujarat Police Traffic Division',
-      locationDescription: a.locationDescription || a.location || a.notes || `Detected at ${camName} (${dist})`,
-      latitude: a.latitude || 23.0225,
-      longitude: a.longitude || 72.5714,
-      timestamp: a.timestamp || new Date().toISOString(),
-      direction: a.direction || 'Northbound',
-      watchlistFlag: isWatchlist,
-      watchlistReason: isWatchlist ? (a.watchlistReason || 'CRIME BRANCH WATCHLIST MATCH') : undefined,
-      imageCropUrl: snapUrl,
-      vehicleImageUrl: snapUrl,
-    };
-  });
+      if (!snapUrl) return null;
 
-  // 2. Map live detections fetched directly from backend
-  const liveEventsMapped: AnprEvent[] = liveDetections.map(a => {
-    const p = (a.plateNumber || a.number_plate || a.plate || a.title?.replace(/.*:\s*/, '') || 'UNKNOWN').trim().toUpperCase();
-    const camCode = a.cameraCode || (a.camera_id ? `CAM-${String(a.camera_id).padStart(3, '0')}` : 'CAM-ANPR-INGEST');
-    const camName = a.cameraName || (a.camera_id ? `Camera ${a.camera_id} (${a.location || 'Gujarat Corridor'})` : 'Gujarat ANPR Corridor Node');
-    const dist = a.district || 'Ahmedabad';
-    const snapUrl = formatSnapshotUrl(a.snapshot) || DEFAULT_PLATE_CROP;
-    const isWatchlist = a.category === 'WATCHLIST_MATCH' || a.category === 'WATCHLIST_HIT' || a.severity === 'CRITICAL' || Boolean(a.watchlist) || String(a.title || '').toLowerCase().includes('watchlist');
-    const ts = a.timestamp || a.receivedAt || new Date().toISOString();
+      return {
+        id: String(a.id),
+        plateNumber: p,
+        vehicleType: a.vehicleType || a.vehicle_type || 'Motor Vehicle',
+        color: '',
+        speedKmh: a.speedKmh || a.speed || 48,
+        confidence: a.confidence || 97.2,
+        plateConfidence: a.plateConfidence || a.plate_confidence || 98.6,
+        cameraUuid: a.cameraUuid || camCode,
+        cameraCode: camCode,
+        cameraName: camName,
+        district: dist,
+        departmentId: a.departmentId || 'DEPT-POL-01',
+        departmentName: a.departmentName || 'Gujarat Police Traffic Division',
+        locationDescription: a.locationDescription || a.location || a.notes || `Detected at ${camName} (${dist})`,
+        latitude: a.latitude || 23.0225,
+        longitude: a.longitude || 72.5714,
+        timestamp: a.timestamp || new Date().toISOString(),
+        direction: a.direction || 'Northbound',
+        watchlistFlag: isWatchlist,
+        watchlistReason: isWatchlist ? (a.watchlistReason || 'CRIME BRANCH WATCHLIST MATCH') : undefined,
+        imageCropUrl: snapUrl,
+        vehicleImageUrl: snapUrl,
+      };
+    })
+    .filter((e): e is AnprEvent => e !== null);
 
-    return {
-      id: String(a.id || `evt-${Math.random()}`),
-      plateNumber: p,
-      vehicleType: a.vehicleType || a.vehicle_type || 'Car (Sedan)',
-      color: a.color || 'White',
-      speedKmh: a.speedKmh || a.speed || 52,
-      confidence: a.confidence || 98.4,
-      plateConfidence: a.plateConfidence || a.plate_confidence || 99.1,
-      cameraUuid: a.cameraUuid || camCode,
-      cameraCode: camCode,
-      cameraName: camName,
-      district: dist,
-      departmentId: a.departmentId || 'DEPT-POL-01',
-      departmentName: a.departmentName || 'Gujarat Police Traffic Division',
-      locationDescription: a.locationDescription || a.location || a.notes || `Detected at ${camName} (${dist})`,
-      latitude: a.latitude || 23.0225,
-      longitude: a.longitude || 72.5714,
-      timestamp: ts,
-      direction: a.direction || 'Northbound',
-      watchlistFlag: isWatchlist,
-      watchlistReason: isWatchlist ? (a.watchlistReason || 'CRIME BRANCH WATCHLIST MATCH') : undefined,
-      imageCropUrl: snapUrl,
-      vehicleImageUrl: snapUrl,
-    };
-  });
+  // 2. Map live detections fetched directly from backend (only with real CCTV snapshots)
+  const liveEventsMapped: AnprEvent[] = liveDetections
+    .map(a => {
+      const p = (a.plateNumber || a.number_plate || a.plate || a.title?.replace(/.*:\s*/, '') || 'UNKNOWN').trim().toUpperCase();
+      const camCode = a.cameraCode || (a.camera_id ? `CAM-${String(a.camera_id).padStart(3, '0')}` : 'CAM-011');
+      const camName = a.cameraName || (a.camera_id ? `Camera ${a.camera_id} (${a.district || 'Gujarat'})` : 'Gujarat Surveillance Node');
+      const dist = a.district || 'Rajkot';
+      const snapUrl = formatSnapshotUrl(a.snapshot);
+      const isWatchlist = a.category === 'WATCHLIST_MATCH' || a.category === 'WATCHLIST_HIT' || a.severity === 'CRITICAL' || Boolean(a.watchlist) || String(a.title || '').toLowerCase().includes('watchlist');
+      const ts = a.timestamp || a.receivedAt || a.created_at || new Date().toISOString();
 
-  const combinedEvents = [...alertsMapped, ...liveEventsMapped, ...anprEvents];
+      if (!snapUrl) return null;
+
+      return {
+        id: String(a.id || `evt-${Math.random()}`),
+        plateNumber: p,
+        vehicleType: a.vehicleType || a.vehicle_type || 'Motor Vehicle',
+        color: '',
+        speedKmh: a.speedKmh || a.speed || 52,
+        confidence: a.confidence || 97.2,
+        plateConfidence: a.plateConfidence || a.plate_confidence || 98.6,
+        cameraUuid: a.cameraUuid || camCode,
+        cameraCode: camCode,
+        cameraName: camName,
+        district: dist,
+        departmentId: a.departmentId || 'DEPT-POL-01',
+        departmentName: a.departmentName || 'Gujarat Police Traffic Division',
+        locationDescription: a.locationDescription || a.location || a.notes || `Detected at ${camName} (${dist})`,
+        latitude: a.latitude || 22.3039,
+        longitude: a.longitude || 70.8022,
+        timestamp: ts,
+        direction: a.direction || 'Northbound',
+        watchlistFlag: isWatchlist,
+        watchlistReason: isWatchlist ? (a.watchlistReason || 'CRIME BRANCH WATCHLIST MATCH') : undefined,
+        imageCropUrl: snapUrl,
+        vehicleImageUrl: snapUrl,
+      };
+    })
+    .filter((e): e is AnprEvent => e !== null);
+
+  const combinedEvents = [...alertsMapped, ...liveEventsMapped];
   const uniqueEventsMap = new Map<string, AnprEvent>();
   combinedEvents.forEach(e => {
     const key = e.id || `${e.plateNumber}_${e.cameraCode}_${e.timestamp}`;
@@ -748,7 +761,7 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
                         </button>
                       </td>
                       <td className="p-3">
-                        <div className="font-bold text-slate-800">{evt.vehicleType} • {evt.color}</div>
+                        <div className="font-bold text-slate-800">{evt.vehicleType}</div>
                         <div className="text-[11px] text-slate-500 font-mono">Speed: {evt.speedKmh} Km/h</div>
                       </td>
                       <td className="p-3 font-mono font-bold text-[#0052CC]">{evt.cameraCode}</td>
