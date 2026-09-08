@@ -211,15 +211,18 @@ class ZTracsBuddyClient:
         if camera_code in self._roi_cache:
             return self._roi_cache[camera_code]
 
-        base_url = self.endpoints[0]
-        for code in get_code_aliases(camera_code):
+        # Try fast lookup from session
+        aliases = get_code_aliases(camera_code)
+        for code in aliases:
             for ep in [f"/anpr/roi/{code}", f"/cameras/{code}/roi"]:
                 try:
-                    res = self.session.get(f"{base_url}{ep}", timeout=0.3)
-                    if res.status_code == 200:
+                    res = self._request_with_failover("GET", ep, timeout=1.0)
+                    if res and res.status_code == 200:
                         data = res.json()
                         d = data.get("data") if isinstance(data, dict) and "data" in data else (data.get("roi") if isinstance(data, dict) and "roi" in data else data)
                         if d and isinstance(d, dict) and (d.get("points") or d.get("zones") or d.get("usecase_rois") or d.get("coordinates") or d.get("roi")):
+                            for a in aliases:
+                                self._roi_cache[a] = d
                             self._roi_cache[camera_code] = d
                             return d
                 except Exception:
@@ -232,15 +235,17 @@ class ZTracsBuddyClient:
         if camera_code in self._ai_cache:
             return self._ai_cache[camera_code]
 
-        base_url = self.endpoints[0]
-        for code in get_code_aliases(camera_code):
+        aliases = get_code_aliases(camera_code)
+        for code in aliases:
             for ep in [f"/cameras/{code}/ai-config", f"/anpr/ai-config/{code}"]:
                 try:
-                    res = self.session.get(f"{base_url}{ep}", timeout=0.3)
-                    if res.status_code == 200:
+                    res = self._request_with_failover("GET", ep, timeout=1.0)
+                    if res and res.status_code == 200:
                         data = res.json()
                         d = data.get("data") if isinstance(data, dict) and "data" in data else (data.get("ai_config") if isinstance(data, dict) and "ai_config" in data else data)
                         if d and isinstance(d, dict) and ("enable" in d or "models" in d or "ai_models" in d):
+                            for a in aliases:
+                                self._ai_cache[a] = d
                             self._ai_cache[camera_code] = d
                             return d
                 except Exception:
