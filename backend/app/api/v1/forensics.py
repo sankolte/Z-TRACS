@@ -174,7 +174,19 @@ async def upload_forensic_task_video(
     try:
         models = json.loads(models_requested) if isinstance(models_requested, str) else models_requested
     except Exception:
-        models = ["ANPR", "VEHICLE_CLASSIFICATION"]
+        models = ["ANPR"]
+    if not isinstance(models, list):
+        models = [str(models)]
+
+    models_upper = [str(m).upper() for m in models]
+    enable_vector = [
+        1 if any(k in m for m in models_upper for k in ["ANPR", "VEHICLE", "PLATE"]) else 0,
+        1 if any(k in m for m in models_upper for k in ["FACE", "FRS", "PERSON"]) else 0,
+        1 if any(k in m for m in models_upper for k in ["PPE", "SAFETY", "HELMET"]) else 0,
+        1 if any(k in m for m in models_upper for k in ["FOOTFALL", "CROWD", "COUNT"]) else 0,
+    ]
+    if sum(enable_vector) == 0:
+        enable_vector = [1, 0, 0, 0]
 
     slug = f"{task_id.lower()}_{sanitize_slug(case_id)}"
     total_seconds = max(60, int(duration_minutes * 60))
@@ -219,6 +231,8 @@ async def upload_forensic_task_video(
             "direct_download_url": f"http://43.204.235.231:8000{download_url}",
             "file_size_bytes": file_size
         },
+        "enable": enable_vector,
+        "usecases": ["ANPR", "FACE_RECOGNITION", "PPE", "FOOTFALL"],
         "models_requested": models,
         "status": "QUEUED",
         "progress_percent": 0.0,
@@ -332,6 +346,16 @@ async def create_forensic_task(payload: Dict[str, Any] = Body(...)):
             "frame_number": int(ts * 25)
         })
 
+    models_upper = [str(m).upper() for m in (models_requested if isinstance(models_requested, list) else [str(models_requested)])]
+    enable_vector = [
+        1 if any(k in m for m in models_upper for k in ["ANPR", "VEHICLE", "PLATE"]) else 0,
+        1 if any(k in m for m in models_upper for k in ["FACE", "FRS", "PERSON"]) else 0,
+        1 if any(k in m for m in models_upper for k in ["PPE", "SAFETY", "HELMET"]) else 0,
+        1 if any(k in m for m in models_upper for k in ["FOOTFALL", "CROWD", "COUNT"]) else 0,
+    ]
+    if sum(enable_vector) == 0:
+        enable_vector = [1, 0, 0, 0]
+
     task_obj = {
         "task_id": task_id,
         "case_id": case_id,
@@ -345,6 +369,8 @@ async def create_forensic_task(payload: Dict[str, Any] = Body(...)):
             "s3_key": s3_key,
             "s3_streaming_url": streaming_url or f"https://z-tracs-media.s3.amazonaws.com/{s3_key}"
         },
+        "enable": enable_vector,
+        "usecases": ["ANPR", "FACE_RECOGNITION", "PPE", "FOOTFALL"],
         "models_requested": models_requested,
         "search_filters": search_filters,
         "status": "QUEUED",

@@ -225,6 +225,20 @@ class ZTracsForensicsListener:
                     task["video_path"] = f"{self.base_dir}/{tid}/{clean_fn}".replace("\\", "/")
                     task["absolute_video_path"] = os.path.abspath(local_dest)
 
+                    # Compute standardized 4-element enable vector: [ANPR, FRS, PPE, FOOTFALL]
+                    models_req = [str(m).upper() for m in (task.get("models_requested") or [])]
+                    enable_vector = [
+                        1 if any(k in m for m in models_req for k in ["ANPR", "VEHICLE", "PLATE"]) else 0,
+                        1 if any(k in m for m in models_req for k in ["FACE", "FRS", "PERSON"]) else 0,
+                        1 if any(k in m for m in models_req for k in ["PPE", "SAFETY", "HELMET"]) else 0,
+                        1 if any(k in m for m in models_req for k in ["FOOTFALL", "CROWD", "COUNT"]) else 0,
+                    ]
+                    if sum(enable_vector) == 0:
+                        enable_vector = [1, 0, 0, 0]
+
+                    task["enable"] = enable_vector
+                    task["usecases"] = ["ANPR", "FACE_RECOGNITION", "PPE", "FOOTFALL"]
+
                 catalog_str = json.dumps(export_data, indent=2, sort_keys=True)
 
                 if self._last_catalog_str != catalog_str:
@@ -246,6 +260,7 @@ class ZTracsForensicsListener:
                                 print(f" -> Local Video File : {task.get('video_path')}")
                                 print(f" -> Stream Mode      : Local Direct cv2.VideoCapture('{task.get('video_path')}')")
                                 print(f" -> AI Models        : {task.get('models_requested')}")
+                                print(f" -> Enable Vector    : {task.get('enable')} [ANPR, FRS, PPE, FOOTFALL]")
                                 print(f" -> Duration         : {task.get('duration_formatted')} ({task.get('total_frames')} frames)")
                                 print(f" -> Forensics File   : '{self.forensics_filename}' ({total_tasks} jobs in {elapsed:.4f}s)")
                                 print(f" -> Engine Status    : READY FOR LOCAL GPU INFERENCE")

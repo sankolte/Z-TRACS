@@ -54,6 +54,8 @@ export interface ForensicTask {
   video_path: string;
   download_url?: string;
   video_url?: string;
+  enable?: number[];
+  usecases?: string[];
   models_requested: string[];
   status: 'QUEUED' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
   progress_percent: number;
@@ -82,7 +84,7 @@ export const ForensicAnalysisView: React.FC = () => {
   const [footageName, setFootageName] = useState('');
   const [locationName, setLocationName] = useState('');
   const [durationMinutes, setDurationMinutes] = useState(60);
-  const [selectedModels, setSelectedModels] = useState<string[]>(['ANPR', 'VEHICLE_CLASSIFICATION']);
+  const [selectedModels, setSelectedModels] = useState<string[]>(['ANPR']);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -795,16 +797,17 @@ export const ForensicAnalysisView: React.FC = () => {
                 </div>
               </div>
 
-              {/* AI Models Checklist */}
+              {/* AI Models Checklist (Standardized 4-Model Vision Pipeline) */}
               <div>
                 <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-2">
-                  Select AI Models to Run on Footage:
+                  Select AI Vision Models to Run on Video Footage:
                 </label>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                   {[
-                    { id: 'ANPR', label: 'ANPR License Plates', icon: Car },
-                    { id: 'VEHICLE_CLASSIFICATION', label: 'Vehicle Type / Color', icon: SlidersHorizontal },
-                    { id: 'FACE_RECOGNITION', label: 'Facial Search (FRS)', icon: UserCheck }
+                    { id: 'ANPR', label: 'ANPR Plates', icon: Car },
+                    { id: 'FACE_RECOGNITION', label: 'Face Recog (FRS)', icon: UserCheck },
+                    { id: 'PPE', label: 'PPE Safety', icon: ShieldAlert },
+                    { id: 'FOOTFALL', label: 'Footfall / Crowd', icon: Target }
                   ].map((m) => {
                     const isChecked = selectedModels.includes(m.id);
                     const Icon = m.icon;
@@ -813,7 +816,7 @@ export const ForensicAnalysisView: React.FC = () => {
                         key={m.id}
                         type="button"
                         onClick={() => toggleModel(m.id)}
-                        className={`p-3 rounded-xl border text-xs font-bold flex items-center space-x-2 transition cursor-pointer text-left ${
+                        className={`p-3 rounded-xl border text-xs font-bold flex flex-col sm:flex-row items-center space-y-1 sm:space-y-0 sm:space-x-2 transition cursor-pointer text-center sm:text-left ${
                           isChecked
                             ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300 shadow-sm'
                             : 'bg-[#02111f] border-[#0e3b63] text-slate-400 hover:text-white'
