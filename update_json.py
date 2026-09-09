@@ -493,13 +493,111 @@ class ZTracsBuddyClient:
             })
 
         loc_list = list(locations_map.values())
+
+        # Append offline FRS clips and Forensic videos as virtual camera feeds for DeepStream / OpenCV
+        try:
+            offline_cams = self.get_offline_media_cameras()
+            if offline_cams and loc_list:
+                loc_list[0]["cameras"].extend(offline_cams)
+        except Exception as e:
+            print(f"[OFFLINE MEDIA MERGE WARN] {e}")
+
+        total_cameras = sum(len(loc["cameras"]) for loc in loc_list)
         return {
             "status": "success",
             "total_locations": len(loc_list),
-            "total_cameras": len(feeds),
+            "total_cameras": total_cameras,
             "export_timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ"),
             "locations": loc_list
         }
+
+    def get_offline_media_cameras(self) -> List[Dict[str, Any]]:
+        """
+        Dynamically merges offline FRS 1-minute suspect clips and Forensic video footage
+        as virtual camera entries in cameras.json for DeepStream / OpenCV offline ingestion.
+        """
+        offline_cameras: List[Dict[str, Any]] = []
+
+        # 1. Ingest FRS Suspect Clips (from local faces.json or cloud endpoint)
+        frs_targets = []
+        if os.path.exists("faces.json"):
+            try:
+                with open("faces.json", "r", encoding="utf-8") as f:
+                    frs_data = json.load(f)
+                    frs_targets = frs_data.get("targets", [])
+            except Exception:
+                pass
+
+        if not frs_targets:
+            res_frs = self._request_with_failover("GET", "/frs/export-targets", timeout=1.5)
+            if res_frs and res_frs.status_code == 200:
+                try:
+                    frs_targets = res_frs.json().get("targets", [])
+                except Exception:
+                    pass
+
+        for tgt in frs_targets:
+            pid = tgt.get("person_id") or tgt.get("id") or "TGT"
+            slug = tgt.get("slug") or pid.lower().replace("-", "_")
+            pname = tgt.get("person_name") or slug
+            cid = tgt.get("case_id") or "N/A"
+            clip_p = tgt.get("media_path") or f"clips/{slug}/clip.mp4"
+
+            offline_cameras.append({
+                "camera_code": f"CAM-FRS-{slug.upper()}",
+                "camera_name": f"[FRS Offline Clip] {pname} (Case: {cid})",
+                "source_type": "OFFLINE_CLIP",
+                "enable": [0, 1, 0, 0],
+                "usecases": STANDARD_USECASES,
+                "rtsp": f"file://$PWD/{clip_p}",
+                "local_path": clip_p,
+                "latitude": 23.0612,
+                "longitude": 72.5804,
+                "roi": [],
+                "rois": []
+            })
+
+        # 2. Ingest Forensic Analysis Videos (from local forensics.json or cloud endpoint)
+        forensic_tasks = []
+        if os.path.exists("forensics.json"):
+            try:
+                with open("forensics.json", "r", encoding="utf-8") as f:
+                    for_data = json.load(f)
+                    forensic_tasks = for_data.get("tasks", [])
+            except Exception:
+                pass
+
+        if not forensic_tasks:
+            res_for = self._request_with_failover("GET", "/forensics/export-tasks", timeout=1.5)
+            if res_for and res_for.status_code == 200:
+                try:
+                    forensic_tasks = res_for.json().get("tasks", [])
+                except Exception:
+                    pass
+
+        for tsk in forensic_tasks:
+            tid = tsk.get("task_id") or "TSK"
+            cid = tsk.get("case_id") or "N/A"
+            fn = tsk.get("filename") or tsk.get("footage_name") or f"{tid.lower()}.mp4"
+            vid_p = tsk.get("video_path") or f"forensics/{tid}/{fn}"
+            
+            task_enable = tsk.get("enable") or [1, 0, 0, 0]
+
+            offline_cameras.append({
+                "camera_code": f"CAM-FOR-{tid}",
+                "camera_name": f"[Forensic Offline Video] {fn} (Case: {cid})",
+                "source_type": "OFFLINE_FORENSIC_VIDEO",
+                "enable": task_enable,
+                "usecases": STANDARD_USECASES,
+                "rtsp": f"file://$PWD/{vid_p}",
+                "local_path": vid_p,
+                "latitude": 23.0612,
+                "longitude": 72.5804,
+                "roi": [],
+                "rois": []
+            })
+
+        return offline_cameras
 
     # Alert Ingest
     def send_anpr_alert(
@@ -702,8 +800,15 @@ class ZTracsActiveCameraListener:
                             del self.missing_counts[dcode]
                             streams_changed = True
 
-                # 3. Only rebuild JSON when AI configs, ROIs, streams changed or file is missing
-                if initial_load or file_missing or ai_changed or roi_changed or streams_changed:
+                # 3. Check for offline media changes (faces.json & forensics.json)
+                faces_m = os.path.getmtime("faces.json") if os.path.exists("faces.json") else 0
+                forensics_m = os.path.getmtime("forensics.json") if os.path.exists("forensics.json") else 0
+                offline_changed = (faces_m != getattr(self, "_last_faces_mtime", 0)) or (forensics_m != getattr(self, "_last_forensics_mtime", 0))
+                self._last_faces_mtime = faces_m
+                self._last_forensics_mtime = forensics_m
+
+                # 4. Only rebuild JSON when AI configs, ROIs, streams, offline media changed or file is missing
+                if initial_load or file_missing or ai_changed or roi_changed or streams_changed or offline_changed:
                     self.cached_ai_configs = self.client.get_all_ai_configs()
                     self.cached_rois = self.client.get_all_rois()
 
@@ -719,7 +824,8 @@ class ZTracsActiveCameraListener:
                     })
                     
                     if not initial_load:
-                        print(f"\n[EVENT] [EDGE SYNC] Rebuilt '{self.json_filename}' with latest state ({catalog.get('total_cameras', 0)} cameras)")
+                        reason = "Offline Media (FRS/Forensics)" if offline_changed else "Camera Config/Streams"
+                        print(f"\n[EVENT] [EDGE SYNC: {reason}] Rebuilt '{self.json_filename}' with latest state ({catalog.get('total_cameras', 0)} cameras)")
 
                 initial_load = False
 
