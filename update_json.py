@@ -835,6 +835,8 @@ class ZTracsActiveCameraListener:
             time.sleep(self.poll_interval)
 
 
+ZTracsActiveListener = ZTracsActiveCameraListener
+
 # ──────────────────────────────────────────────
 # DEMO EXECUTION OF ACTIVE LISTENER
 # ──────────────────────────────────────────────
