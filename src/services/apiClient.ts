@@ -417,6 +417,7 @@ export class ApiClient {
     for (const code of aliases) {
       try {
         const payload = { ...cameraData, cameraCode: code };
+        // 1. Try POST /cameras/update/{code}
         const postRes = await fetch(`${API_BASE}/cameras/update/${encodeURIComponent(code)}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -428,12 +429,25 @@ export class ApiClient {
           continue;
         }
 
-        const putRes = await fetch(`${API_BASE}/cameras/update/${encodeURIComponent(code)}`, {
+        // 2. Try PUT /cameras/{code} (REST standard)
+        const putRestRes = await fetch(`${API_BASE}/cameras/${encodeURIComponent(code)}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-        if (putRes.ok && !primaryResult) primaryResult = await putRes.json();
+        if (putRestRes.ok) {
+          const json = await putRestRes.json();
+          if (!primaryResult) primaryResult = json;
+          continue;
+        }
+
+        // 3. Try POST /cameras/{code}/update
+        const postCodeUpdateRes = await fetch(`${API_BASE}/cameras/${encodeURIComponent(code)}/update`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (postCodeUpdateRes.ok && !primaryResult) primaryResult = await postCodeUpdateRes.json();
       } catch (_) {}
     }
     return primaryResult || { success: true };

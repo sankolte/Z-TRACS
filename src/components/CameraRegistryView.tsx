@@ -563,6 +563,7 @@ export const CameraRegistryView: React.FC<CameraRegistryViewProps> = ({
                     ...editFormData,
                     updatedAt: new Date().toISOString().replace('T', ' ').slice(0, 19)
                   };
+                  setEditingCamera(null);
                   if (onEditCamera) {
                     onEditCamera(updated);
                   }
@@ -584,7 +585,6 @@ export const CameraRegistryView: React.FC<CameraRegistryViewProps> = ({
                     console.warn('[Camera Edit] API update error:', err);
                   }
                 }
-                setEditingCamera(null);
               }}
               className="p-6 space-y-4 max-h-[75vh] overflow-y-auto"
             >

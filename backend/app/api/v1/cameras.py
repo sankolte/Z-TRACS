@@ -296,6 +296,8 @@ async def create_camera(cam_data: Dict[str, Any]):
 
     return ApiResponse.ok(new_cam)
 
+@router.post("/update/{code}")
+@router.put("/update/{code}")
 @router.put("/{code}")
 @router.patch("/{code}")
 @router.post("/{code}/update")
@@ -308,6 +310,11 @@ async def update_camera(code: Optional[str] = None, payload: Dict[str, Any] = Bo
     cam_code = str(code or payload.get("camera_code") or payload.get("cameraCode") or "").strip()
     if not cam_code:
         raise HTTPException(status_code=400, detail="camera_code is required")
+
+    rtsp = payload.get("rtsp_url") or payload.get("endpointReference") or payload.get("rtspUrl") or payload.get("rtsp")
+    if rtsp:
+        payload["rtsp_url"] = str(rtsp).strip()
+        payload["endpointReference"] = str(rtsp).strip()
 
     aliases = [cam_code, cam_code.upper(), cam_code.lower()]
     import re
