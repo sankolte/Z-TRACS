@@ -165,7 +165,9 @@ async def get_live_alerts(limit: int = Query(6000, description="Max alerts to re
                     db_alerts.append(rec)
                 
                 # Merge DB alerts with any fresh in-memory events
-                return ApiResponse.ok(db_alerts, total_records=len(db_alerts))
+                in_mem_ids = {a.get("id") for a in IN_MEMORY_ALERTS if a.get("id")}
+                combined = list(IN_MEMORY_ALERTS) + [d for d in db_alerts if d.get("id") not in in_mem_ids]
+                return ApiResponse.ok(combined[:limit], total_records=len(combined))
         except Exception as e:
             print(f"[RDS ALERT FETCH ERROR] {e}")
 
@@ -223,12 +225,12 @@ async def ingest_anpr_alert(payload: Dict[str, Any] = Body(...)):
         try:
             await conn.execute("""
                 INSERT INTO anpr_alerts (
-                    severity, category, number_plate, camera_id, camera_code, 
+                    id, severity, category, number_plate, camera_id, camera_code, 
                     camera_name, district, watchlist_hit, status, title, notes, received_at
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP);
-            """, severity, category, plate, str(payload.get("camera_id", "1")), cam_code, cam_name, district, is_hit, "NEW", title, notes)
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, CURRENT_TIMESTAMP);
+            """, alert_id, severity, category, plate, str(payload.get("camera_id", "1")), cam_code, cam_name, district, is_hit, "NEW", title, notes)
             await conn.close()
-            print(f"✅ [RDS ANPR ALERT STORED] Plate: {plate} | Camera: {cam_code} | Watchlist Hit: {is_hit}")
+            print(f"✅ [RDS ANPR ALERT STORED] ID: {alert_id} | Plate: {plate} | Camera: {cam_code} | Watchlist Hit: {is_hit}")
         except Exception as e:
             print(f"⚠️ [RDS INSERT WARN] {e}")
 
