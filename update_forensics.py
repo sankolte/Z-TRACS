@@ -218,8 +218,13 @@ class ZTracsForensicsListener:
                     clean_fn = task.get("filename") or f"{tid.lower()}.mp4"
                     task_dir = os.path.join(self.base_dir, tid)
                     local_dest = os.path.join(task_dir, clean_fn)
+                    direct_url = (
+                        task.get("direct_video_url")
+                        or task.get("download_url")
+                        or task.get("streaming_url")
+                        or task.get("media_source", {}).get("s3_streaming_url")
+                    )
                     expected_size = task.get("file_size_bytes")
-                    direct_url = task.get("direct_video_url") or task.get("download_url")
 
                     # Download video if missing or incomplete
                     needs_download = not os.path.exists(local_dest) or (expected_size and os.path.getsize(local_dest) != expected_size)

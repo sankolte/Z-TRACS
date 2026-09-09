@@ -198,17 +198,50 @@ export const ForensicAnalysisView: React.FC = () => {
     try {
       let res;
       if (selectedFile) {
-        const formData = new FormData();
-        formData.append('file', selectedFile);
-        formData.append('case_id', caseId.trim());
-        formData.append('footage_name', footageName.trim() || selectedFile.name);
-        formData.append('location_name', locationName.trim() || 'Gujarat Highway Junction Node');
-        formData.append('models_requested', JSON.stringify(selectedModels.length > 0 ? selectedModels : ['ANPR']));
-        formData.append('duration_minutes', String(durationMinutes));
+        // 1. Try Direct-to-S3 Pre-Signed Upload (Bypasses Vercel 4.5MB limit for 1-hour / 4GB footage)
+        let s3Success = false;
+        try {
+          const uploadInfo = await ApiClient.getForensicUploadUrl({
+            case_id: caseId.trim(),
+            filename: selectedFile.name,
+            content_type: selectedFile.type || 'video/mp4'
+          });
 
-        res = await ApiClient.uploadForensicTask(formData, (percent) => {
-          setUploadProgress(percent);
-        });
+          if (uploadInfo && uploadInfo.upload_url) {
+            await ApiClient.uploadFileToPresignedUrl(uploadInfo.upload_url, selectedFile, (percent) => {
+              setUploadProgress(percent);
+            });
+
+            const payload = {
+              task_id: uploadInfo.task_id,
+              case_id: caseId.trim(),
+              s3_key: uploadInfo.s3_key,
+              footage_name: footageName.trim() || selectedFile.name,
+              location_name: locationName.trim() || 'Gujarat Highway Junction Node',
+              models_requested: selectedModels.length > 0 ? selectedModels : ['ANPR'],
+              estimated_duration_minutes: durationMinutes,
+            };
+            res = await ApiClient.createForensicTask(payload);
+            s3Success = true;
+          }
+        } catch (s3Err) {
+          console.warn('[Forensics] Direct S3 upload failed, falling back to multipart API route:', s3Err);
+        }
+
+        // 2. Fallback to standard multipart upload if S3 direct upload was not successful
+        if (!s3Success) {
+          const formData = new FormData();
+          formData.append('file', selectedFile);
+          formData.append('case_id', caseId.trim());
+          formData.append('footage_name', footageName.trim() || selectedFile.name);
+          formData.append('location_name', locationName.trim() || 'Gujarat Highway Junction Node');
+          formData.append('models_requested', JSON.stringify(selectedModels.length > 0 ? selectedModels : ['ANPR']));
+          formData.append('duration_minutes', String(durationMinutes));
+
+          res = await ApiClient.uploadForensicTask(formData, (percent) => {
+            setUploadProgress(percent);
+          });
+        }
       } else {
         const payload = {
           case_id: caseId.trim(),

@@ -692,6 +692,52 @@ export class ApiClient {
     }
   }
 
+  static async getForensicUploadUrl(payload: { case_id?: string; filename?: string; content_type?: string }): Promise<any> {
+    try {
+      const res = await fetch(`${API_BASE}/forensics/upload-url`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      return data.data || data;
+    } catch (err) {
+      console.warn('[API] POST /forensics/upload-url failed:', err);
+      return null;
+    }
+  }
+
+  static async uploadFileToPresignedUrl(presignedUrl: string, file: File, onProgress?: (percent: number) => void): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('PUT', presignedUrl);
+      xhr.setRequestHeader('Content-Type', file.type || 'video/mp4');
+
+      if (xhr.upload && onProgress) {
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable) {
+            const percent = Math.round((event.loaded / event.total) * 100);
+            onProgress(percent);
+          }
+        };
+      }
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve();
+        } else {
+          reject(new Error(`S3 direct upload failed with status ${xhr.status}`));
+        }
+      };
+
+      xhr.onerror = () => {
+        reject(new Error('Network error during direct S3 video upload'));
+      };
+
+      xhr.send(file);
+    });
+  }
+
   static async uploadForensicTask(formData: FormData, onProgress?: (percent: number) => void): Promise<any> {
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();

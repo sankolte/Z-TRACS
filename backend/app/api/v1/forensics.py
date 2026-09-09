@@ -320,6 +320,9 @@ async def create_forensic_task(payload: Dict[str, Any] = Body(...)):
             "s3_key": s3_key,
             "s3_streaming_url": streaming_url or f"https://z-tracs-media.s3.amazonaws.com/{s3_key}"
         },
+        "streaming_url": streaming_url,
+        "direct_video_url": streaming_url,
+        "download_url": streaming_url,
         "enable": enable_vector,
         "usecases": ["ANPR", "FACE_RECOGNITION", "PPE", "FOOTFALL"],
         "models_requested": models_requested,
