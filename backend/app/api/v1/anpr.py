@@ -300,8 +300,7 @@ async def delete_alert(alert_id: str):
     conn = await get_db_connection()
     if conn:
         try:
-            if alert_id.isdigit():
-                await conn.execute("DELETE FROM anpr_alerts WHERE id = $1;", int(alert_id))
+            await conn.execute("DELETE FROM anpr_alerts WHERE id::text = $1;", str(alert_id))
             await conn.close()
         except Exception:
             pass
