@@ -176,7 +176,7 @@ class ZTracsBuddyClient:
             r_ai = self._request_with_failover("GET", "/cameras/CAM-GJ-AHM-SNTL-000001/ai-config", timeout=0.8)
             if r_ai and r_ai.status_code == 200:
                 d_ai = r_ai.json()
-                ai_ver = d_ai.get("updatedAt") or d_ai.get("updated_at")
+                ai_ver = d_ai.get("updatedAt") or d_ai.get("updated_at") or str(d_ai.get("enable", "")) or str(d_ai.get("models", ""))
         except Exception:
             pass
 
@@ -184,7 +184,7 @@ class ZTracsBuddyClient:
             r_roi = self._request_with_failover("GET", "/anpr/roi/CAM-GJ-AHM-SNTL-000001", timeout=0.8)
             if r_roi and r_roi.status_code == 200:
                 d_roi = r_roi.json().get("data", {})
-                roi_ver = d_roi.get("updated_at") or d_roi.get("updatedAt")
+                roi_ver = d_roi.get("updated_at") or d_roi.get("updatedAt") or str(d_roi.get("points", ""))
         except Exception:
             pass
 
