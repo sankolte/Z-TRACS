@@ -1,9 +1,10 @@
 from typing import Dict, Any, List, Optional
-from fastapi import APIRouter, HTTPException, Body, UploadFile, File, Form, Response
+from fastapi import APIRouter, HTTPException, Body, UploadFile, File, Form, Response, Query
 from fastapi.responses import Response, RedirectResponse
 from app.schemas.api_response import ApiResponse
 from app.websockets.manager import ws_manager
 from app.storage.s3 import s3_storage
+from app.db.frs_db import get_db_connection
 import json
 import os
 import re
@@ -485,4 +486,280 @@ async def delete_target(person_id: str):
 
         return ApiResponse.ok({"message": f"Target {person_id} deleted successfully", "person_id": person_id})
     raise HTTPException(status_code=404, detail="Target not found")
+
+# ─────────────────────────────────────────────────────────────────────────────
+# IN-MEMORY MATCHES BUFFER & S3 HELPER
+# ─────────────────────────────────────────────────────────────────────────────
+
+IN_MEMORY_FRS_MATCHES: List[Dict[str, Any]] = []
+
+def _process_and_upload_frs_snapshot(raw_snapshot: Optional[str], person_id: str, match_id: str) -> Optional[str]:
+    """
+    Decodes base64 CCTV face crop from Edge OpenCV/InsightFace node and uploads directly to AWS S3.
+    """
+    if not raw_snapshot or not isinstance(raw_snapshot, str):
+        return None
+    if raw_snapshot.startswith("http://") or raw_snapshot.startswith("https://"):
+        return raw_snapshot
+
+    try:
+        clean_b64 = raw_snapshot.split(",")[1] if "," in raw_snapshot else raw_snapshot
+        img_bytes = base64.b64decode(clean_b64)
+        s3_url = s3_storage.upload_frs_match_snapshot(
+            photo_bytes=img_bytes,
+            person_id=person_id,
+            match_id=match_id
+        )
+        return s3_url or raw_snapshot
+    except Exception as e:
+        print(f"[FRS SNAPSHOT PROCESS ERROR] {e}")
+        return raw_snapshot
+
+# ─────────────────────────────────────────────────────────────────────────────
+# REAL-TIME FRS MATCH INGESTION & ALERTS (FOR OPENCV / INSIGHTFACE / TAO NODES)
+# ─────────────────────────────────────────────────────────────────────────────
+
+@router.post("/match")
+@router.post("/ingest")
+async def ingest_frs_match(payload: Dict[str, Any] = Body(...)):
+    """
+    Real-time FRS Match Ingestion endpoint for Edge OpenCV / InsightFace / DeepStream nodes.
+    - Matches detected face against enrolled police suspects.
+    - Uploads CCTV face crop to S3.
+    - Persists match sighting to AWS RDS PostgreSQL 'frs_matches' table.
+    - Broadcasts high-priority 'NEW_FRS_MATCH' WebSocket event with side-by-side comparison images.
+    """
+    global SAVED_FRS_TARGETS, IN_MEMORY_FRS_MATCHES
+    pid = str(payload.get("person_id") or payload.get("target_id") or payload.get("id") or "").strip().upper()
+    if not pid:
+        raise HTTPException(status_code=400, detail="person_id is required")
+
+    # Look up target metadata
+    target = SAVED_FRS_TARGETS.get(pid)
+    person_name = target.get("person_name") if target else str(payload.get("person_name") or payload.get("name") or pid)
+    case_id = target.get("case_id") if target else str(payload.get("case_id") or "FIR-UNKNOWN")
+    category = target.get("category") if target else str(payload.get("category") or "CRITICAL_SUSPECT")
+    alert_priority = target.get("alert_priority") if target else str(payload.get("priority") or "CRITICAL")
+    ref_photo_url = target.get("photo_url") or target.get("photo_download_url") or f"/api/v1/frs/targets/{pid}/photo" if target else None
+
+    cam_code = str(payload.get("camera_code") or payload.get("cameraCode") or "CAM-001").strip()
+    cam_name = str(payload.get("camera_name") or payload.get("cameraName") or f"Camera {cam_code}").strip()
+    cam_id = str(payload.get("camera_id") or "1").strip()
+    district = str(payload.get("district") or "Ahmedabad").strip()
+    similarity = float(payload.get("similarity") or payload.get("confidence") or 0.85)
+    bbox = payload.get("bounding_box") or payload.get("bbox")
+    notes = str(payload.get("notes") or f"Facial recognition match detected at {cam_name} with {similarity*100:.1f}% confidence.").strip()
+
+    match_id = f"FRS-ALT-{int(time.time() * 1000)}"
+
+    # Upload CCTV detection face crop to S3
+    raw_snap = payload.get("snapshot") or payload.get("imageCropUrl") or payload.get("face_crop")
+    cctv_snapshot_url = _process_and_upload_frs_snapshot(raw_snap, pid, match_id)
+
+    now_iso = time.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    match_obj = {
+        "id": match_id,
+        "person_id": pid,
+        "person_name": person_name,
+        "case_id": case_id,
+        "category": category,
+        "severity": alert_priority,
+        "camera_id": cam_id,
+        "camera_code": cam_code,
+        "cameraCode": cam_code,
+        "camera_name": cam_name,
+        "cameraName": cam_name,
+        "district": district,
+        "similarity": round(similarity, 4),
+        "similarity_pct": f"{similarity * 100:.1f}%",
+        "reference_photo_url": ref_photo_url,
+        "snapshot_url": cctv_snapshot_url,
+        "snapshot": cctv_snapshot_url,
+        "bounding_box": bbox,
+        "status": "NEW",
+        "notes": notes,
+        "matched_at": now_iso,
+        "timestamp": now_iso
+    }
+
+    # 1. Persist to AWS RDS PostgreSQL
+    conn = await get_db_connection()
+    if conn:
+        try:
+            bbox_json = json.dumps(bbox) if bbox else None
+            await conn.execute("""
+                INSERT INTO frs_matches (
+                    id, person_id, person_name, case_id, category, severity,
+                    camera_id, camera_code, camera_name, district, similarity,
+                    reference_photo_url, snapshot_url, bounding_box, status, notes, matched_at
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, NOW())
+                ON CONFLICT (id) DO NOTHING;
+            """,
+                match_id, pid, person_name, case_id, category, alert_priority,
+                cam_id, cam_code, cam_name, district, similarity,
+                ref_photo_url, cctv_snapshot_url, bbox_json, "NEW", notes
+            )
+        except Exception as e:
+            print(f"[RDS FRS MATCH INSERT ERROR] {e}")
+        finally:
+            try:
+                await conn.close()
+            except Exception:
+                pass
+
+    # 2. Add to in-memory buffer (kept to last 200 matches)
+    IN_MEMORY_FRS_MATCHES.insert(0, match_obj)
+    if len(IN_MEMORY_FRS_MATCHES) > 200:
+        IN_MEMORY_FRS_MATCHES.pop()
+
+    # 3. Broadcast Real-time WebSocket Alert to Command Center & Alert Desk
+    try:
+        await ws_manager.broadcast_json({
+            "type": "FRS_MATCH",
+            "event": "NEW_FRS_MATCH",
+            "payload": match_obj,
+            "data": match_obj
+        })
+    except Exception:
+        pass
+
+    print("\n" + "=" * 65)
+    print(f"[CRITICAL FRS MATCH HIT] {person_name} ({pid})")
+    print(f" -> Camera    : {cam_name} ({cam_code})")
+    print(f" -> Similarity: {similarity * 100:.1f}%")
+    print(f" -> S3 Snapshot: {cctv_snapshot_url}")
+    print("=" * 65 + "\n")
+
+    return ApiResponse.ok(match_obj)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# HISTORICAL FRS MATCHES SEARCH & SIGHTINGS AUDIT TRAIL
+# ─────────────────────────────────────────────────────────────────────────────
+
+@router.get("/matches")
+async def get_frs_matches(
+    person_id: Optional[str] = Query(None, description="Suspect Person ID filter"),
+    camera_code: Optional[str] = Query(None, description="Camera Code filter"),
+    district: Optional[str] = Query(None, description="District filter"),
+    limit: int = Query(100, description="Max matches to return"),
+    offset: int = Query(0, description="Pagination offset")
+):
+    """
+    Retrieve real-time and historical face recognition match hits from AWS RDS PostgreSQL.
+    Powers the FRS Live Sightings feed and Side-by-Side Match Review in FaceRecognitionView.
+    """
+    conn = await get_db_connection()
+    pid_str = str(person_id).strip().upper() if (person_id and not hasattr(person_id, "default")) else None
+    cam_str = str(camera_code).strip().upper() if (camera_code and not hasattr(camera_code, "default")) else None
+    dist_str = str(district).strip().upper() if (district and not hasattr(district, "default")) else None
+    lim = int(limit) if (isinstance(limit, (int, str)) and str(limit).isdigit()) else 100
+    off = int(offset) if (isinstance(offset, (int, str)) and str(offset).isdigit()) else 0
+
+    if conn:
+        try:
+            conditions = ["1=1"]
+            params = []
+            p_idx = 1
+
+            if pid_str:
+                conditions.append(f"UPPER(person_id) = ${p_idx}")
+                params.append(pid_str)
+                p_idx += 1
+
+            if cam_str and cam_str != "ALL":
+                conditions.append(f"UPPER(camera_code) = ${p_idx}")
+                params.append(cam_str)
+                p_idx += 1
+
+            if dist_str and dist_str != "ALL":
+                conditions.append(f"UPPER(district) = ${p_idx}")
+                params.append(dist_str)
+                p_idx += 1
+
+            where_clause = " AND ".join(conditions)
+
+            total = await conn.fetchval(f"SELECT COUNT(*) FROM frs_matches WHERE {where_clause};", *params)
+
+            params.append(lim)
+            params.append(off)
+            data_query = f"""
+                SELECT 
+                    id, person_id, person_name, case_id, category, severity,
+                    camera_id, camera_code, camera_name, district, similarity,
+                    reference_photo_url, snapshot_url, bounding_box, status, notes,
+                    matched_at::text as matched_at,
+                    matched_at::text as timestamp
+                FROM frs_matches
+                WHERE {where_clause}
+                ORDER BY matched_at DESC
+                LIMIT ${p_idx} OFFSET ${p_idx + 1};
+            """
+            rows = await conn.fetch(data_query, *params)
+            await conn.close()
+
+            results = []
+            for r in rows:
+                item = dict(r)
+                sim = float(item.get("similarity") or 0.0)
+                item["similarity_pct"] = f"{sim * 100:.1f}%"
+                item["snapshot"] = item.get("snapshot_url")
+                results.append(item)
+
+            return ApiResponse.ok(results, total_records=total, page=(off // lim) + 1, page_size=lim)
+        except Exception as e:
+            print(f"[RDS FRS MATCHES SEARCH ERROR] {e}")
+
+    # Fallback to in-memory buffer
+    filtered = list(IN_MEMORY_FRS_MATCHES)
+    if pid_str:
+        filtered = [m for m in filtered if m.get("person_id") == pid_str]
+    if cam_str and cam_str != "ALL":
+        filtered = [m for m in filtered if m.get("camera_code") == cam_str]
+    return ApiResponse.ok(filtered[off:off+lim], total_records=len(filtered))
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SUSPECT SIGHTING JOURNEY (ACROSS GUJARAT SURVEILLANCE GRID)
+# ─────────────────────────────────────────────────────────────────────────────
+
+@router.get("/journey/{person_id}")
+async def get_suspect_journey(person_id: str):
+    """
+    Returns ordered checkpoints of cameras where the suspect was sighted by FRS.
+    """
+    clean_id = str(person_id).strip().upper()
+    conn = await get_db_connection()
+    if conn:
+        try:
+            rows = await conn.fetch("""
+                SELECT 
+                    camera_id, 
+                    camera_code, 
+                    camera_name, 
+                    district, 
+                    similarity, 
+                    snapshot_url, 
+                    matched_at::text as timestamp
+                FROM frs_matches
+                WHERE UPPER(person_id) = $1
+                ORDER BY matched_at ASC;
+            """, clean_id)
+            await conn.close()
+            journey = [dict(r) for r in rows]
+            return ApiResponse.ok({
+                "person_id": clean_id,
+                "total_sightings": len(journey),
+                "journey": journey
+            })
+        except Exception as e:
+            print(f"[RDS FRS JOURNEY ERROR] {e}")
+
+    # In-memory fallback
+    matches = [m for m in IN_MEMORY_FRS_MATCHES if m.get("person_id") == clean_id]
+    matches.sort(key=lambda x: x.get("matched_at", ""))
+    return ApiResponse.ok({
+        "person_id": clean_id,
+        "total_sightings": len(matches),
+        "journey": matches
+    })
 

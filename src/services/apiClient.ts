@@ -692,6 +692,69 @@ export class ApiClient {
     }
   }
 
+  static async getFrsMatches(filters?: {
+    person_id?: string;
+    camera_code?: string;
+    district?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<{ records: any[]; total: number }> {
+    try {
+      const params = new URLSearchParams();
+      if (filters?.person_id) params.append('person_id', filters.person_id);
+      if (filters?.camera_code && filters.camera_code !== 'ALL') params.append('camera_code', filters.camera_code);
+      if (filters?.district && filters.district !== 'ALL') params.append('district', filters.district);
+      if (filters?.limit) params.append('limit', String(filters.limit));
+      if (filters?.offset) params.append('offset', String(filters.offset));
+
+      const res = await fetch(`${API_BASE}/frs/matches?${params.toString()}`);
+      if (!res.ok) return { records: [], total: 0 };
+      const json = await res.json();
+      return {
+        records: json.data || [],
+        total: json.pagination?.total_records || json.total_records || (json.data || []).length
+      };
+    } catch (err) {
+      console.warn('[API] GET /frs/matches failed:', err);
+      return { records: [], total: 0 };
+    }
+  }
+
+  static async ingestFrsMatch(payload: {
+    person_id: string;
+    camera_code: string;
+    camera_name?: string;
+    district?: string;
+    similarity?: number;
+    snapshot?: string;
+    bounding_box?: any;
+    notes?: string;
+  }): Promise<any> {
+    try {
+      const res = await fetch(`${API_BASE}/frs/match`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      return await res.json();
+    } catch (err) {
+      console.warn('[API] POST /frs/match failed:', err);
+      return null;
+    }
+  }
+
+  static async getSuspectJourney(personId: string): Promise<any> {
+    try {
+      const res = await fetch(`${API_BASE}/frs/journey/${encodeURIComponent(personId)}`);
+      if (!res.ok) return null;
+      const json = await res.json();
+      return json.data || json;
+    } catch (err) {
+      console.warn(`[API] GET /frs/journey/${personId} failed:`, err);
+      return null;
+    }
+  }
+
   static async getForensicUploadUrl(payload: { case_id?: string; filename?: string; content_type?: string }): Promise<any> {
     try {
       const res = await fetch(`${API_BASE}/forensics/upload-url`, {

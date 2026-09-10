@@ -178,5 +178,37 @@ class S3StorageManager:
                 print(f"[S3 ANPR UPLOAD WARN] {e}")
         return None
 
+    def upload_frs_match_snapshot(self, photo_bytes: bytes, person_id: str, match_id: str, date_str: Optional[str] = None) -> Optional[str]:
+        """
+        Uploads live CCTV face recognition match crop/snapshot to S3 and returns accessible URL.
+        s3://<bucket>/frs/matches/<date>/<person_id>_<match_id>.jpg
+        """
+        if not photo_bytes:
+            return None
+        date_folder = date_str or time.strftime("%Y-%m-%d")
+        safe_pid = re.sub(r'[^A-Za-z0-9_]+', '', person_id or "UNKNOWN").upper()
+        s3_key = f"frs/matches/{date_folder}/{safe_pid}_{match_id}.jpg"
+
+        if self.s3_client:
+            try:
+                self.s3_client.put_object(
+                    Bucket=self.bucket_name,
+                    Key=s3_key,
+                    Body=photo_bytes,
+                    ContentType="image/jpeg"
+                )
+                try:
+                    url = self.s3_client.generate_presigned_url(
+                        "get_object",
+                        Params={"Bucket": self.bucket_name, "Key": s3_key},
+                        ExpiresIn=604800  # 7 days
+                    )
+                    return url
+                except Exception:
+                    return f"https://{self.bucket_name}.s3.{self.region}.amazonaws.com/{s3_key}"
+            except Exception as e:
+                print(f"[S3 FRS MATCH UPLOAD WARN] {e}")
+        return None
+
 s3_storage = S3StorageManager()
 

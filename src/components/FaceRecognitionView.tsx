@@ -89,6 +89,13 @@ export const FaceRecognitionView: React.FC<FaceRecognitionViewProps> = ({
   const [aiConfigs, setAiConfigs] = useState<Record<string, any>>({});
   const [isLoadingAiConfigs, setIsLoadingAiConfigs] = useState(false);
 
+  // FRS Sub-Tabs & Live Matches State
+  const [activeSubTab, setActiveSubTab] = useState<'WATCHLIST' | 'MATCHES'>('WATCHLIST');
+  const [matches, setMatches] = useState<any[]>([]);
+  const [isFetchingMatches, setIsFetchingMatches] = useState(false);
+  const [isSimulatingMatch, setIsSimulatingMatch] = useState(false);
+  const [selectedMatchModal, setSelectedMatchModal] = useState<any | null>(null);
+
   // Quick 1-Click FRS Enable Drawer State
   const [isQuickEnableOpen, setIsQuickEnableOpen] = useState(false);
   const [quickEnableSearch, setQuickEnableSearch] = useState('');
@@ -106,6 +113,45 @@ export const FaceRecognitionView: React.FC<FaceRecognitionViewProps> = ({
       console.warn('[FRS UI] Fetch failed:', err);
     } finally {
       setIsFetching(false);
+    }
+  };
+
+  // Fetch verified face matches from AWS RDS
+  const fetchMatches = async () => {
+    setIsFetchingMatches(true);
+    try {
+      const res = await ApiClient.getFrsMatches({ limit: 100 });
+      setMatches(res.records || []);
+    } catch (err) {
+      console.warn('[FRS UI] Fetch matches failed:', err);
+    } finally {
+      setIsFetchingMatches(false);
+    }
+  };
+
+  // Simulate a live camera face match event (for instant live testing)
+  const handleSimulateMatch = async () => {
+    setIsSimulatingMatch(true);
+    try {
+      const tgt = targets[0] || { person_id: 'TGT-GJ-001', person_name: 'Rahul Sharma', case_id: 'FIR-AHM-9021' };
+      const cam = cameras[0] || { cameraCode: 'CAM-001', name: 'Chiman Bhai Bridge Junction' };
+      const res = await ApiClient.ingestFrsMatch({
+        person_id: tgt.person_id,
+        camera_code: cam.cameraCode || cam.id || 'CAM-001',
+        camera_name: cam.name || 'Chiman Bhai Bridge Junction',
+        district: cam.district || 'Ahmedabad',
+        similarity: 0.914,
+        notes: `Simulated facial match detected for suspect ${tgt.person_name}!`
+      });
+      if (res && res.data) {
+        setStatusMessage(`Live FRS Match detected for ${tgt.person_name} (91.4% confidence)!`);
+        fetchMatches();
+        setActiveSubTab('MATCHES');
+      }
+    } catch (e) {
+      console.warn('Simulate match error:', e);
+    } finally {
+      setIsSimulatingMatch(false);
     }
   };
 
@@ -177,6 +223,9 @@ export const FaceRecognitionView: React.FC<FaceRecognitionViewProps> = ({
   useEffect(() => {
     fetchTargets();
     fetchAiConfigs();
+    fetchMatches();
+    const interval = setInterval(fetchMatches, 8000);
+    return () => clearInterval(interval);
   }, []);
 
   // Filter cameras that have FRS model enabled
@@ -535,137 +584,342 @@ export const FaceRecognitionView: React.FC<FaceRecognitionViewProps> = ({
             <Cpu className="w-5 h-5" />
           </div>
         </div>
-
       </div>
 
-      {/* FILTER & SEARCH BAR */}
-      <div className="bg-[#041a2e] border border-[#0d3457] rounded-2xl p-3.5 shadow-md flex flex-col sm:flex-row items-center justify-between gap-3 text-white">
-        
-        {/* Search Input */}
-        <div className="relative flex-1 w-full sm:w-auto">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            placeholder="Search suspect by Name, FIR / Case ID, or Category..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-[#02111f] border border-[#0e3557] rounded-xl pl-10 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-cyan-400"
-          />
+      {/* FRS SUB-NAV: SUSPECT WATCHLIST vs LIVE SIGHTINGS & MATCHES */}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#0d3457] pb-3">
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={() => setActiveSubTab('WATCHLIST')}
+            className={`px-5 py-2.5 rounded-2xl font-bold text-xs uppercase tracking-wider transition flex items-center space-x-2 cursor-pointer ${
+              activeSubTab === 'WATCHLIST'
+                ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 shadow-lg font-black'
+                : 'bg-[#041a2e] text-slate-300 hover:text-white border border-[#0d3457] hover:bg-[#07243d]'
+            }`}
+          >
+            <Users className="w-4 h-4" />
+            <span>Suspect Watchlist Registry ({targets.length})</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setActiveSubTab('MATCHES');
+              fetchMatches();
+            }}
+            className={`px-5 py-2.5 rounded-2xl font-bold text-xs uppercase tracking-wider transition flex items-center space-x-2.5 cursor-pointer ${
+              activeSubTab === 'MATCHES'
+                ? 'bg-gradient-to-r from-rose-500 to-red-600 text-white shadow-lg font-black'
+                : 'bg-[#041a2e] text-slate-300 hover:text-white border border-[#0d3457] hover:bg-[#07243d]'
+            }`}
+          >
+            <span className="w-2.5 h-2.5 rounded-full bg-rose-400 animate-pulse" />
+            <span>Live Sightings & Matches ({matches.length})</span>
+          </button>
         </div>
 
-        {/* Category Filter Pills */}
-        <div className="flex items-center space-x-2 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 text-xs">
-          {[
-            { id: 'ALL', label: 'All Suspects' },
-            { id: 'CRITICAL_SUSPECT', label: 'Critical' },
-            { id: 'WANTED_CRIMINAL', label: 'Criminal' },
-            { id: 'MISSING_PERSON', label: 'Missing' },
-          ].map(f => (
-            <button
-              key={f.id}
-              onClick={() => setSelectedCategoryFilter(f.id)}
-              className={`px-3.5 py-1.5 rounded-xl font-bold transition cursor-pointer whitespace-nowrap text-[11px] ${
-                selectedCategoryFilter === f.id
-                  ? 'bg-cyan-500 text-slate-950 shadow'
-                  : 'bg-[#02111f] text-slate-300 hover:bg-[#07243d] border border-[#0e3557]'
-              }`}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* SUSPECT TARGETS CARDS GRID (Evenly Distributed across 3 Columns) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {filteredTargets.length === 0 ? (
-          <div className="col-span-full bg-[#041a2e] border border-dashed border-[#0d3457] rounded-3xl p-16 text-center space-y-4">
-            <div className="w-16 h-16 rounded-full bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 mx-auto shadow-inner">
-              <UserCheck className="w-8 h-8" />
-            </div>
-            <div className="space-y-1">
-              <h3 className="text-base font-bold text-slate-200">No Suspect Targets Found</h3>
-              <p className="text-xs text-slate-400 max-w-md mx-auto">
-                No active suspect targets match your search. Click "Onboard Suspect Target" above to deploy suspect video clips or photos for facial recognition tracking.
-              </p>
-            </div>
-            <button
-              onClick={() => setIsAddModalOpen(true)}
-              className="px-6 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs uppercase shadow transition cursor-pointer"
-            >
-              + Onboard Suspect Target
-            </button>
-          </div>
-        ) : (
-          filteredTargets.map((target) => {
-            const isCritical = target.alert_priority === 'CRITICAL';
-            const isHigh = target.alert_priority === 'HIGH';
-
-            return (
-              <div
-                key={target.person_id}
-                className="bg-[#041a2e] hover:bg-[#062440] border border-[#0d3457] hover:border-cyan-500/60 rounded-3xl p-5 transition-all duration-200 flex flex-col justify-between shadow-xl space-y-4 group"
-              >
-                {/* Card Top: Avatar / Initials + Metadata Header */}
-                <div className="flex items-start space-x-3.5">
-                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-600/30 border border-cyan-500/40 flex items-center justify-center text-cyan-300 font-black font-mono text-base shrink-0 shadow-inner group-hover:scale-105 transition">
-                    {target.person_name.substring(0, 2).toUpperCase()}
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <h3 className="text-sm font-black text-white truncate">{target.person_name}</h3>
-                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider shrink-0 ${
-                        isCritical
-                          ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
-                          : isHigh
-                          ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
-                          : 'bg-blue-500/20 text-blue-300 border border-blue-400/40'
-                      }`}>
-                        {target.alert_priority}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center space-x-2 mt-1">
-                      <span className="font-mono text-[11px] text-cyan-300 font-bold bg-[#02111f] px-2 py-0.5 rounded border border-[#0c3152]">
-                        {target.case_id}
-                      </span>
-                      <span className="text-[11px] text-slate-400 font-medium truncate">
-                        {target.category.replace(/_/g, ' ')}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Card Body: Investigation Notes */}
-                {target.notes && (
-                  <p className="text-xs text-slate-300 bg-[#02111f] p-3 rounded-xl border border-[#0a2945] line-clamp-2 leading-relaxed">
-                    {target.notes}
-                  </p>
-                )}
-
-                {/* Card Footer: Camera Scope & Actions */}
-                <div className="pt-3 border-t border-[#0d3457] flex items-center justify-between text-xs font-mono">
-                  <div className="flex items-center space-x-1.5 text-emerald-400 font-bold">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                    <span>
-                      {target.target_cameras.includes('ALL') ? 'All 35 Cameras' : `${target.target_cameras.length} Camera(s)`}
-                    </span>
-                  </div>
-
-                  <button
-                    onClick={() => handleDeleteTarget(target.person_id, target.person_name)}
-                    className="p-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/25 text-rose-400 border border-rose-500/30 transition cursor-pointer shadow-sm"
-                    title="Remove from active surveillance"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            );
-          })
+        {activeSubTab === 'MATCHES' && (
+          <button
+            onClick={handleSimulateMatch}
+            disabled={isSimulatingMatch}
+            className="px-4 py-2 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 text-xs font-bold flex items-center space-x-2 transition cursor-pointer disabled:opacity-50"
+            title="Simulate a real-time CCTV match event from OpenCV/InsightFace"
+          >
+            <Zap className="w-4 h-4 text-rose-400" />
+            <span>{isSimulatingMatch ? 'Simulating CCTV Hit...' : 'Simulate CCTV Match Hit'}</span>
+          </button>
         )}
       </div>
+
+      {activeSubTab === 'MATCHES' ? (
+        /* ─────────────────── LIVE SIGHTINGS FEED (SIDE-BY-SIDE MATCHES) ─────────────────── */
+        <div className="space-y-4">
+          {matches.length === 0 ? (
+            <div className="bg-[#041a2e] border border-dashed border-[#0d3457] rounded-3xl p-16 text-center space-y-4">
+              <div className="w-16 h-16 rounded-full bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400 mx-auto shadow-inner">
+                <ShieldAlert className="w-8 h-8" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-base font-bold text-slate-200">No Face Recognition Match Hits Yet</h3>
+                <p className="text-xs text-slate-400 max-w-md mx-auto">
+                  When edge OpenCV/InsightFace AI cameras detect an enrolled suspect with similarity above the threshold, real-time match alarms and side-by-side photo comparisons will appear here.
+                </p>
+              </div>
+              <button
+                onClick={handleSimulateMatch}
+                disabled={isSimulatingMatch}
+                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-rose-500 to-red-600 text-white font-black text-xs uppercase tracking-wider shadow-lg hover:from-rose-400 hover:to-red-500 transition cursor-pointer"
+              >
+                Simulate Camera Match Hit
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              {matches.map((m: any) => {
+                const simVal = Number(m.similarity || 0);
+                const simPct = (simVal * 100).toFixed(1);
+                const isVeryHigh = simVal >= 0.85;
+
+                return (
+                  <div
+                    key={m.id}
+                    className="bg-[#041a2e] border border-rose-500/40 hover:border-rose-400 rounded-3xl p-5 shadow-2xl space-y-4 transition hover:shadow-rose-950/40"
+                  >
+                    {/* Header */}
+                    <div className="flex items-start justify-between gap-3 border-b border-[#0d3457] pb-3">
+                      <div>
+                        <div className="flex items-center space-x-2">
+                          <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping" />
+                          <h4 className="text-sm font-black text-white uppercase tracking-wide">
+                            {m.person_name || m.person_id}
+                          </h4>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-500/20 text-rose-300 border border-rose-500/40 font-mono">
+                            {m.case_id || 'WANTED'}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-400 mt-0.5">
+                          Detected at <strong className="text-slate-200">{m.camera_name}</strong> ({m.camera_code})
+                        </p>
+                      </div>
+
+                      {/* Match Score Badge */}
+                      <div className={`px-3 py-1.5 rounded-xl text-center font-mono border ${
+                        isVeryHigh 
+                          ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300' 
+                          : 'bg-amber-500/20 border-amber-500/40 text-amber-300'
+                      }`}>
+                        <div className="text-xs font-black">{simPct}%</div>
+                        <div className="text-[8px] uppercase tracking-wider font-bold">
+                          {isVeryHigh ? 'VERIFIED MATCH' : 'PROBABLE'}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* SIDE-BY-SIDE PHOTO COMPARISON */}
+                    <div className="grid grid-cols-2 gap-3 bg-[#02111f] p-3 rounded-2xl border border-[#0b2844]">
+                      {/* Left: Enrolled Reference Photo */}
+                      <div className="space-y-1.5 text-center">
+                        <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider block">
+                          Enrolled Reference
+                        </span>
+                        <div className="w-full h-36 rounded-xl overflow-hidden bg-slate-900 border border-cyan-500/30 flex items-center justify-center relative">
+                          {m.reference_photo_url ? (
+                            <img
+                              src={m.reference_photo_url}
+                              alt={m.person_name}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLElement).style.display = 'none';
+                              }}
+                            />
+                          ) : (
+                            <UserCheck className="w-10 h-10 text-cyan-500/40" />
+                          )}
+                          <span className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-slate-950/80 text-[9px] font-mono text-cyan-300">
+                            POLICE DB
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Right: Live CCTV Detection Face Crop */}
+                      <div className="space-y-1.5 text-center">
+                        <span className="text-[10px] font-bold text-rose-400 uppercase tracking-wider block">
+                          Live CCTV Crop
+                        </span>
+                        <div className="w-full h-36 rounded-xl overflow-hidden bg-slate-900 border border-rose-500/40 flex items-center justify-center relative">
+                          {m.snapshot_url || m.snapshot ? (
+                            <img
+                              src={m.snapshot_url || m.snapshot}
+                              alt="CCTV Face Crop"
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLElement).style.display = 'none';
+                              }}
+                            />
+                          ) : (
+                            <Target className="w-10 h-10 text-rose-500/40" />
+                          )}
+                          <span className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-slate-950/80 text-[9px] font-mono text-rose-300">
+                            CCTV LIVE
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Metadata Footer */}
+                    <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1">
+                      <div className="flex items-center space-x-1.5">
+                        <Clock className="w-3.5 h-3.5 text-slate-500" />
+                        <span>{m.timestamp || m.matched_at || 'Just now'}</span>
+                      </div>
+                      <span className="px-2.5 py-1 rounded-lg bg-rose-500/10 text-rose-400 font-bold border border-rose-500/20 text-[10px]">
+                        CRITICAL SIREN
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      ) : (
+        /* ─────────────────── SUSPECT WATCHLIST REGISTRY ─────────────────── */
+        <>
+          {/* FILTER & SEARCH BAR */}
+          <div className="bg-[#041a2e] border border-[#0d3457] rounded-2xl p-3.5 shadow-md flex flex-col sm:flex-row items-center justify-between gap-3 text-white">
+            
+            {/* Search Input */}
+            <div className="relative flex-1 w-full sm:w-auto">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search suspect by Name, FIR / Case ID, or Category..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-[#02111f] border border-[#0e3557] rounded-xl pl-10 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-cyan-400"
+              />
+            </div>
+
+            {/* Category Filter Pills */}
+            <div className="flex items-center space-x-2 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 text-xs">
+              {[
+                { id: 'ALL', label: 'All Suspects' },
+                { id: 'CRITICAL_SUSPECT', label: 'Critical' },
+                { id: 'WANTED_CRIMINAL', label: 'Criminal' },
+                { id: 'MISSING_PERSON', label: 'Missing' },
+              ].map(f => (
+                <button
+                  key={f.id}
+                  onClick={() => setSelectedCategoryFilter(f.id)}
+                  className={`px-3.5 py-1.5 rounded-xl font-bold transition cursor-pointer whitespace-nowrap text-[11px] ${
+                    selectedCategoryFilter === f.id
+                      ? 'bg-cyan-500 text-slate-950 shadow'
+                      : 'bg-[#02111f] text-slate-300 hover:bg-[#07243d] border border-[#0e3557]'
+                  }`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* SUSPECT TARGETS CARDS GRID (Evenly Distributed across 3 Columns) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {filteredTargets.length === 0 ? (
+              <div className="col-span-full bg-[#041a2e] border border-dashed border-[#0d3457] rounded-3xl p-16 text-center space-y-4">
+                <div className="w-16 h-16 rounded-full bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 mx-auto shadow-inner">
+                  <UserCheck className="w-8 h-8" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-base font-bold text-slate-200">No Suspect Targets Found</h3>
+                  <p className="text-xs text-slate-400 max-w-md mx-auto">
+                    No active suspect targets match your search. Click "Onboard Suspect Target" above to deploy suspect video clips or photos for facial recognition tracking.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setIsAddModalOpen(true)}
+                  className="px-6 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs uppercase shadow transition cursor-pointer"
+                >
+                  + Onboard Suspect Target
+                </button>
+              </div>
+            ) : (
+              filteredTargets.map((target) => {
+                const mediaPath = target.face_image_path || target.media_path;
+                const isVideo = mediaPath.endsWith('.mp4');
+
+                return (
+                  <div
+                    key={target.person_id}
+                    className="bg-[#041a2e] border border-[#0d3457] hover:border-cyan-500/50 rounded-3xl p-5 shadow-xl transition space-y-4 flex flex-col justify-between"
+                  >
+                    <div>
+                      {/* Card Header: Target Category & Priority */}
+                      <div className="flex items-center justify-between gap-2 border-b border-[#0d3457] pb-3">
+                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider font-mono ${
+                          target.alert_priority === 'CRITICAL'
+                            ? 'bg-rose-500/20 text-rose-400 border border-rose-500/40'
+                            : 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
+                        }`}>
+                          {target.alert_priority} PRIORITY
+                        </span>
+
+                        <span className="text-[11px] font-bold text-slate-400 bg-[#02111f] px-2.5 py-1 rounded-lg border border-[#0e3557] font-mono">
+                          {target.case_id}
+                        </span>
+                      </div>
+
+                      {/* Photo / Media Box */}
+                      <div className="mt-3.5 relative w-full h-48 rounded-2xl overflow-hidden bg-[#02111f] border border-[#0d3457] flex items-center justify-center">
+                        {isVideo ? (
+                          <div className="w-full h-full relative group">
+                            <video
+                              src={`/api/v1/frs/targets/${target.person_id}/clip`}
+                              className="w-full h-full object-cover"
+                              muted
+                              loop
+                              onMouseOver={(e) => (e.target as HTMLVideoElement).play().catch(() => {})}
+                              onMouseOut={(e) => (e.target as HTMLVideoElement).pause()}
+                            />
+                            <div className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-sm text-[10px] font-mono text-cyan-300 flex items-center space-x-1">
+                              <FileVideo className="w-3 h-3 text-cyan-400" />
+                              <span>1-MIN CLIP</span>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="w-full h-full relative">
+                            <img
+                              src={`/api/v1/frs/targets/${target.person_id}/photo`}
+                              alt={target.person_name}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLElement).style.display = 'none';
+                              }}
+                            />
+                            <div className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-sm text-[10px] font-mono text-cyan-300 flex items-center space-x-1">
+                              <ImageIcon className="w-3 h-3 text-cyan-400" />
+                              <span>REFERENCE PHOTO</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Suspect Details */}
+                      <div className="mt-4 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-base font-black text-white">{target.person_name}</h3>
+                          <span className="text-[11px] font-mono text-cyan-400 font-bold">{target.person_id}</span>
+                        </div>
+
+                        <p className="text-xs text-slate-300 line-clamp-2 italic">
+                          "{target.notes || 'Suspect enrolled for live facial recognition tracking.'}"
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Bottom Status & Delete Action */}
+                    <div className="pt-3 border-t border-[#0d3457] flex items-center justify-between">
+                      <div className="flex items-center space-x-2 text-[11px] text-slate-400">
+                        <CameraIcon className="w-3.5 h-3.5 text-cyan-400" />
+                        <span>
+                          {target.target_cameras.includes('ALL') ? 'All 35 Cameras' : `${target.target_cameras.length} Camera(s)`}
+                        </span>
+                      </div>
+
+                      <button
+                        onClick={() => handleDeleteTarget(target.person_id, target.person_name)}
+                        className="p-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/25 text-rose-400 border border-rose-500/30 transition cursor-pointer shadow-sm"
+                        title="Remove from active surveillance"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </>
+      )}
 
       {/* MODAL: ONBOARD NEW SUSPECT TARGET */}
       {isAddModalOpen && (

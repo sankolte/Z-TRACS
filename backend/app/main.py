@@ -21,6 +21,7 @@ from app.search.opensearch import opensearch_client
 from app.storage.minio import minio_client
 from app.schemas.api_response import ApiResponse
 from app.db.anpr_db import ensure_all_anpr_tables
+from app.db.frs_db import ensure_all_frs_tables
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -43,6 +44,7 @@ app.add_middleware(
 async def on_startup():
     """Create RDS tables on server start if they don't exist."""
     await ensure_all_anpr_tables()
+    await ensure_all_frs_tables()
 
 
 # Mount Routers
