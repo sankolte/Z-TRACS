@@ -20,7 +20,7 @@ from app.core.telemetry import telemetry
 from app.search.opensearch import opensearch_client
 from app.storage.minio import minio_client
 from app.schemas.api_response import ApiResponse
-from app.db.anpr_db import ensure_anpr_alerts_table, ensure_anpr_rois_table, ensure_anpr_ai_configs_table
+from app.db.anpr_db import ensure_all_anpr_tables
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -42,9 +42,7 @@ app.add_middleware(
 @app.on_event("startup")
 async def on_startup():
     """Create RDS tables on server start if they don't exist."""
-    await ensure_anpr_alerts_table()
-    await ensure_anpr_rois_table()
-    await ensure_anpr_ai_configs_table()
+    await ensure_all_anpr_tables()
 
 
 # Mount Routers

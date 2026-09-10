@@ -3,11 +3,14 @@ from fastapi import APIRouter, HTTPException, Body, Query, Response
 from app.schemas.api_response import ApiResponse
 from app.websockets.manager import ws_manager
 from app.core.config import settings
+from app.storage.s3 import s3_storage
 import json
 import asyncpg
 import asyncio
 import os
 import time
+import base64
+import re
 from datetime import datetime
 
 router = APIRouter(prefix="/anpr", tags=["Model 2 — ANPR & ROI Services"])
@@ -38,6 +41,27 @@ def save_json_file(filepath: str, data: Dict[str, Any]):
 SAVED_ROIS: Dict[str, Dict[str, Any]] = load_json_file(ROI_FILE)
 AI_CONFIGS: Dict[str, Dict[str, Any]] = load_json_file(AI_CONFIG_FILE)
 
+# In-memory detections buffer (All Traffic Telemetry, last 1000)
+IN_MEMORY_DETECTIONS: List[Dict[str, Any]] = [
+    {
+        "id": "DET-INIT-001",
+        "number_plate": "GJ01AB1234",
+        "plateNumber": "GJ01AB1234",
+        "camera_id": "1",
+        "camera_code": "CAM-033",
+        "cameraCode": "CAM-033",
+        "camera_name": "SG Highway - Junction 33",
+        "cameraName": "SG Highway - Junction 33",
+        "district": "Ahmedabad",
+        "vehicle_type": "SEDAN",
+        "confidence": 0.98,
+        "snapshot": "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=400&auto=format&fit=crop",
+        "watchlist_hit": True,
+        "detected_at": datetime.now().isoformat(),
+        "timestamp": datetime.now().isoformat()
+    }
+]
+
 # In-memory alerts buffer (keeps last 500 in memory + persistent RDS storage)
 IN_MEMORY_ALERTS: List[Dict[str, Any]] = [
     {
@@ -58,27 +82,34 @@ IN_MEMORY_ALERTS: List[Dict[str, Any]] = [
         "timestamp": datetime.now().isoformat(),
         "received_at": datetime.now().isoformat(),
         "snapshot": "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=400&auto=format&fit=crop"
-    },
-    {
-        "id": "ALT-LIVE-002",
-        "title": "SPEED VIOLATION: GJ05CD5678 (112 km/h in 80 km/h Zone)",
-        "severity": "HIGH",
-        "category": "SPEED_VIOLATION",
-        "number_plate": "GJ05CD5678",
-        "plateNumber": "GJ05CD5678",
-        "camera_code": "CAM-005",
-        "cameraCode": "CAM-005",
-        "camera_name": "Visat Teen Rasta Highway",
-        "cameraName": "Visat Teen Rasta Highway",
-        "district": "Gandhinagar",
-        "watchlist_hit": False,
-        "status": "ACTIVE",
-        "notes": "Vehicle speed 112 km/h exceeded segment limit 80 km/h",
-        "timestamp": datetime.now().isoformat(),
-        "received_at": datetime.now().isoformat(),
-        "snapshot": "https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=400&auto=format&fit=crop"
     }
 ]
+
+def _process_and_upload_snapshot(raw_snapshot: Optional[str], plate: str, identifier: str) -> str:
+    """Uploads base64 snapshot to S3 and returns S3 URL, or retains clean URL/fallback."""
+    if not raw_snapshot or not str(raw_snapshot).strip():
+        return "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=400&auto=format&fit=crop"
+    
+    s = str(raw_snapshot).strip()
+    if s.startswith("http://") or s.startswith("https://"):
+        return s
+    
+    b64_data = s
+    if "," in b64_data and ("data:image" in b64_data or ";base64" in b64_data):
+        b64_data = b64_data.split(",", 1)[1]
+    
+    try:
+        img_bytes = base64.b64decode(b64_data)
+        if len(img_bytes) > 50:
+            s3_url = s3_storage.upload_anpr_snapshot(img_bytes, plate, identifier)
+            if s3_url:
+                return s3_url
+    except Exception as e:
+        print(f"[ANPR SNAPSHOT S3 UPLOAD WARN] {e}")
+    
+    if not s.startswith("data:image"):
+        return f"data:image/jpeg;base64,{s}"
+    return s
 
 ANPR_WATCHLIST: List[str] = [
     "GJ01AB1234",
@@ -179,13 +210,19 @@ async def get_live_alerts(limit: int = Query(6000, description="Max alerts to re
 async def ingest_anpr_alert(payload: Dict[str, Any] = Body(...)):
     """
     Real-time ANPR Ingestion endpoint for Edge YOLO / DeepStream / OpenCV nodes.
-    Saves to AWS RDS PostgreSQL 'anpr_alerts' table and broadcasts via WebSockets.
+    - Tier 1: Persists 100% of detected passing vehicles into 'anpr_detections' with S3 photo.
+    - Tier 2: If plate matches Watchlist, creates a Critical Alert in 'anpr_alerts' & triggers WebSocket alarm.
     """
     plate = str(payload.get("number_plate") or payload.get("plateNumber") or payload.get("plate") or "").upper().strip()
+    if not plate:
+        raise HTTPException(status_code=400, detail="number_plate is required")
+
     is_hit = bool(payload.get("watchlist_hit", plate in ANPR_WATCHLIST))
-    cam_code = str(payload.get("camera_code") or payload.get("cameraCode") or "CAM-033").strip()
+    cam_code = str(payload.get("camera_code") or payload.get("cameraCode") or "CAM-001").strip()
     cam_name = str(payload.get("camera_name") or payload.get("cameraName") or f"Camera {cam_code}").strip()
     district = str(payload.get("district") or "Ahmedabad").strip()
+    vehicle_type = str(payload.get("vehicle_type") or payload.get("vehicleType") or "SEDAN").upper().strip()
+    confidence = float(payload.get("confidence", 0.95))
     severity = str(payload.get("severity") or ("CRITICAL" if is_hit else "INFO")).upper()
     category = str(payload.get("category") or ("HOTLIST_STOLEN" if is_hit else "ANPR_DETECTION")).upper()
     notes = str(payload.get("notes") or ("Stolen vehicle watchlist hit" if is_hit else "Plate scanned at checkpoint")).strip()
@@ -193,59 +230,278 @@ async def ingest_anpr_alert(payload: Dict[str, Any] = Body(...)):
 
     alert_id = f"ALT-{int(time.time() * 1000)}"
 
-    alert_obj = {
+    # 1. Process & Upload Snapshot to S3 (if base64)
+    raw_snap = payload.get("snapshot") or payload.get("imageCropUrl")
+    clean_snapshot = _process_and_upload_snapshot(raw_snap, plate, alert_id)
+
+    # 2. TIER 1 TELEMETRY: Always record every detected vehicle in anpr_detections
+    det_obj = {
         "id": alert_id,
-        "title": title,
-        "severity": severity,
-        "category": category,
         "number_plate": plate,
         "plateNumber": plate,
-        "camera_id": payload.get("camera_id", 1),
+        "camera_id": str(payload.get("camera_id", "1")),
         "camera_code": cam_code,
         "cameraCode": cam_code,
         "camera_name": cam_name,
         "cameraName": cam_name,
         "district": district,
+        "vehicle_type": vehicle_type,
+        "confidence": confidence,
+        "snapshot": clean_snapshot,
         "watchlist_hit": is_hit,
-        "status": "NEW",
-        "notes": notes,
-        "timestamp": datetime.now().isoformat(),
-        "received_at": datetime.now().isoformat(),
-        "snapshot": payload.get("snapshot") or payload.get("imageCropUrl") or "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=400&auto=format&fit=crop"
+        "detected_at": datetime.now().isoformat(),
+        "timestamp": datetime.now().isoformat()
     }
+    IN_MEMORY_DETECTIONS.insert(0, det_obj)
+    if len(IN_MEMORY_DETECTIONS) > 1000:
+        IN_MEMORY_DETECTIONS.pop()
 
-    # 1. Store in memory buffer
-    IN_MEMORY_ALERTS.insert(0, alert_obj)
-    if len(IN_MEMORY_ALERTS) > 500:
-        IN_MEMORY_ALERTS.pop()
-
-    # 2. Persist to AWS RDS PostgreSQL
     conn = await get_db_connection()
     if conn:
         try:
             await conn.execute("""
-                INSERT INTO anpr_alerts (
-                    id, severity, category, number_plate, camera_id, camera_code, 
-                    camera_name, district, watchlist_hit, status, title, notes, received_at
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, CURRENT_TIMESTAMP);
-            """, alert_id, severity, category, plate, str(payload.get("camera_id", "1")), cam_code, cam_name, district, is_hit, "NEW", title, notes)
-            await conn.close()
-            print(f"✅ [RDS ANPR ALERT STORED] ID: {alert_id} | Plate: {plate} | Camera: {cam_code} | Watchlist Hit: {is_hit}")
+                INSERT INTO anpr_detections (
+                    number_plate, camera_id, camera_code, camera_name, district, 
+                    vehicle_type, confidence, snapshot, watchlist_hit, detected_at
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_TIMESTAMP);
+            """, plate, str(payload.get("camera_id", "1")), cam_code, cam_name, district, vehicle_type, confidence, clean_snapshot, is_hit)
+            print(f"[OK] [RDS ANPR DETECTION STORED] Plate: {plate} | Cam: {cam_code} | Type: {vehicle_type} | Watchlist Hit: {is_hit}")
         except Exception as e:
-            print(f"⚠️ [RDS INSERT WARN] {e}")
+            print(f"[WARN] [RDS DETECTION INSERT WARN] {e}")
 
-    # 3. Broadcast real-time event via WebSocket to all connected React Dashboards
+    # 3. TIER 2 WATCHLIST ALERT: Only generate critical alarm if plate is in watchlist
+    alert_obj = None
+    if is_hit:
+        alert_obj = {
+            "id": alert_id,
+            "title": title,
+            "severity": severity,
+            "category": category,
+            "number_plate": plate,
+            "plateNumber": plate,
+            "camera_id": payload.get("camera_id", 1),
+            "camera_code": cam_code,
+            "cameraCode": cam_code,
+            "camera_name": cam_name,
+            "cameraName": cam_name,
+            "district": district,
+            "watchlist_hit": True,
+            "status": "NEW",
+            "notes": notes,
+            "timestamp": datetime.now().isoformat(),
+            "received_at": datetime.now().isoformat(),
+            "snapshot": clean_snapshot
+        }
+        IN_MEMORY_ALERTS.insert(0, alert_obj)
+        if len(IN_MEMORY_ALERTS) > 500:
+            IN_MEMORY_ALERTS.pop()
+
+        if conn:
+            try:
+                await conn.execute("""
+                    INSERT INTO anpr_alerts (
+                        id, severity, category, number_plate, camera_id, camera_code, 
+                        camera_name, district, watchlist_hit, status, title, notes, snapshot, received_at
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, CURRENT_TIMESTAMP);
+                """, alert_id, severity, category, plate, int(payload.get("camera_id") or 1), cam_code, cam_name, district, True, "NEW", title, notes, clean_snapshot)
+                print(f"[ALERT] [RDS WATCHLIST ALERT STORED] ID: {alert_id} | Plate: {plate} | Camera: {cam_code}")
+            except Exception as e:
+                print(f"[WARN] [RDS ALERT INSERT WARN] {e}")
+
+        # Broadcast critical alert to Real-Time Alert Center with loud alarm
+        try:
+            await ws_manager.broadcast_json({
+                "type": "ANPR_ALERT",
+                "event": "NEW_ANPR_ALERT",
+                "payload": alert_obj,
+                "data": alert_obj
+            })
+        except Exception:
+            pass
+
+    if conn:
+        try:
+            await conn.close()
+        except Exception:
+            pass
+
+    # Broadcast live detection event (telemetry feed for search tables)
     try:
         await ws_manager.broadcast_json({
-            "type": "ANPR_ALERT",
-            "event": "NEW_ANPR_ALERT",
-            "payload": alert_obj,
-            "data": alert_obj
+            "type": "ANPR_DETECTION",
+            "event": "NEW_ANPR_DETECTION",
+            "payload": det_obj,
+            "data": det_obj
         })
     except Exception:
         pass
 
-    return ApiResponse.ok(alert_obj)
+    return ApiResponse.ok(alert_obj or det_obj)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SEARCH & VEHICLE JOURNEY APIS (POWERING ANPR VEHICLE SEARCH & TRACKING)
+# ─────────────────────────────────────────────────────────────────────────────
+
+@router.get("/search")
+async def search_anpr_detections(
+    plate: Optional[str] = Query(None, description="Number plate substring or exact match"),
+    camera_code: Optional[str] = Query(None, description="Camera Code filter"),
+    district: Optional[str] = Query(None, description="District filter"),
+    vehicle_type: Optional[str] = Query(None, description="Vehicle type filter"),
+    watchlist_only: bool = Query(False, description="Filter only watchlist hits"),
+    limit: int = Query(200, description="Max records to return"),
+    offset: int = Query(0, description="Pagination offset")
+):
+    """
+    Search historical vehicle passages and sightings across all ANPR cameras.
+    Queries AWS RDS PostgreSQL 'anpr_detections' table with in-memory buffer fallback.
+    """
+    plate_str = str(plate).strip() if (plate and isinstance(plate, str)) else None
+    cam_str = str(camera_code).strip() if (camera_code and isinstance(camera_code, str)) else None
+    dist_str = str(district).strip() if (district and isinstance(district, str)) else None
+    v_type_str = str(vehicle_type).strip() if (vehicle_type and isinstance(vehicle_type, str)) else None
+    wl_only = bool(watchlist_only) if not hasattr(watchlist_only, "default") else False
+    lim = int(limit) if (isinstance(limit, (int, str)) and str(limit).isdigit()) else 200
+    off = int(offset) if (isinstance(offset, (int, str)) and str(offset).isdigit()) else 0
+
+    conn = await get_db_connection()
+    if conn:
+        try:
+            conditions = ["1=1"]
+            params: List[Any] = []
+            param_idx = 1
+
+            if plate_str:
+                clean_plate = plate_str.upper().replace(" ", "")
+                conditions.append(f"UPPER(REPLACE(number_plate, ' ', '')) LIKE ${param_idx}")
+                params.append(f"%{clean_plate}%")
+                param_idx += 1
+
+            if cam_str and cam_str.upper() != "ALL":
+                conditions.append(f"UPPER(camera_code) = ${param_idx}")
+                params.append(cam_str.upper())
+                param_idx += 1
+
+            if dist_str and dist_str.upper() != "ALL":
+                conditions.append(f"UPPER(district) = ${param_idx}")
+                params.append(dist_str.upper())
+                param_idx += 1
+
+            if v_type_str and v_type_str.upper() != "ALL":
+                conditions.append(f"UPPER(vehicle_type) = ${param_idx}")
+                params.append(vehicle_type.strip().upper())
+                param_idx += 1
+
+            if watchlist_only:
+                conditions.append(f"watchlist_hit = TRUE")
+
+            where_clause = " AND ".join(conditions)
+            
+            # Fetch count
+            count_query = f"SELECT COUNT(*) FROM anpr_detections WHERE {where_clause};"
+            total_count = await conn.fetchval(count_query, *params)
+
+            # Fetch rows
+            params.append(lim)
+            params.append(off)
+            data_query = f"""
+                SELECT 
+                    id::text, 
+                    number_plate, 
+                    camera_id, 
+                    camera_code, 
+                    camera_name, 
+                    district, 
+                    vehicle_type, 
+                    confidence, 
+                    snapshot, 
+                    watchlist_hit, 
+                    detected_at::text as timestamp
+                FROM anpr_detections
+                WHERE {where_clause}
+                ORDER BY detected_at DESC
+                LIMIT ${param_idx} OFFSET ${param_idx + 1};
+            """
+            rows = await conn.fetch(data_query, *params)
+            await conn.close()
+
+            results = []
+            for r in rows:
+                item = dict(r)
+                item["plateNumber"] = item.get("number_plate")
+                item["cameraCode"] = item.get("camera_code")
+                item["cameraName"] = item.get("camera_name")
+                results.append(item)
+
+            return ApiResponse.ok(results, total_records=total_count, page=(off // lim) + 1, page_size=lim)
+        except Exception as e:
+            print(f"[RDS ANPR SEARCH ERROR] {e}")
+
+    # In-memory fallback
+    filtered = list(IN_MEMORY_DETECTIONS)
+    if plate_str:
+        clean_p = plate_str.upper().replace(" ", "")
+        filtered = [d for d in filtered if clean_p in d.get("number_plate", "").replace(" ", "").upper()]
+    if cam_str and cam_str.upper() != "ALL":
+        filtered = [d for d in filtered if d.get("camera_code", "").upper() == cam_str.upper()]
+    if dist_str and dist_str.upper() != "ALL":
+        filtered = [d for d in filtered if d.get("district", "").upper() == dist_str.upper()]
+    if v_type_str and v_type_str.upper() != "ALL":
+        filtered = [d for d in filtered if d.get("vehicle_type", "").upper() == v_type_str.upper()]
+    if wl_only:
+        filtered = [d for d in filtered if d.get("watchlist_hit")]
+
+    total = len(filtered)
+    paginated = filtered[off : off + lim]
+    return ApiResponse.ok(paginated, total_records=total)
+
+@router.get("/journey/{plate}")
+async def get_vehicle_journey(plate: str):
+    """
+    Get chronologically ordered camera sightings of a vehicle for route journey tracking.
+    """
+    clean_plate = plate.strip().upper().replace(" ", "")
+    conn = await get_db_connection()
+    if conn:
+        try:
+            rows = await conn.fetch("""
+                SELECT 
+                    id::text, 
+                    number_plate, 
+                    camera_id, 
+                    camera_code, 
+                    camera_name, 
+                    district, 
+                    vehicle_type, 
+                    confidence, 
+                    snapshot, 
+                    watchlist_hit, 
+                    detected_at::text as timestamp
+                FROM anpr_detections
+                WHERE UPPER(REPLACE(number_plate, ' ', '')) = $1
+                ORDER BY detected_at ASC;
+            """, clean_plate)
+            await conn.close()
+            sightings = [dict(r) for r in rows]
+            return ApiResponse.ok({
+                "plateNumber": clean_plate,
+                "totalSightings": len(sightings),
+                "sightings": sightings
+            })
+        except Exception as e:
+            print(f"[RDS JOURNEY ERROR] {e}")
+
+    # Fallback to in-memory
+    sightings = [
+        d for d in IN_MEMORY_DETECTIONS 
+        if clean_plate in d.get("number_plate", "").replace(" ", "").upper()
+    ]
+    sightings.sort(key=lambda x: x.get("timestamp") or x.get("detected_at") or "")
+    return ApiResponse.ok({
+        "plateNumber": clean_plate,
+        "totalSightings": len(sightings),
+        "sightings": sightings
+    })
 
 @router.post("/ingest/test")
 async def fire_test_alerts():

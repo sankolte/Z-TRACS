@@ -61,16 +61,30 @@ export const VehicleJourneyView: React.FC<VehicleJourneyViewProps> = ({
     if (initialPlate) setSearchPlate(initialPlate);
   }, [initialPlate]);
 
-  // Fetch real-time alerts directly from backend API
+  // Fetch real-time detections & journey sightings directly from backend API
   useEffect(() => {
     let isMounted = true;
-    const fetchAlerts = async () => {
+    const fetchDetections = async () => {
       try {
         const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
-        const url = isHttps
-          ? '/api/v1/anpr/alerts/live?limit=6000'
-          : 'http://43.204.235.231:8000/api/v1/anpr/alerts/live?limit=6000';
-        const res = await fetch(url);
+        const base = isHttps ? '/api/v1' : 'http://43.204.235.231:8000/api/v1';
+        
+        // 1. Fetch specific journey sightings if plate entered
+        if (cleanPlate) {
+          try {
+            const jRes = await fetch(`${base}/anpr/journey/${encodeURIComponent(cleanPlate)}`);
+            if (jRes.ok && isMounted) {
+              const jJson = await jRes.json();
+              if (jJson.data?.sightings && Array.isArray(jJson.data.sightings) && jJson.data.sightings.length > 0) {
+                setLiveAlerts(jJson.data.sightings);
+                return;
+              }
+            }
+          } catch (_) {}
+        }
+
+        // 2. Fallback to general detections search
+        const res = await fetch(`${base}/anpr/search?limit=1000`);
         if (res.ok && isMounted) {
           const json = await res.json();
           if (json.data && Array.isArray(json.data)) {
@@ -78,12 +92,12 @@ export const VehicleJourneyView: React.FC<VehicleJourneyViewProps> = ({
           }
         }
       } catch (err) {
-        console.warn('[VehicleJourneyView] Live alerts fetch error:', err);
+        console.warn('[VehicleJourneyView] Live detections fetch error:', err);
       }
     };
 
-    fetchAlerts();
-    const timer = setInterval(fetchAlerts, 3000);
+    fetchDetections();
+    const timer = setInterval(fetchDetections, 3000);
     return () => {
       isMounted = false;
       clearInterval(timer);

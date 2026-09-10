@@ -108,7 +108,7 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
       try {
         const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
         const base = isHttps ? '/api/v1' : 'http://43.204.235.231:8000/api/v1';
-        const res = await fetch(`${base}/anpr/alerts/live?limit=6000`);
+        const res = await fetch(`${base}/anpr/search?limit=1000`);
         if (res.ok && isMounted) {
           const json = await res.json();
           if (json.data && Array.isArray(json.data)) {

@@ -1,6 +1,7 @@
 import os
 import hashlib
 import time
+import re
 from typing import Optional, Dict, Any, Tuple
 from app.core.config import settings
 
@@ -142,6 +143,39 @@ class S3StorageManager:
                 return res["Body"].read()
             except Exception as e:
                 print(f"[S3 DOWNLOAD ERROR] Failed reading s3://{self.bucket_name}/{s3_key}: {e}")
+        return None
+
+    def upload_anpr_snapshot(self, photo_bytes: bytes, plate: str, identifier: str, date_str: Optional[str] = None) -> Optional[str]:
+        """
+        Uploads ANPR crop/snapshot to S3 and returns a direct or presigned URL.
+        s3://<bucket>/anpr/snapshots/<date>/<plate>_<identifier>.jpg
+        """
+        if not photo_bytes:
+            return None
+        date_folder = date_str or time.strftime("%Y-%m-%d")
+        safe_plate = re.sub(r'[^A-Za-z0-9_]+', '', plate or "VEHICLE").upper()
+        s3_key = f"anpr/snapshots/{date_folder}/{safe_plate}_{identifier}.jpg"
+        
+        if self.s3_client:
+            try:
+                self.s3_client.put_object(
+                    Bucket=self.bucket_name,
+                    Key=s3_key,
+                    Body=photo_bytes,
+                    ContentType="image/jpeg"
+                )
+                try:
+                    url = self.s3_client.generate_presigned_url(
+                        "get_object",
+                        Params={"Bucket": self.bucket_name, "Key": s3_key},
+                        ExpiresIn=604800  # 7 days
+                    )
+                    return url
+                except Exception:
+                    # Fallback to standard S3 public URL format
+                    return f"https://{self.bucket_name}.s3.{self.region}.amazonaws.com/{s3_key}"
+            except Exception as e:
+                print(f"[S3 ANPR UPLOAD WARN] {e}")
         return None
 
 s3_storage = S3StorageManager()

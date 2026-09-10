@@ -100,3 +100,47 @@ async def ensure_anpr_ai_configs_table():
     finally:
         await conn.close()
 
+async def ensure_anpr_detections_table():
+    """Create anpr_detections table in RDS for 24x7 all-traffic telemetry and vehicle search."""
+    conn = await get_db_connection()
+    if not conn:
+        print("[RDS NOTE] Skipping anpr_detections table check (DB offline or local mode)")
+        return
+    try:
+        # Also ensure anpr_alerts has snapshot column
+        try:
+            await conn.execute("ALTER TABLE anpr_alerts ADD COLUMN IF NOT EXISTS snapshot TEXT;")
+        except Exception:
+            pass
+
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS anpr_detections (
+                id SERIAL PRIMARY KEY,
+                number_plate VARCHAR(50) NOT NULL,
+                camera_id VARCHAR(100),
+                camera_code VARCHAR(100),
+                camera_name VARCHAR(255),
+                district VARCHAR(100),
+                vehicle_type VARCHAR(50) DEFAULT 'CAR',
+                confidence FLOAT DEFAULT 0.95,
+                snapshot TEXT,
+                watchlist_hit BOOLEAN DEFAULT FALSE,
+                detected_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            );
+            CREATE INDEX IF NOT EXISTS idx_anpr_detections_plate ON anpr_detections (number_plate);
+            CREATE INDEX IF NOT EXISTS idx_anpr_detections_time ON anpr_detections (detected_at DESC);
+            CREATE INDEX IF NOT EXISTS idx_anpr_detections_cam ON anpr_detections (camera_code);
+        """)
+        print("[RDS SUCCESS] anpr_detections table verified/created.")
+    except Exception as e:
+        print(f"[RDS ERROR] Failed to ensure anpr_detections table: {e}")
+    finally:
+        await conn.close()
+
+async def ensure_all_anpr_tables():
+    """Verify and auto-initialize all ANPR tables in AWS RDS."""
+    await ensure_anpr_alerts_table()
+    await ensure_anpr_rois_table()
+    await ensure_anpr_ai_configs_table()
+    await ensure_anpr_detections_table()
+

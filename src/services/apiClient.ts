@@ -827,4 +827,49 @@ export class ApiClient {
       return null;
     }
   }
+
+  // ─── ANPR Telemetry & Historical Search APIs ─────────────────────────────
+  static async searchAnprDetections(params?: {
+    plate?: string;
+    cameraCode?: string;
+    district?: string;
+    vehicleType?: string;
+    watchlistOnly?: boolean;
+    limit?: number;
+    offset?: number;
+  }): Promise<{ detections: any[]; total: number }> {
+    try {
+      const q = new URLSearchParams();
+      if (params?.plate) q.append('plate', params.plate);
+      if (params?.cameraCode && params.cameraCode !== 'ALL') q.append('camera_code', params.cameraCode);
+      if (params?.district && params.district !== 'ALL') q.append('district', params.district);
+      if (params?.vehicleType && params.vehicleType !== 'ALL') q.append('vehicle_type', params.vehicleType);
+      if (params?.watchlistOnly) q.append('watchlist_only', 'true');
+      if (params?.limit) q.append('limit', String(params.limit));
+      if (params?.offset) q.append('offset', String(params.offset));
+
+      const res = await fetch(`${API_BASE}/anpr/search?${q.toString()}`);
+      if (!res.ok) return { detections: [], total: 0 };
+      const json = await res.json();
+      return {
+        detections: json.data || [],
+        total: json.totalRecords || json.total_records || (json.data ? json.data.length : 0)
+      };
+    } catch (err) {
+      console.warn('[API] GET /anpr/search failed:', err);
+      return { detections: [], total: 0 };
+    }
+  }
+
+  static async getVehicleJourney(plate: string): Promise<{ plateNumber: string; totalSightings: number; sightings: any[] }> {
+    try {
+      const res = await fetch(`${API_BASE}/anpr/journey/${encodeURIComponent(plate.trim().toUpperCase())}`);
+      if (!res.ok) return { plateNumber: plate, totalSightings: 0, sightings: [] };
+      const json = await res.json();
+      return json.data || { plateNumber: plate, totalSightings: 0, sightings: [] };
+    } catch (err) {
+      console.warn(`[API] GET /anpr/journey/${plate} failed:`, err);
+      return { plateNumber: plate, totalSightings: 0, sightings: [] };
+    }
+  }
 }
