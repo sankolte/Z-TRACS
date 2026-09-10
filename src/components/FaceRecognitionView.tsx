@@ -824,8 +824,8 @@ export const FaceRecognitionView: React.FC<FaceRecognitionViewProps> = ({
               </div>
             ) : (
               filteredTargets.map((target) => {
-                const mediaPath = target.face_image_path || target.media_path;
-                const isVideo = mediaPath.endsWith('.mp4');
+                const mediaPath = String(target.face_image_path || target.media_path || target.clip_url || target.photo_url || target.s3_clip_key || target.s3_key || '');
+                const isVideo = Boolean(mediaPath && mediaPath.toLowerCase().endsWith('.mp4'));
 
                 return (
                   <div

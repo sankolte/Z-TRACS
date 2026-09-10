@@ -22,7 +22,7 @@ source venv/bin/activate
 
 echo "📦 [3/5] Installing Python dependencies..."
 pip install --upgrade pip
-pip install fastapi uvicorn boto3 psycopg2-binary pydantic python-dotenv requests sqlalchemy python-multipart asyncpg
+pip install -r backend/requirements.txt
 
 echo "🛑 [4/5] Stopping previous PM2 instances if running..."
 pm2 delete all || true
