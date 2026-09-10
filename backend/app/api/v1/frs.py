@@ -35,34 +35,11 @@ def load_frs_targets() -> Dict[str, Dict[str, Any]]:
         try:
             with open(FRS_TARGETS_FILE, "r", encoding="utf-8") as f:
                 data = json.load(f)
-                if data and isinstance(data, dict) and len(data) > 0:
+                if isinstance(data, dict):
                     return data
         except Exception:
             pass
-    # Initial sample suspect for immediate testing
-    initial_sample = {
-        "TGT-GJ-001": {
-            "person_id": "TGT-GJ-001",
-            "person_name": "Rahul Sharma",
-            "slug": "usr1",
-            "case_id": "FIR-AHM-9021",
-            "category": "CRITICAL_SUSPECT",
-            "alert_priority": "HIGH",
-            "s3_key": "frs/targets/TGT-GJ-001/face_reference.jpg",
-            "photo_version": "v_1725700000_sample",
-            "s3_clip_key": "frs/targets/TGT-GJ-001/clip.mp4",
-            "clip_version": "v_1725700000_clip",
-            "media_path": "clips/usr1/clip.mp4",
-            "face_image_path": "clips/usr1/face_reference.jpg",
-            "enabled": 1,
-            "target_cameras": ["ALL"],
-            "similarity_threshold": 0.78,
-            "notes": "Suspect in Ahmedabad vehicle theft series",
-            "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ"),
-            "updated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ")
-        }
-    }
-    return initial_sample
+    return {}
 
 def save_frs_targets(targets: Dict[str, Dict[str, Any]]):
     try:
@@ -78,7 +55,7 @@ async def get_current_frs_targets() -> Dict[str, Dict[str, Any]]:
     global SAVED_FRS_TARGETS
     try:
         db_targets = await fetch_all_frs_targets()
-        if db_targets:
+        if db_targets is not None:
             loaded: Dict[str, Dict[str, Any]] = {}
             for t in db_targets:
                 pid = t["person_id"]
@@ -89,7 +66,7 @@ async def get_current_frs_targets() -> Dict[str, Dict[str, Any]]:
     except Exception as e:
         print(f"[FRS RDS FETCH WARN] {e}")
 
-    # Fallback to local file or default sample
+    # Fallback to local file only if DB query failed
     SAVED_FRS_TARGETS = load_frs_targets()
     return SAVED_FRS_TARGETS
 
@@ -504,19 +481,19 @@ async def delete_target(person_id: str):
     except Exception as e:
         print(f"[RDS FRS DEACTIVATE WARN] {e}")
 
-    if person_id in SAVED_FRS_TARGETS:
-        deleted = SAVED_FRS_TARGETS.pop(person_id)
-        _PHOTO_MEMORY_CACHE.pop(person_id, None)
-        save_frs_targets(SAVED_FRS_TARGETS)
-        
-        print("\n" + "=" * 65)
-        print(f"[LIVE DEMO] FRS SUSPECT TARGET REMOVED: {deleted.get('person_name')}")
-        print(f" -> Person ID      : {person_id}")
-        print(f" -> Total Suspects : {len(SAVED_FRS_TARGETS)} Remaining in Registry")
-        print("=" * 65 + "\n")
+    deleted = SAVED_FRS_TARGETS.pop(person_id, None)
+    _PHOTO_MEMORY_CACHE.pop(person_id, None)
+    _CLIP_MEMORY_CACHE.pop(person_id, None)
+    save_frs_targets(SAVED_FRS_TARGETS)
+    
+    person_name = deleted.get('person_name', person_id) if deleted else person_id
+    print("\n" + "=" * 65)
+    print(f"[LIVE DEMO] FRS SUSPECT TARGET REMOVED: {person_name}")
+    print(f" -> Person ID      : {person_id}")
+    print(f" -> Total Suspects : {len(SAVED_FRS_TARGETS)} Remaining in Registry")
+    print("=" * 65 + "\n")
 
-        return ApiResponse.ok({"message": f"Target {person_id} deleted successfully", "person_id": person_id})
-    raise HTTPException(status_code=404, detail="Target not found")
+    return ApiResponse.ok({"message": f"Target {person_id} deleted successfully", "person_id": person_id})
 
 # ─────────────────────────────────────────────────────────────────────────────
 # IN-MEMORY MATCHES BUFFER & S3 HELPER

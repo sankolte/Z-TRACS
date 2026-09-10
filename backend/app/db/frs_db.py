@@ -112,11 +112,11 @@ async def ensure_frs_matches_table() -> bool:
         except Exception:
             pass
 
-async def fetch_all_frs_targets() -> List[Dict[str, Any]]:
+async def fetch_all_frs_targets() -> Optional[List[Dict[str, Any]]]:
     """Fetch all active suspect targets from AWS RDS PostgreSQL."""
     conn = await get_db_connection()
     if not conn:
-        return []
+        return None
     try:
         rows = await conn.fetch("""
             SELECT person_id, person_name, slug, case_id, category, alert_priority,
@@ -145,7 +145,7 @@ async def fetch_all_frs_targets() -> List[Dict[str, Any]]:
         return results
     except Exception as e:
         print(f"[RDS FRS TARGETS FETCH ERROR] {e}")
-        return []
+        return None
     finally:
         try:
             await conn.close()

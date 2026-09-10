@@ -432,15 +432,20 @@ export const FaceRecognitionView: React.FC<FaceRecognitionViewProps> = ({
     }
   };
 
-  // Delete Target
+  // Delete Target (Optimistic removal so the UI card vanishes immediately)
   const handleDeleteTarget = async (personId: string, name: string) => {
+    // 1. Immediately remove from local state
+    setTargets(prev => prev.filter(t => t.person_id !== personId));
+    setStatusMessage(`Suspect "${name}" removed from surveillance.`);
+
     try {
       await ApiClient.deleteFrsTarget(personId);
-      setStatusMessage(`Suspect "${name}" removed from surveillance.`);
-      fetchTargets();
+      await fetchTargets();
       setTimeout(() => setStatusMessage(null), 3000);
     } catch (err) {
       console.warn('[FRS Delete]', err);
+      // Restore on failure
+      fetchTargets();
     }
   };
 
