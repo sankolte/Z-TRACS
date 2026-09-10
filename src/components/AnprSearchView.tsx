@@ -190,20 +190,19 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
     return undefined;
   };
 
-  // 1. Map system alerts passed from App state (only with real CCTV snapshots)
+  // 1. Map system alerts passed from App state (real-time alerts stream)
   const alertsMapped: AnprEvent[] = alerts
     .map(a => {
-      const p = (a.plateNumber || a.title.replace(/.*:\s*/, '') || 'UNKNOWN').trim().toUpperCase();
+      const p = (a.plateNumber || a.title?.replace(/.*:\s*/, '') || 'UNKNOWN').trim().toUpperCase();
+      if (!p || p === 'UNKNOWN') return null;
       const camCode = a.cameraCode || 'CAM-001';
       const camName = a.cameraName || `Camera ${camCode}`;
       const dist = a.district || 'Ahmedabad';
-      const snapUrl = formatSnapshotUrl(a.snapshot);
-      const isWatchlist = a.category === 'WATCHLIST_MATCH' || a.category === 'WATCHLIST_HIT' || a.severity === 'CRITICAL' || a.title.toLowerCase().includes('watchlist');
-
-      if (!snapUrl) return null;
+      const snapUrl = formatSnapshotUrl(a.snapshot) || DEFAULT_PLATE_CROP;
+      const isWatchlist = a.category === 'WATCHLIST_MATCH' || a.category === 'WATCHLIST_HIT' || a.severity === 'CRITICAL' || a.title?.toLowerCase().includes('watchlist');
 
       return {
-        id: String(a.id),
+        id: String(a.id || `alert-${p}-${a.timestamp || Date.now()}`),
         plateNumber: p,
         vehicleType: a.vehicleType || a.vehicle_type || 'Motor Vehicle',
         color: '',
@@ -216,7 +215,7 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
         district: dist,
         departmentId: a.departmentId || 'DEPT-POL-01',
         departmentName: a.departmentName || 'Gujarat Police Traffic Division',
-        locationDescription: a.locationDescription || a.location || a.notes || `Detected at ${camName} (${dist})`,
+        locationDescription: a.locationDescription || a.location || a.notes || `🚨 Real-time Watchlist Hit at ${camName} (${dist})`,
         latitude: a.latitude || 23.0225,
         longitude: a.longitude || 72.5714,
         timestamp: a.timestamp || new Date().toISOString(),
@@ -229,18 +228,17 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
     })
     .filter(Boolean) as AnprEvent[];
 
-  // 2. Map live detections fetched directly from backend (only with real CCTV snapshots)
+  // 2. Map live detections fetched directly from backend
   const liveEventsMapped: AnprEvent[] = liveDetections
     .map(a => {
       const p = (a.plateNumber || a.number_plate || a.plate || a.title?.replace(/.*:\s*/, '') || 'UNKNOWN').trim().toUpperCase();
+      if (!p || p === 'UNKNOWN') return null;
       const camCode = a.cameraCode || (a.camera_id ? `CAM-${String(a.camera_id).padStart(3, '0')}` : 'CAM-011');
       const camName = a.cameraName || (a.camera_id ? `Camera ${a.camera_id} (${a.district || 'Gujarat'})` : 'Gujarat Surveillance Node');
       const dist = a.district || 'Rajkot';
-      const snapUrl = formatSnapshotUrl(a.snapshot);
+      const snapUrl = formatSnapshotUrl(a.snapshot) || DEFAULT_PLATE_CROP;
       const isWatchlist = a.category === 'WATCHLIST_MATCH' || a.category === 'WATCHLIST_HIT' || a.severity === 'CRITICAL' || Boolean(a.watchlist) || String(a.title || '').toLowerCase().includes('watchlist');
       const ts = a.timestamp || a.receivedAt || a.created_at || new Date().toISOString();
-
-      if (!snapUrl) return null;
 
       return {
         id: String(a.id || `evt-${Math.random()}`),
@@ -269,7 +267,7 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
     })
     .filter(Boolean) as AnprEvent[];
 
-  const combinedEvents = [...alertsMapped, ...liveEventsMapped];
+  const combinedEvents = [...alertsMapped, ...liveEventsMapped, ...(anprEvents || [])];
   const uniqueEventsMap = new Map<string, AnprEvent>();
   combinedEvents.forEach(e => {
     const key = e.id || `${e.plateNumber}_${e.cameraCode}_${e.timestamp}`;
@@ -278,7 +276,12 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
     }
   });
 
-  const allEventsList = Array.from(uniqueEventsMap.values());
+  // Sort descending by timestamp so real-time alerts appear at the very top (Row 1)
+  const allEventsList = Array.from(uniqueEventsMap.values()).sort((a, b) => {
+    const timeA = new Date(a.timestamp).getTime() || 0;
+    const timeB = new Date(b.timestamp).getTime() || 0;
+    return timeB - timeA;
+  });
 
   // Filtered ANPR records
   const filteredEvents = allEventsList.filter(evt => {

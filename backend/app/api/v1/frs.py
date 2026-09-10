@@ -4,7 +4,7 @@ from fastapi.responses import Response, RedirectResponse
 from app.schemas.api_response import ApiResponse
 from app.websockets.manager import ws_manager
 from app.storage.s3 import s3_storage
-from app.db.frs_db import get_db_connection, fetch_all_frs_targets, upsert_frs_target, deactivate_frs_target
+from app.db.frs_db import get_db_connection, fetch_all_frs_targets, upsert_frs_target, deactivate_frs_target, delete_frs_matches_by_target
 import json
 import os
 import re
@@ -475,11 +475,16 @@ async def upload_target_with_video(
 
 @router.delete("/targets/{person_id}")
 async def delete_target(person_id: str):
-    """Delete or deactivate a suspect target."""
+    """Delete or deactivate a suspect target and purge all associated sighting matches."""
     try:
         await deactivate_frs_target(person_id)
+        await delete_frs_matches_by_target(person_id)
     except Exception as e:
-        print(f"[RDS FRS DEACTIVATE WARN] {e}")
+        print(f"[RDS FRS DEACTIVATE/PURGE WARN] {e}")
+
+    # Purge any active matches for this person from transient memory buffer
+    global IN_MEMORY_FRS_MATCHES
+    IN_MEMORY_FRS_MATCHES = [m for m in IN_MEMORY_FRS_MATCHES if m.get("person_id") != person_id]
 
     deleted = SAVED_FRS_TARGETS.pop(person_id, None)
     _PHOTO_MEMORY_CACHE.pop(person_id, None)
@@ -490,10 +495,11 @@ async def delete_target(person_id: str):
     print("\n" + "=" * 65)
     print(f"[LIVE DEMO] FRS SUSPECT TARGET REMOVED: {person_name}")
     print(f" -> Person ID      : {person_id}")
+    print(f" -> Matches Purged : All sightings for {person_id} removed from RDS & Cache")
     print(f" -> Total Suspects : {len(SAVED_FRS_TARGETS)} Remaining in Registry")
     print("=" * 65 + "\n")
 
-    return ApiResponse.ok({"message": f"Target {person_id} deleted successfully", "person_id": person_id})
+    return ApiResponse.ok({"message": f"Target {person_id} deleted successfully and sighting matches purged", "person_id": person_id})
 
 # ─────────────────────────────────────────────────────────────────────────────
 # IN-MEMORY MATCHES BUFFER & S3 HELPER

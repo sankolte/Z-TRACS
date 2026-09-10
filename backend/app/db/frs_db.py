@@ -228,6 +228,24 @@ async def deactivate_frs_target(person_id: str) -> bool:
         except Exception:
             pass
 
+async def delete_frs_matches_by_target(person_id: str) -> bool:
+    """Delete all sighting match records for a given suspect from AWS RDS PostgreSQL."""
+    conn = await get_db_connection()
+    if not conn:
+        return False
+    try:
+        await conn.execute("DELETE FROM frs_matches WHERE person_id = $1;", person_id)
+        print(f"[RDS SUCCESS] Purged all sighting matches for suspect {person_id}.")
+        return True
+    except Exception as e:
+        print(f"[RDS FRS MATCHES PURGE ERROR] {e}")
+        return False
+    finally:
+        try:
+            await conn.close()
+        except Exception:
+            pass
+
 async def ensure_all_frs_tables():
     """Initialize all FRS tables on server startup."""
     await ensure_frs_targets_table()
