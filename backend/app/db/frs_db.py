@@ -1,6 +1,7 @@
 import os
+import json
 import asyncpg
-from typing import Optional
+from typing import Optional, List, Dict, Any
 from app.core.config import settings
 
 async def get_db_connection():
@@ -104,6 +105,122 @@ async def ensure_frs_matches_table() -> bool:
         return True
     except Exception as e:
         print(f"[RDS ERROR] Failed to create 'frs_matches' table: {e}")
+        return False
+    finally:
+        try:
+            await conn.close()
+        except Exception:
+            pass
+
+async def fetch_all_frs_targets() -> List[Dict[str, Any]]:
+    """Fetch all active suspect targets from AWS RDS PostgreSQL."""
+    conn = await get_db_connection()
+    if not conn:
+        return []
+    try:
+        rows = await conn.fetch("""
+            SELECT person_id, person_name, slug, case_id, category, alert_priority,
+                   photo_url, clip_url, s3_key, s3_clip_key, photo_version, clip_version,
+                   similarity_threshold, target_cameras, enabled, notes, created_at, updated_at
+            FROM frs_targets
+            WHERE enabled = 1
+            ORDER BY created_at DESC;
+        """)
+        results = []
+        for r in rows:
+            d = dict(r)
+            if d.get("created_at"):
+                d["created_at"] = d["created_at"].isoformat()
+            if d.get("updated_at"):
+                d["updated_at"] = d["updated_at"].isoformat()
+            if isinstance(d.get("target_cameras"), str):
+                try:
+                    if d["target_cameras"].startswith("["):
+                        d["target_cameras"] = json.loads(d["target_cameras"])
+                    else:
+                        d["target_cameras"] = [d["target_cameras"]]
+                except Exception:
+                    d["target_cameras"] = ["ALL"]
+            results.append(d)
+        return results
+    except Exception as e:
+        print(f"[RDS FRS TARGETS FETCH ERROR] {e}")
+        return []
+    finally:
+        try:
+            await conn.close()
+        except Exception:
+            pass
+
+async def upsert_frs_target(target: Dict[str, Any]) -> bool:
+    """Insert or update target in AWS RDS PostgreSQL."""
+    conn = await get_db_connection()
+    if not conn:
+        return False
+    try:
+        await conn.execute("""
+            INSERT INTO frs_targets (
+                person_id, person_name, slug, case_id, category, alert_priority,
+                photo_url, clip_url, s3_key, s3_clip_key, photo_version, clip_version,
+                similarity_threshold, target_cameras, enabled, notes, updated_at
+            ) VALUES (
+                $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, NOW()
+            )
+            ON CONFLICT (person_id) DO UPDATE SET
+                person_name = EXCLUDED.person_name,
+                slug = EXCLUDED.slug,
+                case_id = EXCLUDED.case_id,
+                category = EXCLUDED.category,
+                alert_priority = EXCLUDED.alert_priority,
+                photo_url = COALESCE(EXCLUDED.photo_url, frs_targets.photo_url),
+                clip_url = COALESCE(EXCLUDED.clip_url, frs_targets.clip_url),
+                s3_key = COALESCE(EXCLUDED.s3_key, frs_targets.s3_key),
+                s3_clip_key = COALESCE(EXCLUDED.s3_clip_key, frs_targets.s3_clip_key),
+                photo_version = EXCLUDED.photo_version,
+                clip_version = EXCLUDED.clip_version,
+                similarity_threshold = EXCLUDED.similarity_threshold,
+                target_cameras = EXCLUDED.target_cameras,
+                enabled = EXCLUDED.enabled,
+                notes = EXCLUDED.notes,
+                updated_at = NOW();
+        """,
+            target.get("person_id"),
+            target.get("person_name"),
+            target.get("slug") or "usr1",
+            target.get("case_id") or "UNKNOWN",
+            target.get("category") or "CRITICAL_SUSPECT",
+            target.get("alert_priority") or "HIGH",
+            target.get("photo_url"),
+            target.get("clip_url"),
+            target.get("s3_key"),
+            target.get("s3_clip_key"),
+            target.get("photo_version") or "v1",
+            target.get("clip_version") or "v1",
+            float(target.get("similarity_threshold") or 0.78),
+            json.dumps(target.get("target_cameras")) if isinstance(target.get("target_cameras"), list) else str(target.get("target_cameras") or "ALL"),
+            int(target.get("enabled", 1)),
+            target.get("notes") or ""
+        )
+        return True
+    except Exception as e:
+        print(f"[RDS FRS TARGET UPSERT ERROR] {e}")
+        return False
+    finally:
+        try:
+            await conn.close()
+        except Exception:
+            pass
+
+async def deactivate_frs_target(person_id: str) -> bool:
+    """Deactivate suspect target in AWS RDS PostgreSQL."""
+    conn = await get_db_connection()
+    if not conn:
+        return False
+    try:
+        await conn.execute("UPDATE frs_targets SET enabled = 0, updated_at = NOW() WHERE person_id = $1;", person_id)
+        return True
+    except Exception as e:
+        print(f"[RDS FRS DEACTIVATE ERROR] {e}")
         return False
     finally:
         try:

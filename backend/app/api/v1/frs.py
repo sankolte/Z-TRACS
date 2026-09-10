@@ -4,7 +4,7 @@ from fastapi.responses import Response, RedirectResponse
 from app.schemas.api_response import ApiResponse
 from app.websockets.manager import ws_manager
 from app.storage.s3 import s3_storage
-from app.db.frs_db import get_db_connection
+from app.db.frs_db import get_db_connection, fetch_all_frs_targets, upsert_frs_target, deactivate_frs_target
 import json
 import os
 import re
@@ -34,7 +34,9 @@ def load_frs_targets() -> Dict[str, Dict[str, Any]]:
     if os.path.exists(FRS_TARGETS_FILE):
         try:
             with open(FRS_TARGETS_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
+                data = json.load(f)
+                if data and isinstance(data, dict) and len(data) > 0:
+                    return data
         except Exception:
             pass
     # Initial sample suspect for immediate testing
@@ -71,6 +73,26 @@ def save_frs_targets(targets: Dict[str, Dict[str, Any]]):
 
 SAVED_FRS_TARGETS: Dict[str, Dict[str, Any]] = load_frs_targets()
 
+async def get_current_frs_targets() -> Dict[str, Dict[str, Any]]:
+    """Fetches targets from AWS RDS PostgreSQL first, falls back to disk cache."""
+    global SAVED_FRS_TARGETS
+    try:
+        db_targets = await fetch_all_frs_targets()
+        if db_targets:
+            loaded: Dict[str, Dict[str, Any]] = {}
+            for t in db_targets:
+                pid = t["person_id"]
+                loaded[pid] = t
+            SAVED_FRS_TARGETS = loaded
+            save_frs_targets(SAVED_FRS_TARGETS)
+            return SAVED_FRS_TARGETS
+    except Exception as e:
+        print(f"[FRS RDS FETCH WARN] {e}")
+
+    # Fallback to local file or default sample
+    SAVED_FRS_TARGETS = load_frs_targets()
+    return SAVED_FRS_TARGETS
+
 # ─────────────────────────────────────────────────────────────────────────────
 # FRS TARGET MANAGEMENT ENDPOINTS
 # ─────────────────────────────────────────────────────────────────────────────
@@ -79,7 +101,7 @@ SAVED_FRS_TARGETS: Dict[str, Dict[str, Any]] = load_frs_targets()
 async def get_all_targets():
     """Retrieve all active face recognition suspect targets."""
     global SAVED_FRS_TARGETS
-    SAVED_FRS_TARGETS = load_frs_targets()
+    SAVED_FRS_TARGETS = await get_current_frs_targets()
     return ApiResponse.ok(list(SAVED_FRS_TARGETS.values()))
 
 @router.get("/targets/{person_id}/photo")
@@ -135,7 +157,7 @@ async def get_target_clip(person_id: str):
 async def export_targets_for_edge():
     """High-speed batch endpoint for update_frs.py edge daemon listener."""
     global SAVED_FRS_TARGETS
-    SAVED_FRS_TARGETS = load_frs_targets()
+    SAVED_FRS_TARGETS = await get_current_frs_targets()
     targets_list = []
     for t in SAVED_FRS_TARGETS.values():
         if t.get("enabled", 1) == 1:
@@ -451,6 +473,10 @@ async def upload_target_with_video(
 
     SAVED_FRS_TARGETS[person_id] = target_obj
     save_frs_targets(SAVED_FRS_TARGETS)
+    try:
+        await upsert_frs_target(target_obj)
+    except Exception as e:
+        print(f"[RDS FRS ONBOARD SYNC WARN] {e}")
 
     print("\n" + "=" * 65)
     print(f"[FAST MULTIPART UPLOAD] FRS SUSPECT ONBOARDED: {clean_name}")
@@ -473,6 +499,11 @@ async def upload_target_with_video(
 @router.delete("/targets/{person_id}")
 async def delete_target(person_id: str):
     """Delete or deactivate a suspect target."""
+    try:
+        await deactivate_frs_target(person_id)
+    except Exception as e:
+        print(f"[RDS FRS DEACTIVATE WARN] {e}")
+
     if person_id in SAVED_FRS_TARGETS:
         deleted = SAVED_FRS_TARGETS.pop(person_id)
         _PHOTO_MEMORY_CACHE.pop(person_id, None)
