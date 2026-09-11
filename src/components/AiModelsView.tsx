@@ -24,7 +24,9 @@ import {
   Activity,
   AlertTriangle,
   RefreshCw,
-  Edit3
+  Edit3,
+  PowerOff,
+  PlusCircle
 } from 'lucide-react';
 import { Camera, Language } from '../types';
 import { ApiClient } from '../services/apiClient';
@@ -546,69 +548,97 @@ export const AiModelsView: React.FC<AiModelsViewProps> = ({
     return clean;
   };
 
-  // Compute list of configured cameras with active models (Deduplicated by Canonical Camera Code)
-  const canonicalConfigMap = new Map<string, any>();
+  // Helper to extract enabled models and status for any camera
+  const getCameraModelSummary = (cameraCode: string) => {
+    const canonical = toCanonicalCode(cameraCode);
+    const cfg = allAiConfigs[canonical] || allAiConfigs[cameraCode];
+    if (!cfg) return { hasAi: false, label: '⚪ IDLE (NO AI)', modelsList: [] as string[], enabledKeys: [] as string[] };
 
-  Object.entries(allAiConfigs).forEach(([code, rawCfg]) => {
-    const cfg: any = rawCfg;
-    const canonicalCode = toCanonicalCode(code);
-    const matchedCam = cameras.find(c => 
-      c.cameraCode === canonicalCode || 
-      toCanonicalCode(c.cameraCode) === canonicalCode
-    );
-    
-    // Check which models are enabled
-    const enabledModelKeys: string[] = [];
-    if (cfg.models) {
+    let enabledKeys: string[] = [];
+    if (cfg.models && typeof cfg.models === 'object') {
       Object.entries(cfg.models).forEach(([key, val]) => {
-        if (val) enabledModelKeys.push(key);
+        if (val) enabledKeys.push(key);
       });
     } else if (Array.isArray(cfg.usecases)) {
       cfg.usecases.forEach((u: string) => {
         const def = AI_MODEL_DEFINITIONS.find(m => m.usecaseKey.toLowerCase() === u.toLowerCase());
-        if (def) enabledModelKeys.push(def.id);
+        if (def) enabledKeys.push(def.id);
       });
+    } else if (Array.isArray(cfg.enable)) {
+      if (cfg.enable[0]) enabledKeys.push('anpr');
+      if (cfg.enable[1]) enabledKeys.push('frs');
+      if (cfg.enable[2]) enabledKeys.push('ppe');
+      if (cfg.enable[3]) enabledKeys.push('footfall');
     }
 
-    if (enabledModelKeys.length > 0) {
-      // Overwrite or update with latest config
-      canonicalConfigMap.set(canonicalCode, {
-        cameraCode: canonicalCode,
-        cameraName: matchedCam ? matchedCam.name : `Camera ${canonicalCode}`,
-        district: matchedCam ? matchedCam.district : 'Gujarat Statewide',
-        location: matchedCam ? matchedCam.location : 'Surveillance Grid Node',
-        targetFps: cfg.target_fps || 15,
-        confidence: cfg.confidence_threshold || 85,
-        enabledModelKeys,
-        rawConfig: cfg
-      });
+    if (enabledKeys.length > 0) {
+      const displayNames = enabledKeys.map(k => k.toUpperCase());
+      return {
+        hasAi: true,
+        label: `🟢 [${displayNames.join(', ')}]`,
+        modelsList: displayNames,
+        enabledKeys
+      };
     }
+    return { hasAi: false, label: '⚪ IDLE (NO AI)', modelsList: [] as string[], enabledKeys: [] as string[] };
+  };
+
+  // Build unified status for every camera node in the system
+  const allCamerasMapped = (cameras || []).map(cam => {
+    const canonicalCode = toCanonicalCode(cam.cameraCode);
+    const summary = getCameraModelSummary(cam.cameraCode);
+    const rawCfg = allAiConfigs[canonicalCode] || allAiConfigs[cam.cameraCode] || {};
+
+    return {
+      cameraCode: cam.cameraCode,
+      canonicalCode,
+      cameraName: cam.name,
+      district: cam.district,
+      location: cam.location,
+      hasAi: summary.hasAi,
+      enabledModelKeys: summary.enabledKeys,
+      modelsList: summary.modelsList,
+      targetFps: rawCfg.target_fps || 15,
+      confidence: rawCfg.confidence_threshold || 85,
+      rawConfig: rawCfg
+    };
   });
 
-  const configuredList = Array.from(canonicalConfigMap.values());
+  const activeCameras = allCamerasMapped.filter(c => c.hasAi);
+  const idleCameras = allCamerasMapped.filter(c => !c.hasAi);
 
-  // Filter configured cameras based on search query
-  const filteredConfigured = configuredList.filter(item => {
-    const q = searchFilter.toLowerCase().trim();
-    if (!q) return true;
-    return (
-      item.cameraCode.toLowerCase().includes(q) ||
-      item.cameraName.toLowerCase().includes(q) ||
-      item.district.toLowerCase().includes(q) ||
-      item.location.toLowerCase().includes(q) ||
-      item.enabledModelKeys.some(k => k.toLowerCase().includes(q))
-    );
+  // Filter Tab State: 'active' | 'idle' | 'all'
+  const [filterTab, setFilterTab] = useState<'active' | 'idle' | 'all'>('active');
 
-  });
+  // Filter list based on selected tab and search query
+  const displayedCameras = allCamerasMapped
+    .filter(c => {
+      if (filterTab === 'active') return c.hasAi;
+      if (filterTab === 'idle') return !c.hasAi;
+      return true;
+    })
+    .filter(item => {
+      const q = searchFilter.toLowerCase().trim();
+      if (!q) return true;
+      return (
+        item.cameraCode.toLowerCase().includes(q) ||
+        item.cameraName.toLowerCase().includes(q) ||
+        item.district.toLowerCase().includes(q) ||
+        item.location.toLowerCase().includes(q) ||
+        item.enabledModelKeys.some(k => k.toLowerCase().includes(q))
+      );
+    });
 
   // Calculate telemetry counts
-  const totalConfigured = configuredList.length;
-  const anprCount = configuredList.filter(c => c.enabledModelKeys.includes('anpr')).length;
-  const frsCount = configuredList.filter(c => c.enabledModelKeys.includes('frs')).length;
-  const safetyCount = configuredList.filter(c => 
-    c.enabledModelKeys.includes('crowd') || 
-    c.enabledModelKeys.includes('ppe') || 
-    c.enabledModelKeys.includes('footfall') || 
+  const totalCamerasCount = allCamerasMapped.length;
+  const activeCount = activeCameras.length;
+  const idleCount = idleCameras.length;
+  const anprCount = activeCameras.filter(c => c.enabledModelKeys.includes('anpr')).length;
+  const frsCount = activeCameras.filter(c => c.enabledModelKeys.includes('frs')).length;
+  const safetyCount = activeCameras.filter(c =>
+    c.enabledModelKeys.includes('crowd') ||
+    c.enabledModelKeys.includes('ppe') ||
+    c.enabledModelKeys.includes('footfall') ||
     c.enabledModelKeys.includes('perimeter')
   ).length;
 
@@ -678,7 +708,7 @@ export const AiModelsView: React.FC<AiModelsViewProps> = ({
 
       {/* SECTION 1: Configurator for Selected Camera Node */}
       <div ref={topConfiguratorRef} className="space-y-4">
-        {/* Camera Selector Bar */}
+        {/* Camera Selector Bar with Live AI Status Badges */}
         <div className="bg-[#051329] border border-[#0e274d] rounded-2xl p-4.5 shadow-md flex flex-wrap items-center justify-between gap-4 text-white">
           <div className="flex items-center space-x-3 flex-1 min-w-[340px]">
             <CameraIcon className="w-5 h-5 text-[#0072CE]" />
@@ -691,11 +721,14 @@ export const AiModelsView: React.FC<AiModelsViewProps> = ({
               }}
               className="flex-1 bg-[#0b1b36] border border-[#1d3b6a] rounded-xl px-3.5 py-2 text-xs font-bold text-white focus:ring-2 focus:ring-[#0072CE] focus:outline-none cursor-pointer"
             >
-              {cameras.map(c => (
-                <option key={c.cameraCode} value={c.cameraCode}>
-                  {c.cameraCode} — {c.name} ({c.district})
-                </option>
-              ))}
+              {cameras.map(c => {
+                const summary = getCameraModelSummary(c.cameraCode);
+                return (
+                  <option key={c.cameraCode} value={c.cameraCode}>
+                    {c.cameraCode} • {summary.label} — {c.name} ({c.district})
+                  </option>
+                );
+              })}
             </select>
           </div>
         </div>
@@ -719,14 +752,14 @@ export const AiModelsView: React.FC<AiModelsViewProps> = ({
             <div>
               <div className="flex items-center space-x-2.5">
                 <h2 className="text-sm font-extrabold text-white tracking-wide uppercase">
-                  My Configured AI Cameras & Active Models
+                  Camera Vision Nodes & Active AI Manifest
                 </h2>
                 <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                   LIVE EDGE MANIFEST
                 </span>
               </div>
               <p className="text-xs text-slate-400 mt-0.5">
-                Overview of all cameras you have provisioned with AI vision pipelines. Modify or undeploy anytime.
+                Overview of all cameras across Gujarat. Switch between Active, Idle, or All cameras to inspect and deploy models.
               </p>
             </div>
           </div>
@@ -734,10 +767,26 @@ export const AiModelsView: React.FC<AiModelsViewProps> = ({
           {/* Quick Metrics Bar */}
           <div className="flex flex-wrap items-center gap-2 text-xs">
             <div className="bg-[#00253E] border border-[#00385C] px-3 py-1.5 rounded-xl flex items-center space-x-2">
-              <Activity className="w-4 h-4 text-emerald-400" />
-              <span className="text-slate-300 font-medium">Total AI Active:</span>
-              <span className="font-extrabold text-white bg-emerald-500/30 px-2 py-0.5 rounded text-[11px] font-mono">
-                {totalConfigured} Cams
+              <Activity className="w-4 h-4 text-sky-400" />
+              <span className="text-slate-300 font-medium">Total Cameras:</span>
+              <span className="font-extrabold text-white bg-sky-500/20 border border-sky-500/30 px-2 py-0.5 rounded text-[11px] font-mono">
+                {totalCamerasCount} Cams
+              </span>
+            </div>
+
+            <div className="bg-[#00253E] border border-[#00385C] px-3 py-1.5 rounded-xl flex items-center space-x-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-slate-300 font-medium">AI Active:</span>
+              <span className="font-extrabold text-emerald-300 bg-emerald-500/20 border border-emerald-500/30 px-2 py-0.5 rounded text-[11px] font-mono">
+                {activeCount} Cams
+              </span>
+            </div>
+
+            <div className="bg-[#00253E] border border-[#00385C] px-3 py-1.5 rounded-xl flex items-center space-x-2">
+              <span className="w-2 h-2 rounded-full bg-slate-400" />
+              <span className="text-slate-300 font-medium">AI Disabled:</span>
+              <span className="font-extrabold text-slate-300 bg-slate-700/50 border border-slate-600 px-2 py-0.5 rounded text-[11px] font-mono">
+                {idleCount} Cams
               </span>
             </div>
 
@@ -755,10 +804,49 @@ export const AiModelsView: React.FC<AiModelsViewProps> = ({
 
             <div className="bg-[#00253E] border border-[#00385C] px-3 py-1.5 rounded-xl flex items-center space-x-2">
               <ShieldAlert className="w-4 h-4 text-amber-400" />
-              <span className="text-slate-300 font-medium">Crowd / Safety:</span>
+              <span className="text-slate-300 font-medium">Safety:</span>
               <span className="font-bold text-amber-300">{safetyCount}</span>
             </div>
           </div>
+        </div>
+
+        {/* Tab Selector: Active vs Idle vs All */}
+        <div className="flex flex-wrap items-center gap-2.5 border-b border-[#00385C] pb-3">
+          <button
+            onClick={() => setFilterTab('active')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center space-x-2 ${
+              filterTab === 'active'
+                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm ring-1 ring-emerald-500/30'
+                : 'bg-[#00253E] text-slate-400 hover:text-white border border-[#00385C]'
+            }`}
+          >
+            <span className="w-2 h-2 rounded-full bg-emerald-400" />
+            <span>Active AI Nodes ({activeCount})</span>
+          </button>
+
+          <button
+            onClick={() => setFilterTab('idle')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center space-x-2 ${
+              filterTab === 'idle'
+                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm ring-1 ring-amber-500/30'
+                : 'bg-[#00253E] text-slate-400 hover:text-white border border-[#00385C]'
+            }`}
+          >
+            <span className="w-2 h-2 rounded-full bg-slate-500" />
+            <span>Disabled / Idle Nodes ({idleCount})</span>
+          </button>
+
+          <button
+            onClick={() => setFilterTab('all')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center space-x-2 ${
+              filterTab === 'all'
+                ? 'bg-[#0072CE]/30 text-sky-300 border border-[#0072CE]/50 shadow-sm ring-1 ring-[#0072CE]/30'
+                : 'bg-[#00253E] text-slate-400 hover:text-white border border-[#00385C]'
+            }`}
+          >
+            <Layers className="w-3.5 h-3.5" />
+            <span>All Camera Nodes ({totalCamerasCount})</span>
+          </button>
         </div>
 
         {/* Search & Action Bar */}
@@ -769,7 +857,7 @@ export const AiModelsView: React.FC<AiModelsViewProps> = ({
               type="text"
               value={searchFilter}
               onChange={(e) => setSearchFilter(e.target.value)}
-              placeholder="Search configured cameras by code, location, or model name..."
+              placeholder="Search cameras by code, location, or model name..."
               className="w-full bg-[#001c33] border border-[#00385c] rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#0072ce]"
             />
           </div>
@@ -783,48 +871,142 @@ export const AiModelsView: React.FC<AiModelsViewProps> = ({
           </button>
         </div>
 
-        {/* Configured Camera Cards Grid */}
-        {filteredConfigured.length === 0 ? (
+        {/* Camera Cards Grid (Active + Idle) */}
+        {displayedCameras.length === 0 ? (
           <div className="bg-[#001c33] border border-[#00385c] rounded-2xl p-10 text-center space-y-3">
             <div className="w-14 h-14 rounded-2xl bg-slate-800/80 border border-slate-700 mx-auto flex items-center justify-center text-slate-400 shadow-inner">
               <Cpu className="w-7 h-7" />
             </div>
-            <h3 className="text-sm font-bold text-white">No Configured AI Cameras Found</h3>
+            <h3 className="text-sm font-bold text-white">No Camera Nodes Found</h3>
             <p className="text-xs text-slate-400 max-w-md mx-auto">
               {searchFilter
-                ? `No configured cameras match "${searchFilter}". Try clearing your search filter.`
-                : `Select a camera node from the top configurator, choose your desired AI vision models (ANPR, FRS, PPE, Crowd), and click "Save & Deploy AI Config".`}
+                ? `No camera nodes match "${searchFilter}". Try clearing your search filter.`
+                : `No camera nodes found in this category.`}
             </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {filteredConfigured.map((item) => {
+            {displayedCameras.map((item) => {
               const isCurrent = item.cameraCode === selectedCamCode;
               const isThisUndeploying = isUndeploying === item.cameraCode;
 
+              if (item.hasAi) {
+                // ACTIVE AI CAMERA CARD
+                return (
+                  <div
+                    key={item.cameraCode}
+                    className={`bg-[#001c33] border rounded-2xl p-5 shadow-lg flex flex-col justify-between transition-all duration-150 ${
+                      isCurrent
+                        ? 'border-[#0072ce] ring-2 ring-[#0072ce]/40 shadow-sky-950/40 bg-gradient-to-br from-[#001c33] to-[#012644]'
+                        : 'border-emerald-500/30 hover:border-emerald-500/60'
+                    }`}
+                  >
+                    {/* Card Header: Camera ID, Name, Location, Status Badge */}
+                    <div>
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <div className="flex items-center space-x-2">
+                            <span className="font-mono font-extrabold text-xs text-white tracking-wide bg-[#002d4d] px-2.5 py-1 rounded-lg border border-[#00477a]">
+                              {item.cameraCode}
+                            </span>
+                            <span className="flex items-center space-x-1 font-mono text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                              <span>INFERENCING ACTIVE</span>
+                            </span>
+                          </div>
+                          <h4 className="text-xs font-bold text-white mt-2 leading-tight">
+                            {item.cameraName}
+                          </h4>
+                          <div className="text-[11px] text-slate-400 mt-0.5 flex items-center space-x-1.5">
+                            <span>{item.district}</span>
+                            <span>•</span>
+                            <span className="truncate max-w-[200px]">{item.location}</span>
+                          </div>
+                        </div>
+
+                        {/* Target FPS Badge */}
+                        <div className="text-right shrink-0">
+                          <span className="text-[10px] font-mono text-slate-400 block">TARGET</span>
+                          <span className="text-xs font-extrabold text-white font-mono">{item.targetFps} FPS</span>
+                        </div>
+                      </div>
+
+                      {/* Applied Models Chips Section */}
+                      <div className="mt-4 pt-3.5 border-t border-white/5 space-y-2">
+                        <div className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">
+                          Applied AI Models ({item.enabledModelKeys.length}):
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {item.enabledModelKeys.map(key => {
+                            const def = AI_MODEL_DEFINITIONS.find(m => m.id === key);
+                            if (!def) return null;
+                            const Icon = def.icon;
+                            return (
+                              <span
+                                key={key}
+                                className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold border shadow-sm"
+                                style={{
+                                  backgroundColor: def.tagBg,
+                                  color: def.tagColor,
+                                  borderColor: `${def.tagColor}40`
+                                }}
+                              >
+                                <Icon className="w-3.5 h-3.5" />
+                                <span>{def.name.split('(')[0].trim()}</span>
+                              </span>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Card Actions Footer: Edit & Undeploy Buttons */}
+                    <div className="mt-5 pt-3.5 border-t border-white/10 flex items-center justify-between gap-3">
+                      <button
+                        onClick={() => handleEditConfigured(item.cameraCode)}
+                        className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-bold flex items-center space-x-1.5 transition cursor-pointer"
+                      >
+                        <Edit3 className="w-3.5 h-3.5 text-[#0072ce]" />
+                        <span>Edit Models</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleUndeploy(item.cameraCode)}
+                        disabled={isThisUndeploying}
+                        className="px-3.5 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-300 hover:text-rose-200 text-xs font-bold flex items-center space-x-1.5 transition cursor-pointer disabled:opacity-50"
+                        title="Stop inferencing and undeploy all AI models for this camera"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                        <span>{isThisUndeploying ? 'Undeploying...' : 'Undeploy AI'}</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              }
+
+              // IDLE CAMERA CARD
               return (
                 <div
                   key={item.cameraCode}
-                  className={`bg-[#001c33] border rounded-2xl p-5 shadow-lg flex flex-col justify-between transition-colors duration-150 ${
+                  className={`bg-[#00182c]/80 border rounded-2xl p-5 shadow-md flex flex-col justify-between transition-all duration-150 ${
                     isCurrent
-                      ? 'border-[#0072ce] ring-2 ring-[#0072ce]/40 shadow-sky-950/40 bg-gradient-to-br from-[#001c33] to-[#012644]'
-                      : 'border-[#00385c] hover:border-slate-600'
+                      ? 'border-[#0072ce] ring-2 ring-[#0072ce]/40 bg-gradient-to-br from-[#00182c] to-[#01223e]'
+                      : 'border-slate-800 hover:border-slate-700'
                   }`}
                 >
-                  {/* Card Header: Camera ID, Name, Location, Status Badge */}
                   <div>
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <div className="flex items-center space-x-2">
-                          <span className="font-mono font-extrabold text-xs text-white tracking-wide bg-[#002d4d] px-2.5 py-1 rounded-lg border border-[#00477a]">
+                          <span className="font-mono font-extrabold text-xs text-slate-300 tracking-wide bg-slate-800/80 px-2.5 py-1 rounded-lg border border-slate-700">
                             {item.cameraCode}
                           </span>
-                          <span className="flex items-center space-x-1 font-mono text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                            <span>INFERENCING ACTIVE</span>
+                          <span className="flex items-center space-x-1 font-mono text-[10px] font-bold text-slate-400 bg-slate-800/60 border border-slate-700 px-2 py-0.5 rounded-full">
+                            <span className="w-1.5 h-1.5 rounded-full bg-slate-500" />
+                            <span>IDLE / NO AI</span>
                           </span>
                         </div>
-                        <h4 className="text-xs font-bold text-white mt-2 leading-tight">
+                        <h4 className="text-xs font-bold text-slate-200 mt-2 leading-tight">
                           {item.cameraName}
                         </h4>
                         <div className="text-[11px] text-slate-400 mt-0.5 flex items-center space-x-1.5">
@@ -834,60 +1016,26 @@ export const AiModelsView: React.FC<AiModelsViewProps> = ({
                         </div>
                       </div>
 
-                      {/* Target FPS Badge */}
                       <div className="text-right shrink-0">
-                        <span className="text-[10px] font-mono text-slate-400 block">TARGET</span>
-                        <span className="text-xs font-extrabold text-white font-mono">{item.targetFps} FPS</span>
+                        <span className="text-[10px] font-mono text-slate-500 block">STATUS</span>
+                        <span className="text-xs font-bold text-slate-400">STANDBY</span>
                       </div>
                     </div>
 
-                    {/* Applied Models Chips Section */}
-                    <div className="mt-4 pt-3.5 border-t border-white/5 space-y-2">
-                      <div className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">
-                        Applied AI Models ({item.enabledModelKeys.length}):
-                      </div>
-                      <div className="flex flex-wrap gap-1.5">
-                        {item.enabledModelKeys.map(key => {
-                          const def = AI_MODEL_DEFINITIONS.find(m => m.id === key);
-                          if (!def) return null;
-                          const Icon = def.icon;
-                          return (
-                            <span
-                              key={key}
-                              className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold border shadow-sm"
-                              style={{
-                                backgroundColor: def.tagBg,
-                                color: def.tagColor,
-                                borderColor: `${def.tagColor}40`
-                              }}
-                            >
-                              <Icon className="w-3.5 h-3.5" />
-                              <span>{def.name.split('(')[0].trim()}</span>
-                            </span>
-                          );
-                        })}
-                      </div>
+                    <div className="mt-4 pt-3 border-t border-white/5">
+                      <p className="text-[11px] text-slate-400 leading-relaxed">
+                        No AI inference models deployed. DeepStream / YOLO edge worker is idle for this stream, saving GPU compute cycles.
+                      </p>
                     </div>
                   </div>
 
-                  {/* Card Actions Footer: Edit & Undeploy Buttons */}
-                  <div className="mt-5 pt-3.5 border-t border-white/10 flex items-center justify-between gap-3">
+                  <div className="mt-5 pt-3.5 border-t border-white/5 flex items-center justify-end">
                     <button
                       onClick={() => handleEditConfigured(item.cameraCode)}
-                      className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-bold flex items-center space-x-1.5 transition cursor-pointer"
+                      className="px-4 py-1.5 rounded-xl bg-[#0072CE]/20 hover:bg-[#0072CE]/30 border border-[#0072CE]/40 text-[#38bdf8] hover:text-white text-xs font-bold flex items-center space-x-2 transition cursor-pointer"
                     >
-                      <Edit3 className="w-3.5 h-3.5 text-[#0072ce]" />
-                      <span>Edit Models</span>
-                    </button>
-
-                    <button
-                      onClick={() => handleUndeploy(item.cameraCode)}
-                      disabled={isThisUndeploying}
-                      className="px-3.5 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-300 hover:text-rose-200 text-xs font-bold flex items-center space-x-1.5 transition cursor-pointer disabled:opacity-50"
-                      title="Stop inferencing and undeploy all AI models for this camera"
-                    >
-                      <Trash2 className="w-3.5 h-3.5 text-rose-400" />
-                      <span>{isThisUndeploying ? 'Undeploying...' : 'Undeploy AI'}</span>
+                      <PlusCircle className="w-3.5 h-3.5" />
+                      <span>Deploy AI Models →</span>
                     </button>
                   </div>
                 </div>

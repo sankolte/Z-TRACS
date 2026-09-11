@@ -967,7 +967,7 @@ async def save_ai_config(payload: Dict[str, Any] = Body(...)):
         except Exception as e:
             print(f"[RDS AI CONFIG SAVE WARN] {e}")
 
-    asyncio.create_task(_persist_ai_config_rds())
+    await _persist_ai_config_rds()
     return ApiResponse.ok({"status": "success", "camera_code": canonical_code, "data": payload})
 
 @router.get("/ai-config/{camera_code}")
@@ -1041,12 +1041,16 @@ async def undeploy_ai_config(camera_code: str):
     if conn:
         try:
             await conn.execute("""
-                DELETE FROM anpr_camera_ai_configs 
+                UPDATE anpr_camera_ai_configs 
+                SET enable_vector = '[0, 0, 0, 0]',
+                    usecases_json = '[]',
+                    models_json = '{"anpr": false, "frs": false, "crowd": false, "ppe": false, "footfall": false, "perimeter": false}',
+                    updated_at = NOW()
                 WHERE camera_code = $1 OR camera_code = $2;
             """, canonical_code, get_sentinel_code(cam_code))
             await conn.close()
         except Exception as e:
-            print(f"[RDS AI CONFIG DELETE WARN] {e}")
+            print(f"[RDS AI CONFIG UNDEPLOY WARN] {e}")
 
     return ApiResponse.ok({
         "status": "success",
