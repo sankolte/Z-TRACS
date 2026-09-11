@@ -249,6 +249,13 @@ class ZTracsFrsListener:
                             print(f"[FRS RETENTION] Auto-purged 24h expired video clip ({size_mb:.2f} MB, age {age_sec/3600:.1f}h): '{clip_path}'")
                     except Exception as err:
                         print(f"[FRS RETENTION WARN] Could not prune {clip_path}: {err}")
+
+                # If clips folder has become empty (no photo, no clip), remove directory
+                remaining = [x for x in os.listdir(target_folder) if not x.endswith(".tmp")]
+                if len(remaining) == 0:
+                    import shutil
+                    shutil.rmtree(target_folder, ignore_errors=True)
+                    print(f"[FRS RETENTION] Cleaned up empty suspect folder: '{target_folder}/'")
         except Exception as e:
             print(f"[FRS RETENTION ERROR] Error during prune sweep: {e}")
 

@@ -212,6 +212,12 @@ class ZTracsForensicsListener:
                                 print(f"[FORENSICS RETENTION] Auto-purged 24h expired video footage ({size_mb:.2f} MB, age {age_sec/3600:.1f}h): '{file_path}'")
                         except Exception as err:
                             print(f"[FORENSICS RETENTION WARN] Could not prune {file_path}: {err}")
+
+                # If task folder has become empty, remove the whole directory to keep disk clean
+                remaining = [x for x in os.listdir(task_dir) if not x.endswith(".tmp")]
+                if len(remaining) == 0:
+                    shutil.rmtree(task_dir, ignore_errors=True)
+                    print(f"[FORENSICS RETENTION] Cleaned up empty task folder: '{task_dir}/'")
         except Exception as e:
             print(f"[FORENSICS RETENTION ERROR] Error during prune sweep: {e}")
 
