@@ -75,13 +75,8 @@ def _process_and_upload_snapshot(raw_snapshot: Optional[str], plate: str, identi
         return f"data:image/jpeg;base64,{s}"
     return s
 
-ANPR_WATCHLIST: List[str] = [
-    "GJ01AB1234",
-    "GJ05CD5678",
-    "GJ27XY9999",
-    "GJ03EF4321",
-    "MH02CB8899"
-]
+# In-memory watchlist cache (synced with AWS RDS 'anpr_watchlist' table, zero false/dummy data)
+ANPR_WATCHLIST: List[str] = []
 
 # Cache DB connection
 _LAST_DB_CHECK_TIME = 0
@@ -304,6 +299,23 @@ async def ingest_anpr_alert(payload: Dict[str, Any] = Body(...)):
         IN_MEMORY_DETECTIONS.pop()
 
     conn = await get_db_connection()
+    if conn and not is_hit:
+        try:
+            wl_check = await conn.fetchrow(
+                "SELECT id, reason, severity FROM anpr_watchlist WHERE active = TRUE AND UPPER(REPLACE(plate_number, ' ', '')) = $1 LIMIT 1;",
+                plate.replace(" ", "")
+            )
+            if wl_check:
+                is_hit = True
+                if plate not in ANPR_WATCHLIST:
+                    ANPR_WATCHLIST.insert(0, plate)
+                severity = str(wl_check.get("severity") or "CRITICAL").upper()
+                category = "HOTLIST_STOLEN"
+                notes = str(wl_check.get("reason") or "Stolen vehicle watchlist hit").strip()
+                title = f"WATCHLIST HIT: {plate}"
+        except Exception:
+            pass
+
     if conn:
         try:
             await conn.execute("""
@@ -636,32 +648,140 @@ async def delete_alert(alert_id: str):
     return ApiResponse.ok({"status": "success", "deleted_id": alert_id})
 
 # ─────────────────────────────────────────────────────────────────────────────
-# WATCHLIST MANAGEMENT
+# WATCHLIST MANAGEMENT (AWS RDS 'anpr_watchlist' + IN-MEMORY FAILOVER)
 # ─────────────────────────────────────────────────────────────────────────────
 
 @router.get("/watchlist")
 async def get_watchlist():
-    """Fetch active ANPR stolen/wanted watchlist."""
-    return {"status": "success", "watchlist": ANPR_WATCHLIST}
+    """
+    Fetch active ANPR stolen/wanted watchlist from AWS RDS PostgreSQL.
+    Falls back safely to in-memory cache if database is temporarily unreachable.
+    Zero dummy/seed data: returns only real plates added by operators.
+    """
+    global ANPR_WATCHLIST
+    records: List[Dict[str, Any]] = []
+
+    conn = await get_db_connection()
+    if conn:
+        try:
+            rows = await conn.fetch("""
+                SELECT 
+                    id, 
+                    plate_number, 
+                    vehicle_type, 
+                    owner_name, 
+                    reason, 
+                    severity, 
+                    flagged_by, 
+                    active,
+                    created_at::text as created_at,
+                    updated_at::text as updated_at
+                FROM anpr_watchlist 
+                WHERE active = TRUE 
+                ORDER BY created_at DESC;
+            """)
+            await conn.close()
+            if rows is not None:
+                records = [dict(r) for r in rows]
+                db_plates = [r["plate_number"] for r in records]
+                ANPR_WATCHLIST = db_plates
+        except Exception as e:
+            print(f"[RDS WATCHLIST FETCH WARN] {e}")
+
+    return {
+        "status": "success",
+        "watchlist": ANPR_WATCHLIST,
+        "count": len(ANPR_WATCHLIST),
+        "records": records
+    }
 
 @router.post("/watchlist")
 @router.post("/watchlist/add")
 async def add_watchlist_plate(payload: Dict[str, Any] = Body(...)):
-    """Add a plate to the active watchlist."""
-    plate = str(payload.get("plate") or payload.get("number_plate") or "").upper().strip()
-    if plate and plate not in ANPR_WATCHLIST:
-        ANPR_WATCHLIST.append(plate)
-        print(f"📋 [WATCHLIST ADDED] Plate: {plate} | Total: {len(ANPR_WATCHLIST)}")
-    return ApiResponse.ok({"status": "success", "watchlist": ANPR_WATCHLIST})
+    """
+    Add a plate to the active watchlist in AWS RDS and memory.
+    Supports optional vehicle_type, reason, and severity.
+    """
+    global ANPR_WATCHLIST
+    plate = str(payload.get("plate") or payload.get("number_plate") or payload.get("plate_number") or "").upper().strip()
+    if not plate:
+        raise HTTPException(status_code=400, detail="Valid plate number is required")
+
+    vehicle_type = str(payload.get("vehicle_type") or payload.get("vehicleType") or "UNKNOWN").upper().strip()
+    owner_name = payload.get("owner_name") or payload.get("ownerName")
+    reason = str(payload.get("reason") or "Stolen / Hotlist Target").strip()
+    severity = str(payload.get("severity") or "CRITICAL").upper().strip()
+    flagged_by = str(payload.get("flagged_by") or payload.get("flaggedBy") or "Control Room Officer").strip()
+
+    conn = await get_db_connection()
+    if conn:
+        try:
+            await conn.execute("""
+                INSERT INTO anpr_watchlist (
+                    plate_number, vehicle_type, owner_name, reason, severity, flagged_by, active, updated_at
+                ) VALUES ($1, $2, $3, $4, $5, $6, TRUE, CURRENT_TIMESTAMP)
+                ON CONFLICT (plate_number) DO UPDATE SET
+                    active = TRUE,
+                    vehicle_type = EXCLUDED.vehicle_type,
+                    reason = EXCLUDED.reason,
+                    severity = EXCLUDED.severity,
+                    flagged_by = EXCLUDED.flagged_by,
+                    updated_at = CURRENT_TIMESTAMP;
+            """, plate, vehicle_type, owner_name, reason, severity, flagged_by)
+            await conn.close()
+            print(f"[RDS WATCHLIST ADDED] Plate: {plate} | Reason: {reason}")
+        except Exception as e:
+            print(f"[RDS WATCHLIST INSERT WARN] {e}")
+
+    if plate not in ANPR_WATCHLIST:
+        ANPR_WATCHLIST.insert(0, plate)
+
+    return ApiResponse.ok({
+        "status": "success", 
+        "message": f"Plate {plate} successfully flagged in Watchlist",
+        "plate": plate,
+        "watchlist": ANPR_WATCHLIST,
+        "count": len(ANPR_WATCHLIST)
+    })
 
 @router.post("/watchlist/remove")
+async def remove_watchlist_plate_body(payload: Dict[str, Any] = Body(...)):
+    """Remove a plate from the active watchlist via JSON body payload."""
+    plate = str(payload.get("plate") or payload.get("number_plate") or payload.get("plate_number") or "").upper().strip()
+    return await _do_remove_watchlist_plate(plate)
+
 @router.delete("/watchlist/{plate}")
-async def remove_watchlist_plate(plate: str):
-    """Remove a plate from the active watchlist."""
-    clean = plate.upper().strip()
-    if clean in ANPR_WATCHLIST:
-        ANPR_WATCHLIST.remove(clean)
-    return ApiResponse.ok({"status": "success", "watchlist": ANPR_WATCHLIST})
+async def remove_watchlist_plate_param(plate: str):
+    """Remove a plate from the active watchlist via URL path parameter."""
+    return await _do_remove_watchlist_plate(plate)
+
+async def _do_remove_watchlist_plate(plate: str):
+    global ANPR_WATCHLIST
+    clean = str(plate or "").upper().strip()
+    if not clean:
+        raise HTTPException(status_code=400, detail="Plate number is required")
+
+    conn = await get_db_connection()
+    if conn:
+        try:
+            await conn.execute("""
+                UPDATE anpr_watchlist 
+                SET active = FALSE, updated_at = CURRENT_TIMESTAMP 
+                WHERE UPPER(REPLACE(plate_number, ' ', '')) = $1;
+            """, clean.replace(" ", ""))
+            await conn.close()
+            print(f"[RDS WATCHLIST REMOVED] Plate: {clean}")
+        except Exception as e:
+            print(f"[RDS WATCHLIST DELETE WARN] {e}")
+
+    ANPR_WATCHLIST = [p for p in ANPR_WATCHLIST if p.replace(" ", "") != clean.replace(" ", "")]
+    return ApiResponse.ok({
+        "status": "success", 
+        "message": f"Plate {clean} unflagged from Watchlist",
+        "plate": clean,
+        "watchlist": ANPR_WATCHLIST,
+        "count": len(ANPR_WATCHLIST)
+    })
 
 from app.core.camera_utils import get_code_aliases, normalize_camera_code, get_sentinel_code
 

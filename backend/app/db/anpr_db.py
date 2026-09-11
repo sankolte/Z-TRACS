@@ -157,10 +157,40 @@ async def ensure_anpr_detections_table():
     finally:
         await conn.close()
 
+async def ensure_anpr_watchlist_table():
+    """Create anpr_watchlist table in RDS for persistent target plate tracking."""
+    conn = await get_db_connection()
+    if not conn:
+        print("[RDS NOTE] Skipping anpr_watchlist table check (DB offline or local mode)")
+        return
+    try:
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS anpr_watchlist (
+                id SERIAL PRIMARY KEY,
+                plate_number VARCHAR(50) UNIQUE NOT NULL,
+                vehicle_type VARCHAR(50) DEFAULT 'UNKNOWN',
+                owner_name VARCHAR(100) DEFAULT NULL,
+                reason VARCHAR(255) DEFAULT 'Stolen / Hotlist Target',
+                severity VARCHAR(50) DEFAULT 'CRITICAL',
+                flagged_by VARCHAR(100) DEFAULT 'Control Room Officer',
+                active BOOLEAN DEFAULT TRUE,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            );
+            CREATE INDEX IF NOT EXISTS idx_anpr_watchlist_plate ON anpr_watchlist (plate_number);
+            CREATE INDEX IF NOT EXISTS idx_anpr_watchlist_active ON anpr_watchlist (active);
+        """)
+        print("[RDS SUCCESS] anpr_watchlist table verified/created.")
+    except Exception as e:
+        print(f"[RDS ERROR] Failed to ensure anpr_watchlist table: {e}")
+    finally:
+        await conn.close()
+
 async def ensure_all_anpr_tables():
     """Verify and auto-initialize all ANPR tables in AWS RDS."""
     await ensure_anpr_alerts_table()
     await ensure_anpr_rois_table()
     await ensure_anpr_ai_configs_table()
     await ensure_anpr_detections_table()
+    await ensure_anpr_watchlist_table()
 
