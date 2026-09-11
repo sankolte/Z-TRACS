@@ -137,6 +137,8 @@ def send_detection_alert(camera_id: int, plate: str, snapshot_path: str = None):
             "lng": cam_info["lng"],
         },
         "snapshot":  encode_snapshot(snapshot_path),
+        "PlateCrop": encode_snapshot(snapshot_path),
+        "plate_crop": encode_snapshot(snapshot_path),
         "watchlist": is_hit,   # True if plate matched watchlist, False otherwise
     }
 
@@ -178,6 +180,8 @@ def send_watchlist_search_alert(camera_id: int, plate: str, snapshot_path: str =
             "lng": cam_info["lng"],
         },
         "snapshot":  encode_snapshot(snapshot_path),
+        "PlateCrop": encode_snapshot(snapshot_path),
+        "plate_crop": encode_snapshot(snapshot_path),
         "watchlist": True,   # ALWAYS True for watchlist search hits
     }
 
@@ -198,7 +202,7 @@ def _post_alert(payload: dict):
             headers=get_headers(),
             timeout=10,
         )
-        if resp.status_code == 201:
+        if resp.status_code in (200, 201):
             data     = resp.json()
             alert_id = data.get("data", {}).get("alertId", "N/A")
             hit      = data.get("data", {}).get("watchlistHit", False)

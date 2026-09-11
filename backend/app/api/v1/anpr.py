@@ -42,56 +42,20 @@ SAVED_ROIS: Dict[str, Dict[str, Any]] = load_json_file(ROI_FILE)
 AI_CONFIGS: Dict[str, Dict[str, Any]] = load_json_file(AI_CONFIG_FILE)
 
 # In-memory detections buffer (All Traffic Telemetry, last 1000)
-IN_MEMORY_DETECTIONS: List[Dict[str, Any]] = [
-    {
-        "id": "DET-INIT-001",
-        "number_plate": "GJ01AB1234",
-        "plateNumber": "GJ01AB1234",
-        "camera_id": "1",
-        "camera_code": "CAM-033",
-        "cameraCode": "CAM-033",
-        "camera_name": "SG Highway - Junction 33",
-        "cameraName": "SG Highway - Junction 33",
-        "district": "Ahmedabad",
-        "vehicle_type": "SEDAN",
-        "confidence": 0.98,
-        "snapshot": "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=400&auto=format&fit=crop",
-        "watchlist_hit": True,
-        "detected_at": datetime.now().isoformat(),
-        "timestamp": datetime.now().isoformat()
-    }
-]
+IN_MEMORY_DETECTIONS: List[Dict[str, Any]] = []
 
 # In-memory alerts buffer (keeps last 500 in memory + persistent RDS storage)
-IN_MEMORY_ALERTS: List[Dict[str, Any]] = [
-    {
-        "id": "ALT-LIVE-001",
-        "title": "STOLEN VEHICLE DETECTED: GJ01AB1234",
-        "severity": "CRITICAL",
-        "category": "HOTLIST_STOLEN",
-        "number_plate": "GJ01AB1234",
-        "plateNumber": "GJ01AB1234",
-        "camera_code": "CAM-033",
-        "cameraCode": "CAM-033",
-        "camera_name": "SG Highway - Junction 33",
-        "cameraName": "SG Highway - Junction 33",
-        "district": "Ahmedabad",
-        "watchlist_hit": True,
-        "status": "NEW",
-        "notes": "Stolen vehicle matched against Gujarat Police national hotlist",
-        "timestamp": datetime.now().isoformat(),
-        "received_at": datetime.now().isoformat(),
-        "snapshot": "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=400&auto=format&fit=crop"
-    }
-]
+IN_MEMORY_ALERTS: List[Dict[str, Any]] = []
 
-def _process_and_upload_snapshot(raw_snapshot: Optional[str], plate: str, identifier: str) -> str:
-    """Uploads base64 snapshot to S3 and returns S3 URL, or retains clean URL/fallback."""
+def _process_and_upload_snapshot(raw_snapshot: Optional[str], plate: str, identifier: str) -> Optional[str]:
+    """Uploads base64 snapshot to S3 and returns S3 URL, or retains clean URL/base64."""
     if not raw_snapshot or not str(raw_snapshot).strip():
-        return "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=400&auto=format&fit=crop"
+        return None
     
     s = str(raw_snapshot).strip()
     if s.startswith("http://") or s.startswith("https://"):
+        if "unsplash.com" in s:
+            return None
         return s
     
     b64_data = s
@@ -177,6 +141,9 @@ async def get_live_alerts(limit: int = Query(6000, description="Max alerts to re
                     title, 
                     notes, 
                     snapshot,
+                    speed_kmh,
+                    plate_crop,
+                    plate_confidence,
                     received_at::text as timestamp
                 FROM anpr_alerts 
                 ORDER BY received_at DESC 
@@ -192,7 +159,11 @@ async def get_live_alerts(limit: int = Query(6000, description="Max alerts to re
                     rec["cameraCode"] = rec.get("camera_code")
                     rec["cameraName"] = rec.get("camera_name")
                     rec["receivedAt"] = rec.get("timestamp")
-                    rec["snapshot"] = rec.get("snapshot")
+                    rec["snapshot"] = rec.get("plate_crop") or rec.get("snapshot")
+                    rec["imageCropUrl"] = rec.get("plate_crop") or rec.get("snapshot")
+                    rec["speedKmh"] = rec.get("speed_kmh")
+                    rec["speed"] = rec.get("speed_kmh")
+                    rec["plateConfidence"] = rec.get("plate_confidence")
                     db_alerts.append(rec)
                 
                 # Merge DB alerts with any fresh in-memory events
@@ -210,19 +181,78 @@ async def get_live_alerts(limit: int = Query(6000, description="Max alerts to re
 async def ingest_anpr_alert(payload: Dict[str, Any] = Body(...)):
     """
     Real-time ANPR Ingestion endpoint for Edge YOLO / DeepStream / OpenCV nodes.
-    - Tier 1: Persists 100% of detected passing vehicles into 'anpr_detections' with S3 photo.
+    - Accepts all OpenCV/YOLO key variants: PlateCrop, plate_crop, plate, number_plate, speed, confidence.
+    - Tier 1: Persists 100% of detected passing vehicles into 'anpr_detections' with S3/base64 plate crop.
     - Tier 2: If plate matches Watchlist, creates a Critical Alert in 'anpr_alerts' & triggers WebSocket alarm.
     """
-    plate = str(payload.get("number_plate") or payload.get("plateNumber") or payload.get("plate") or "").upper().strip()
+    plate = str(
+        payload.get("number_plate") or 
+        payload.get("plateNumber") or 
+        payload.get("plate") or 
+        payload.get("plate_number") or 
+        payload.get("Plate") or 
+        payload.get("license_plate") or 
+        payload.get("PlateNumber") or 
+        ""
+    ).upper().strip()
     if not plate:
-        raise HTTPException(status_code=400, detail="number_plate is required")
+        raise HTTPException(status_code=400, detail="Plate number is required (number_plate, plate, or Plate)")
 
-    is_hit = bool(payload.get("watchlist_hit", plate in ANPR_WATCHLIST))
-    cam_code = str(payload.get("camera_code") or payload.get("cameraCode") or "CAM-001").strip()
+    # Watchlist flag
+    if "watchlist" in payload:
+        is_hit = bool(payload.get("watchlist"))
+    elif "watchlist_hit" in payload:
+        is_hit = bool(payload.get("watchlist_hit"))
+    else:
+        is_hit = plate in ANPR_WATCHLIST
+
+    # Camera Code & Safe integer ID resolution
+    raw_cam_code = payload.get("camera_code") or payload.get("cameraCode") or payload.get("cam_code")
+    raw_cam_id = payload.get("camera_id") or payload.get("cameraId") or "1"
+    
+    m_num = re.search(r'\d+', str(raw_cam_id))
+    safe_cam_int = int(m_num.group(0)) if m_num else 1
+
+    if raw_cam_code:
+        cam_code = str(raw_cam_code).strip()
+    elif safe_cam_int:
+        cam_code = f"CAM-{safe_cam_int:03d}"
+    else:
+        cam_code = "CAM-001"
+
     cam_name = str(payload.get("camera_name") or payload.get("cameraName") or f"Camera {cam_code}").strip()
     district = str(payload.get("district") or "Ahmedabad").strip()
-    vehicle_type = str(payload.get("vehicle_type") or payload.get("vehicleType") or "SEDAN").upper().strip()
-    confidence = float(payload.get("confidence", 0.95))
+    
+    v_type = payload.get("vehicle_type") or payload.get("vehicleType") or payload.get("class") or payload.get("vehicleClass")
+    vehicle_type = str(v_type).upper().strip() if v_type else None
+    
+    # Real speed (NULL if not instrumented)
+    raw_speed = payload.get("speed") or payload.get("speed_kmh") or payload.get("speedKmh") or payload.get("vehicle_speed")
+    speed_val = None
+    if raw_speed is not None:
+        try:
+            speed_val = float(raw_speed)
+        except (ValueError, TypeError):
+            speed_val = None
+
+    # Real AI detection confidence (NULL if not sent)
+    raw_conf = payload.get("confidence") or payload.get("score") or payload.get("ai_confidence")
+    confidence_val = None
+    if raw_conf is not None:
+        try:
+            confidence_val = float(raw_conf)
+        except (ValueError, TypeError):
+            confidence_val = None
+
+    # Real Plate OCR confidence (NULL if not sent)
+    raw_p_conf = payload.get("plate_confidence") or payload.get("plateConfidence")
+    plate_conf_val = None
+    if raw_p_conf is not None:
+        try:
+            plate_conf_val = float(raw_p_conf)
+        except (ValueError, TypeError):
+            plate_conf_val = None
+
     severity = str(payload.get("severity") or ("CRITICAL" if is_hit else "INFO")).upper()
     category = str(payload.get("category") or ("HOTLIST_STOLEN" if is_hit else "ANPR_DETECTION")).upper()
     notes = str(payload.get("notes") or ("Stolen vehicle watchlist hit" if is_hit else "Plate scanned at checkpoint")).strip()
@@ -230,24 +260,41 @@ async def ingest_anpr_alert(payload: Dict[str, Any] = Body(...)):
 
     alert_id = f"ALT-{int(time.time() * 1000)}"
 
-    # 1. Process & Upload Snapshot to S3 (if base64)
-    raw_snap = payload.get("snapshot") or payload.get("imageCropUrl")
-    clean_snapshot = _process_and_upload_snapshot(raw_snap, plate, alert_id)
+    # Process & Upload PlateCrop / Snapshot (if base64 or S3)
+    raw_crop = (
+        payload.get("PlateCrop") or 
+        payload.get("plate_crop") or 
+        payload.get("plateCrop") or 
+        payload.get("crop") or 
+        payload.get("plate_image") or 
+        payload.get("snapshot") or 
+        payload.get("imageCropUrl") or 
+        None
+    )
+    clean_crop = _process_and_upload_snapshot(raw_crop, plate, alert_id)
 
-    # 2. TIER 1 TELEMETRY: Always record every detected vehicle in anpr_detections
+    # TIER 1 TELEMETRY: Always record every detected vehicle in anpr_detections
     det_obj = {
         "id": alert_id,
         "number_plate": plate,
         "plateNumber": plate,
-        "camera_id": str(payload.get("camera_id", "1")),
+        "camera_id": str(safe_cam_int),
         "camera_code": cam_code,
         "cameraCode": cam_code,
         "camera_name": cam_name,
         "cameraName": cam_name,
         "district": district,
         "vehicle_type": vehicle_type,
-        "confidence": confidence,
-        "snapshot": clean_snapshot,
+        "confidence": confidence_val,
+        "plate_confidence": plate_conf_val,
+        "plateConfidence": plate_conf_val,
+        "speed_kmh": speed_val,
+        "speedKmh": speed_val,
+        "speed": speed_val,
+        "snapshot": clean_crop,
+        "plate_crop": clean_crop,
+        "plateCrop": clean_crop,
+        "imageCropUrl": clean_crop,
         "watchlist_hit": is_hit,
         "detected_at": datetime.now().isoformat(),
         "timestamp": datetime.now().isoformat()
@@ -262,14 +309,15 @@ async def ingest_anpr_alert(payload: Dict[str, Any] = Body(...)):
             await conn.execute("""
                 INSERT INTO anpr_detections (
                     number_plate, camera_id, camera_code, camera_name, district, 
-                    vehicle_type, confidence, snapshot, watchlist_hit, detected_at
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_TIMESTAMP);
-            """, plate, str(payload.get("camera_id", "1")), cam_code, cam_name, district, vehicle_type, confidence, clean_snapshot, is_hit)
-            print(f"[OK] [RDS ANPR DETECTION STORED] Plate: {plate} | Cam: {cam_code} | Type: {vehicle_type} | Watchlist Hit: {is_hit}")
+                    vehicle_type, confidence, snapshot, watchlist_hit, detected_at,
+                    speed_kmh, plate_crop, plate_confidence
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_TIMESTAMP, $10, $11, $12);
+            """, plate, str(safe_cam_int), cam_code, cam_name, district, vehicle_type, confidence_val, clean_crop, is_hit, speed_val, clean_crop, plate_conf_val)
+            print(f"[OK] [RDS ANPR DETECTION STORED] Plate: {plate} | Cam: {cam_code} | Speed: {speed_val} | Crop: {bool(clean_crop)} | Watchlist: {is_hit}")
         except Exception as e:
             print(f"[WARN] [RDS DETECTION INSERT WARN] {e}")
 
-    # 3. TIER 2 WATCHLIST ALERT: Only generate critical alarm if plate is in watchlist
+    # TIER 2 WATCHLIST ALERT: Only generate critical alarm if plate is in watchlist
     alert_obj = None
     if is_hit:
         alert_obj = {
@@ -279,7 +327,7 @@ async def ingest_anpr_alert(payload: Dict[str, Any] = Body(...)):
             "category": category,
             "number_plate": plate,
             "plateNumber": plate,
-            "camera_id": payload.get("camera_id", 1),
+            "camera_id": safe_cam_int,
             "camera_code": cam_code,
             "cameraCode": cam_code,
             "camera_name": cam_name,
@@ -288,9 +336,17 @@ async def ingest_anpr_alert(payload: Dict[str, Any] = Body(...)):
             "watchlist_hit": True,
             "status": "NEW",
             "notes": notes,
+            "speed_kmh": speed_val,
+            "speedKmh": speed_val,
+            "speed": speed_val,
+            "plate_confidence": plate_conf_val,
+            "plateConfidence": plate_conf_val,
+            "plate_crop": clean_crop,
+            "plateCrop": clean_crop,
+            "imageCropUrl": clean_crop,
             "timestamp": datetime.now().isoformat(),
             "received_at": datetime.now().isoformat(),
-            "snapshot": clean_snapshot
+            "snapshot": clean_crop
         }
         IN_MEMORY_ALERTS.insert(0, alert_obj)
         if len(IN_MEMORY_ALERTS) > 500:
@@ -301,9 +357,10 @@ async def ingest_anpr_alert(payload: Dict[str, Any] = Body(...)):
                 await conn.execute("""
                     INSERT INTO anpr_alerts (
                         id, severity, category, number_plate, camera_id, camera_code, 
-                        camera_name, district, watchlist_hit, status, title, notes, snapshot, received_at
-                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, CURRENT_TIMESTAMP);
-                """, alert_id, severity, category, plate, int(payload.get("camera_id") or 1), cam_code, cam_name, district, True, "NEW", title, notes, clean_snapshot)
+                        camera_name, district, watchlist_hit, status, title, notes, snapshot, received_at,
+                        speed_kmh, plate_crop, plate_confidence
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, CURRENT_TIMESTAMP, $14, $15, $16);
+                """, alert_id, severity, category, plate, safe_cam_int, cam_code, cam_name, district, True, "NEW", title, notes, clean_crop, speed_val, clean_crop, plate_conf_val)
                 print(f"[ALERT] [RDS WATCHLIST ALERT STORED] ID: {alert_id} | Plate: {plate} | Camera: {cam_code}")
             except Exception as e:
                 print(f"[WARN] [RDS ALERT INSERT WARN] {e}")
@@ -336,7 +393,14 @@ async def ingest_anpr_alert(payload: Dict[str, Any] = Body(...)):
     except Exception:
         pass
 
-    return ApiResponse.ok(alert_obj or det_obj)
+    resp_payload = {
+        "alertId": alert_id,
+        "alert_id": alert_id,
+        "watchlistHit": is_hit,
+        "watchlist_hit": is_hit,
+        **(alert_obj or det_obj)
+    }
+    return ApiResponse.ok(resp_payload)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # SEARCH & VEHICLE JOURNEY APIS (POWERING ANPR VEHICLE SEARCH & TRACKING)
@@ -392,7 +456,7 @@ async def search_anpr_detections(
                 params.append(vehicle_type.strip().upper())
                 param_idx += 1
 
-            if watchlist_only:
+            if wl_only:
                 conditions.append(f"watchlist_hit = TRUE")
 
             where_clause = " AND ".join(conditions)
@@ -416,7 +480,10 @@ async def search_anpr_detections(
                     confidence, 
                     snapshot, 
                     watchlist_hit, 
-                    detected_at::text as timestamp
+                    detected_at::text as timestamp,
+                    speed_kmh,
+                    plate_crop,
+                    plate_confidence
                 FROM anpr_detections
                 WHERE {where_clause}
                 ORDER BY detected_at DESC
@@ -431,6 +498,11 @@ async def search_anpr_detections(
                 item["plateNumber"] = item.get("number_plate")
                 item["cameraCode"] = item.get("camera_code")
                 item["cameraName"] = item.get("camera_name")
+                item["speedKmh"] = item.get("speed_kmh")
+                item["speed"] = item.get("speed_kmh")
+                item["plateCrop"] = item.get("plate_crop") or item.get("snapshot")
+                item["imageCropUrl"] = item.get("plate_crop") or item.get("snapshot")
+                item["plateConfidence"] = item.get("plate_confidence")
                 results.append(item)
 
             return ApiResponse.ok(results, total_records=total_count, page=(off // lim) + 1, page_size=lim)

@@ -33,7 +33,7 @@ interface AnprSearchViewProps {
   onSelectCameraByCode?: (cameraCode: string) => void;
 }
 
-const DEFAULT_PLATE_CROP = 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=200&auto=format&fit=crop';
+const DEFAULT_PLATE_CROP = '';
 
 export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
   anprEvents,
@@ -198,17 +198,37 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
       const camCode = a.cameraCode || 'CAM-001';
       const camName = a.cameraName || `Camera ${camCode}`;
       const dist = a.district || 'Ahmedabad';
-      const snapUrl = formatSnapshotUrl(a.snapshot) || DEFAULT_PLATE_CROP;
+      const snapUrl = formatSnapshotUrl((a as any).plateCrop || (a as any).plate_crop || a.snapshot);
       const isWatchlist = a.category === 'WATCHLIST_MATCH' || a.category === 'WATCHLIST_HIT' || a.severity === 'CRITICAL' || a.title?.toLowerCase().includes('watchlist');
+
+      // Real speed (undefined if not detected)
+      const rawSp = (a as any).speedKmh ?? (a as any).speed ?? (a as any).speed_kmh;
+      const speedKmh = (rawSp !== undefined && rawSp !== null && !isNaN(Number(rawSp)) && Number(rawSp) > 0) ? Number(rawSp) : undefined;
+
+      // Real confidence (undefined if not detected)
+      const rawC = (a as any).confidence ?? (a as any).score ?? (a as any).ai_confidence;
+      let confidence: number | undefined = undefined;
+      if (rawC !== undefined && rawC !== null && !isNaN(Number(rawC)) && Number(rawC) > 0) {
+        const numC = Number(rawC);
+        confidence = numC <= 1.0 ? Number((numC * 100).toFixed(1)) : Number(numC.toFixed(1));
+      }
+
+      // Real plate confidence (undefined if not detected)
+      const rawPc = (a as any).plateConfidence ?? (a as any).plate_confidence;
+      let plateConfidence: number | undefined = undefined;
+      if (rawPc !== undefined && rawPc !== null && !isNaN(Number(rawPc)) && Number(rawPc) > 0) {
+        const numPc = Number(rawPc);
+        plateConfidence = numPc <= 1.0 ? Number((numPc * 100).toFixed(1)) : Number(numPc.toFixed(1));
+      }
 
       return {
         id: String(a.id || `alert-${p}-${a.timestamp || Date.now()}`),
         plateNumber: p,
-        vehicleType: a.vehicleType || a.vehicle_type || 'Motor Vehicle',
+        vehicleType: (a as any).vehicleType || (a as any).vehicle_type || 'VEHICLE',
         color: '',
-        speedKmh: a.speedKmh || a.speed || 48,
-        confidence: a.confidence || 97.2,
-        plateConfidence: a.plateConfidence || a.plate_confidence || 98.6,
+        speedKmh: speedKmh as any,
+        confidence: confidence as any,
+        plateConfidence: plateConfidence as any,
         cameraUuid: a.cameraUuid || camCode,
         cameraCode: camCode,
         cameraName: camName,
@@ -235,19 +255,39 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
       if (!p || p === 'UNKNOWN') return null;
       const camCode = a.cameraCode || (a.camera_id ? `CAM-${String(a.camera_id).padStart(3, '0')}` : 'CAM-011');
       const camName = a.cameraName || (a.camera_id ? `Camera ${a.camera_id} (${a.district || 'Gujarat'})` : 'Gujarat Surveillance Node');
-      const dist = a.district || 'Rajkot';
-      const snapUrl = formatSnapshotUrl(a.snapshot) || DEFAULT_PLATE_CROP;
+      const dist = a.district || 'Ahmedabad';
+      const snapUrl = formatSnapshotUrl(a.plateCrop || a.plate_crop || a.PlateCrop || a.snapshot || a.imageCropUrl);
       const isWatchlist = a.category === 'WATCHLIST_MATCH' || a.category === 'WATCHLIST_HIT' || a.severity === 'CRITICAL' || Boolean(a.watchlist) || String(a.title || '').toLowerCase().includes('watchlist');
-      const ts = a.timestamp || a.receivedAt || a.created_at || new Date().toISOString();
+      const ts = a.timestamp || a.receivedAt || a.created_at || a.detected_at || new Date().toISOString();
+
+      // Real speed (undefined if not detected)
+      const rawSp = a.speedKmh ?? a.speed ?? a.speed_kmh;
+      const speedKmh = (rawSp !== undefined && rawSp !== null && !isNaN(Number(rawSp)) && Number(rawSp) > 0) ? Number(rawSp) : undefined;
+
+      // Real confidence (undefined if not detected)
+      const rawC = a.confidence ?? a.score ?? a.ai_confidence;
+      let confidence: number | undefined = undefined;
+      if (rawC !== undefined && rawC !== null && !isNaN(Number(rawC)) && Number(rawC) > 0) {
+        const numC = Number(rawC);
+        confidence = numC <= 1.0 ? Number((numC * 100).toFixed(1)) : Number(numC.toFixed(1));
+      }
+
+      // Real plate confidence (undefined if not detected)
+      const rawPc = a.plateConfidence ?? a.plate_confidence;
+      let plateConfidence: number | undefined = undefined;
+      if (rawPc !== undefined && rawPc !== null && !isNaN(Number(rawPc)) && Number(rawPc) > 0) {
+        const numPc = Number(rawPc);
+        plateConfidence = numPc <= 1.0 ? Number((numPc * 100).toFixed(1)) : Number(numPc.toFixed(1));
+      }
 
       return {
         id: String(a.id || `evt-${Math.random()}`),
         plateNumber: p,
-        vehicleType: a.vehicleType || a.vehicle_type || 'Motor Vehicle',
+        vehicleType: a.vehicleType || a.vehicle_type || 'VEHICLE',
         color: '',
-        speedKmh: a.speedKmh || a.speed || 52,
-        confidence: a.confidence || 97.2,
-        plateConfidence: a.plateConfidence || a.plate_confidence || 98.6,
+        speedKmh: speedKmh as any,
+        confidence: confidence as any,
+        plateConfidence: plateConfidence as any,
         cameraUuid: a.cameraUuid || camCode,
         cameraCode: camCode,
         cameraName: camName,
@@ -255,8 +295,8 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
         departmentId: a.departmentId || 'DEPT-POL-01',
         departmentName: a.departmentName || 'Gujarat Police Traffic Division',
         locationDescription: a.locationDescription || a.location || a.notes || `Detected at ${camName} (${dist})`,
-        latitude: a.latitude || 22.3039,
-        longitude: a.longitude || 70.8022,
+        latitude: a.latitude || 23.0225,
+        longitude: a.longitude || 72.5714,
         timestamp: ts,
         direction: a.direction || 'Northbound',
         watchlistFlag: isWatchlist,
@@ -267,7 +307,8 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
     })
     .filter(Boolean) as AnprEvent[];
 
-  const combinedEvents = [...alertsMapped, ...liveEventsMapped, ...(anprEvents || [])];
+  // Real events only (no fake mock data merged)
+  const combinedEvents = [...alertsMapped, ...liveEventsMapped];
   const uniqueEventsMap = new Map<string, AnprEvent>();
   combinedEvents.forEach(e => {
     const key = e.id || `${e.plateNumber}_${e.cameraCode}_${e.timestamp}`;
@@ -703,34 +744,41 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
                   filteredEvents.map(evt => (
                     <tr key={evt.id} className="hover:bg-blue-50/40 transition">
                       <td className="p-3">
-                        <button
-                          onClick={() => {
-                            setModalImgError(false);
-                            setSelectedSnapshot({
-                              url: evt.imageCropUrl || evt.vehicleImageUrl,
-                              title: `ANPR Evidence: ${evt.plateNumber} • ${evt.cameraCode}`,
-                              plate: evt.plateNumber,
-                              cam: evt.cameraCode,
-                              camName: evt.cameraName,
-                              district: evt.district,
-                              location: evt.locationDescription,
-                              time: evt.timestamp,
-                              vehicleType: evt.vehicleType,
-                              color: evt.color,
-                              speed: evt.speedKmh,
-                              confidence: evt.confidence,
-                              plateConfidence: evt.plateConfidence,
-                              watchlist: evt.watchlistFlag,
-                            });
-                          }}
-                          className="relative group cursor-pointer overflow-hidden rounded border border-slate-300 shadow-2xs hover:border-[#0052CC] transition block"
-                          title="Click to view full image snapshot & details"
-                        >
-                          <img src={evt.imageCropUrl} alt={evt.plateNumber} className="w-16 h-10 object-cover group-hover:scale-110 transition duration-200" />
-                          <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition">
-                            <Maximize2 className="w-3.5 h-3.5 text-white drop-shadow-xs" />
+                        {evt.imageCropUrl ? (
+                          <button
+                            onClick={() => {
+                              setModalImgError(false);
+                              setSelectedSnapshot({
+                                url: evt.imageCropUrl || evt.vehicleImageUrl,
+                                title: `ANPR Evidence: ${evt.plateNumber} • ${evt.cameraCode}`,
+                                plate: evt.plateNumber,
+                                cam: evt.cameraCode,
+                                camName: evt.cameraName,
+                                district: evt.district,
+                                location: evt.locationDescription,
+                                time: evt.timestamp,
+                                vehicleType: evt.vehicleType,
+                                color: evt.color,
+                                speed: evt.speedKmh,
+                                confidence: evt.confidence,
+                                plateConfidence: evt.plateConfidence,
+                                watchlist: evt.watchlistFlag,
+                              });
+                            }}
+                            className="relative group cursor-pointer overflow-hidden rounded border border-slate-300 shadow-2xs hover:border-[#0052CC] transition block bg-slate-900"
+                            title="Click to view full image snapshot & details"
+                          >
+                            <img src={evt.imageCropUrl} alt={evt.plateNumber} className="w-16 h-10 object-cover group-hover:scale-110 transition duration-200" />
+                            <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition">
+                              <Maximize2 className="w-3.5 h-3.5 text-white drop-shadow-xs" />
+                            </div>
+                          </button>
+                        ) : (
+                          <div className="w-16 h-10 rounded border border-dashed border-slate-300 bg-slate-50 flex flex-col items-center justify-center text-slate-400 select-none">
+                            <Camera className="w-3.5 h-3.5 text-slate-300 mb-0.5" />
+                            <span className="text-[8px] font-mono leading-none text-slate-400">NO CROP</span>
                           </div>
-                        </button>
+                        )}
                       </td>
                       <td className="p-3">
                         <button
@@ -764,8 +812,10 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
                         </button>
                       </td>
                       <td className="p-3">
-                        <div className="font-bold text-slate-800">{evt.vehicleType}</div>
-                        <div className="text-[11px] text-slate-500 font-mono">Speed: {evt.speedKmh} Km/h</div>
+                        <div className="font-bold text-slate-800">{evt.vehicleType || 'VEHICLE'}</div>
+                        <div className="text-[11px] text-slate-500 font-mono">
+                          Speed: {evt.speedKmh !== undefined && evt.speedKmh !== null && evt.speedKmh > 0 ? `${evt.speedKmh} Km/h` : '—'}
+                        </div>
                       </td>
                       <td className="p-3 font-mono font-bold text-[#0052CC]">{evt.cameraCode}</td>
                       <td className="p-3">
@@ -774,8 +824,16 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
                       </td>
                       <td className="p-3 font-mono text-[11px] text-slate-600">{evt.timestamp}</td>
                       <td className="p-3 font-mono">
-                        <span className="font-bold text-emerald-600">{evt.confidence}%</span>
-                        <div className="text-[10px] text-slate-400">Plate: {evt.plateConfidence}%</div>
+                        {evt.confidence !== undefined && evt.confidence !== null && evt.confidence > 0 ? (
+                          <>
+                            <span className="font-bold text-emerald-600">{evt.confidence}%</span>
+                            {evt.plateConfidence !== undefined && evt.plateConfidence !== null && evt.plateConfidence > 0 ? (
+                              <div className="text-[10px] text-slate-400">Plate: {evt.plateConfidence}%</div>
+                            ) : null}
+                          </>
+                        ) : (
+                          <span className="text-slate-400 font-normal">—</span>
+                        )}
                       </td>
                       <td className="p-3 text-right space-x-1.5 whitespace-nowrap">
                         <button
@@ -938,10 +996,10 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
 
             {/* Snapshot Image Display */}
             <div className="bg-slate-950 p-3 flex items-center justify-center min-h-[260px] max-h-[460px] relative">
-              {modalImgError ? (
+              {!selectedSnapshot.url || modalImgError ? (
                 <div className="flex flex-col items-center justify-center py-12 text-slate-400 font-mono">
                   <Camera className="w-10 h-10 opacity-30 mb-2" />
-                  <span className="text-xs">NO IMAGE SNAPSHOT AVAILABLE FOR THIS EVENT</span>
+                  <span className="text-xs">NO PLATE CROP OR IMAGE SNAPSHOT STORED FOR THIS EVENT</span>
                 </div>
               ) : (
                 <img 
@@ -976,6 +1034,29 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
               <div>
                 <span className="text-[10px] text-slate-500 font-bold block uppercase">TIMESTAMP</span>
                 <span className="font-mono text-slate-700 text-[11px]">{selectedSnapshot.time}</span>
+              </div>
+
+              <div>
+                <span className="text-[10px] text-slate-500 font-bold block uppercase">VEHICLE TYPE</span>
+                <span className="font-bold text-slate-800">{selectedSnapshot.vehicleType || '—'}</span>
+              </div>
+              <div>
+                <span className="text-[10px] text-slate-500 font-bold block uppercase">DETECTED SPEED</span>
+                <span className="font-mono font-bold text-slate-800">
+                  {selectedSnapshot.speed && selectedSnapshot.speed > 0 ? `${selectedSnapshot.speed} Km/h` : '—'}
+                </span>
+              </div>
+              <div>
+                <span className="text-[10px] text-slate-500 font-bold block uppercase">AI CONFIDENCE</span>
+                <span className="font-mono font-bold text-emerald-600">
+                  {selectedSnapshot.confidence && selectedSnapshot.confidence > 0 ? `${selectedSnapshot.confidence}%` : '—'}
+                </span>
+              </div>
+              <div>
+                <span className="text-[10px] text-slate-500 font-bold block uppercase">PLATE CONFIDENCE</span>
+                <span className="font-mono font-bold text-emerald-600">
+                  {selectedSnapshot.plateConfidence && selectedSnapshot.plateConfidence > 0 ? `${selectedSnapshot.plateConfidence}%` : '—'}
+                </span>
               </div>
 
               {selectedSnapshot.location && (

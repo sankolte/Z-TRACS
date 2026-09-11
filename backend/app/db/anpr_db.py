@@ -107,11 +107,17 @@ async def ensure_anpr_detections_table():
         print("[RDS NOTE] Skipping anpr_detections table check (DB offline or local mode)")
         return
     try:
-        # Also ensure anpr_alerts has snapshot column
-        try:
-            await conn.execute("ALTER TABLE anpr_alerts ADD COLUMN IF NOT EXISTS snapshot TEXT;")
-        except Exception:
-            pass
+        # Ensure columns exist in anpr_alerts
+        for col_def in [
+            "ALTER TABLE anpr_alerts ADD COLUMN IF NOT EXISTS snapshot TEXT;",
+            "ALTER TABLE anpr_alerts ADD COLUMN IF NOT EXISTS speed_kmh FLOAT DEFAULT NULL;",
+            "ALTER TABLE anpr_alerts ADD COLUMN IF NOT EXISTS plate_crop TEXT DEFAULT NULL;",
+            "ALTER TABLE anpr_alerts ADD COLUMN IF NOT EXISTS plate_confidence FLOAT DEFAULT NULL;"
+        ]:
+            try:
+                await conn.execute(col_def)
+            except Exception:
+                pass
 
         await conn.execute("""
             CREATE TABLE IF NOT EXISTS anpr_detections (
@@ -122,15 +128,29 @@ async def ensure_anpr_detections_table():
                 camera_name VARCHAR(255),
                 district VARCHAR(100),
                 vehicle_type VARCHAR(50) DEFAULT 'CAR',
-                confidence FLOAT DEFAULT 0.95,
+                confidence FLOAT DEFAULT NULL,
                 snapshot TEXT,
                 watchlist_hit BOOLEAN DEFAULT FALSE,
-                detected_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+                detected_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                speed_kmh FLOAT DEFAULT NULL,
+                plate_crop TEXT DEFAULT NULL,
+                plate_confidence FLOAT DEFAULT NULL
             );
             CREATE INDEX IF NOT EXISTS idx_anpr_detections_plate ON anpr_detections (number_plate);
             CREATE INDEX IF NOT EXISTS idx_anpr_detections_time ON anpr_detections (detected_at DESC);
             CREATE INDEX IF NOT EXISTS idx_anpr_detections_cam ON anpr_detections (camera_code);
         """)
+        # Also ensure columns exist if anpr_detections was created earlier
+        for col_def in [
+            "ALTER TABLE anpr_detections ADD COLUMN IF NOT EXISTS speed_kmh FLOAT DEFAULT NULL;",
+            "ALTER TABLE anpr_detections ADD COLUMN IF NOT EXISTS plate_crop TEXT DEFAULT NULL;",
+            "ALTER TABLE anpr_detections ADD COLUMN IF NOT EXISTS plate_confidence FLOAT DEFAULT NULL;"
+        ]:
+            try:
+                await conn.execute(col_def)
+            except Exception:
+                pass
+
         print("[RDS SUCCESS] anpr_detections table verified/created.")
     except Exception as e:
         print(f"[RDS ERROR] Failed to ensure anpr_detections table: {e}")
