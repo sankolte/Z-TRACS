@@ -785,8 +785,9 @@ export const DetectionAreaView: React.FC<DetectionAreaViewProps> = ({
 
     ctx.clearRect(0, 0, BASE_WIDTH, BASE_HEIGHT);
 
-    // Draw ALL zones configured for this camera
+    // Draw active ANPR and FRS zones configured for this camera
     zonesForCurrentCam.forEach((zone, zoneIdx) => {
+      if (!['ANPR', 'FACE_RECOGNITION'].includes(zone.usecase)) return;
       const zPts = zone.points;
       if (zPts.length === 0) return;
 
@@ -1152,7 +1153,7 @@ export const DetectionAreaView: React.FC<DetectionAreaViewProps> = ({
 
           </div>
 
-          {/* 4 AI USECASE SELECTION TABS (Clean, Uncluttered Workflow) */}
+          {/* 2 AI USECASE SELECTION TABS (Strictly ANPR & FRS) */}
           <div className="bg-[#031527] border border-[#00385C] rounded-2xl p-3 flex flex-wrap items-center justify-between gap-3 text-white shadow-md">
             <div className="flex items-center space-x-2">
               <Layers className="w-4 h-4 text-sky-400" />
@@ -1162,9 +1163,7 @@ export const DetectionAreaView: React.FC<DetectionAreaViewProps> = ({
             <div className="flex flex-wrap items-center gap-2">
               {[
                 { usecase: 'ANPR' as DetectionUsecase, id: 'zone-anpr', name: 'ANPR Lane', icon: '🚗', color: '#10B981', border: 'border-emerald-500/50', activeBg: 'bg-emerald-600' },
-                { usecase: 'FACE_RECOGNITION' as DetectionUsecase, id: 'zone-frs', name: 'Face Recog (FRS)', icon: '👤', color: '#3B82F6', border: 'border-blue-500/50', activeBg: 'bg-blue-600' },
-                { usecase: 'PPE' as DetectionUsecase, id: 'zone-ppe', name: 'PPE Safety', icon: '🦺', color: '#F59E0B', border: 'border-amber-500/50', activeBg: 'bg-amber-600' },
-                { usecase: 'FOOTFALL' as DetectionUsecase, id: 'zone-footfall', name: 'Footfall / Crowd', icon: '🚶', color: '#8B5CF6', border: 'border-purple-500/50', activeBg: 'bg-purple-600' },
+                { usecase: 'FACE_RECOGNITION' as DetectionUsecase, id: 'zone-frs', name: 'Face Recog (FRS)', icon: '👤', color: '#3B82F6', border: 'border-blue-500/50', activeBg: 'bg-blue-600' }
               ].map(u => {
                 const isSelected = activeUsecase === u.usecase || currentZone.usecase === u.usecase;
                 return (
@@ -1189,7 +1188,7 @@ export const DetectionAreaView: React.FC<DetectionAreaViewProps> = ({
               })}
             </div>
 
-            {/* Solo Mode Toggle (Removes Clutter) */}
+            {/* Solo Mode Toggle */}
             <button
               onClick={() => setSoloZoneMode(!soloZoneMode)}
               className={`px-3 py-1.5 rounded-xl text-[11px] font-bold flex items-center space-x-1.5 transition cursor-pointer border ${
@@ -1197,10 +1196,10 @@ export const DetectionAreaView: React.FC<DetectionAreaViewProps> = ({
                   ? 'bg-sky-500/20 text-sky-300 border-sky-500/40'
                   : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'
               }`}
-              title="Toggle between showing only the active zone (clean & focused) or all 4 zones overlaid"
+              title="Toggle between showing only the active zone (clean & focused) or both zones overlaid"
             >
               <Activity className="w-3.5 h-3.5 text-sky-400" />
-              <span>{soloZoneMode ? '🎯 Solo Focus: ON' : '👁️ Show All 4'}</span>
+              <span>{soloZoneMode ? '🎯 Solo Focus: ON' : '👁️ Show Both Zones'}</span>
             </button>
           </div>
 

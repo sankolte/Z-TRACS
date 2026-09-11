@@ -589,6 +589,8 @@ class ZTracsBuddyClient:
                 "source_type": "OFFLINE_FORENSIC_VIDEO",
                 "enable": task_enable,
                 "usecases": STANDARD_USECASES,
+                "models_requested": tsk.get("models_requested") or [],
+                "custom_model": tsk.get("custom_model"),
                 "rtsp": f"file://$PWD/{vid_p}",
                 "local_path": vid_p,
                 "latitude": 23.0612,

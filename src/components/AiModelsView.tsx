@@ -65,50 +65,6 @@ export const AI_MODEL_DEFINITIONS: ModelDefinition[] = [
     icon: UserCheck,
     defaultFps: 15,
     usecaseKey: 'FACE_RECOGNITION'
-  },
-  {
-    id: 'crowd',
-    name: 'Crowd Density & Flow Management',
-    tag: 'Public Order',
-    tagColor: '#fbbf24',
-    tagBg: '#78350f33',
-    description: 'Head-count estimation, bottleneck alert triggers, stampede risk telemetry & group tracking.',
-    icon: Users,
-    defaultFps: 15,
-    usecaseKey: 'CROWD_DENSITY'
-  },
-  {
-    id: 'ppe',
-    name: 'PPE & Safety Compliance Detection',
-    tag: 'Industrial Safety',
-    tagColor: '#f472b6',
-    tagBg: '#83184333',
-    description: 'Verifies helmet, reflective jacket, mask compliance & sends safety breach alerts.',
-    icon: HardHat,
-    defaultFps: 15,
-    usecaseKey: 'PPE'
-  },
-  {
-    id: 'footfall',
-    name: 'Footfall Analytics & Heatmap',
-    tag: 'Traffic Intelligence',
-    tagColor: '#a78bfa',
-    tagBg: '#4c1d9533',
-    description: 'Bi-directional pedestrian entry/exit counting with spatial density heatmap generator.',
-    icon: Footprints,
-    defaultFps: 15,
-    usecaseKey: 'FOOTFALL'
-  },
-  {
-    id: 'perimeter',
-    name: 'Perimeter Breach & Tripwire Intrusion',
-    tag: 'Border & Fence Control',
-    tagColor: '#fb7185',
-    tagBg: '#88133733',
-    description: 'Virtual tripwire line-crossing & forbidden zone movement detection with instant alarm.',
-    icon: ShieldAlert,
-    defaultFps: 15,
-    usecaseKey: 'PERIMETER_BREACH'
   }
 ];
 
@@ -243,8 +199,8 @@ export const AiModelCardsSection: React.FC<AiModelCardsSectionProps> = ({
   const enableVector = [
     enabledModels.anpr ? 1 : 0,
     enabledModels.frs ? 1 : 0,
-    enabledModels.ppe ? 1 : 0,
-    enabledModels.footfall ? 1 : 0
+    0,
+    0
   ];
 
   const activeUsecasesList = AI_MODEL_DEFINITIONS
@@ -335,7 +291,7 @@ export const AiModelCardsSection: React.FC<AiModelCardsSectionProps> = ({
           <div className="hidden sm:flex items-center space-x-1.5 bg-slate-900/80 px-3.5 py-1.5 rounded-lg border border-slate-700 text-xs">
             <span className="w-2 h-2 rounded-full bg-emerald-400" />
             <span className="text-slate-300 font-medium">Active Models:</span>
-            <span className="text-emerald-400 font-bold">{activeUsecasesList.length} of 6 Enabled</span>
+            <span className="text-emerald-400 font-bold">{activeUsecasesList.length} of 2 Enabled</span>
           </div>
 
           <button
@@ -349,8 +305,8 @@ export const AiModelCardsSection: React.FC<AiModelCardsSectionProps> = ({
         </div>
       </div>
 
-      {/* 6 AI INFERENCE MODEL CARDS GRID (Stable, No Layout Jitter) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4.5">
+      {/* 2 AI INFERENCE MODEL CARDS GRID (Generous 2-Column Wide Layout) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {AI_MODEL_DEFINITIONS.map(model => {
           const isEnabled = !!enabledModels[model.id];
           const Icon = model.icon;
@@ -556,9 +512,8 @@ export const AiModelsView: React.FC<AiModelsViewProps> = ({
 
     let enabledKeys: string[] = [];
     if (cfg.models && typeof cfg.models === 'object') {
-      Object.entries(cfg.models).forEach(([key, val]) => {
-        if (val) enabledKeys.push(key);
-      });
+      if (cfg.models.anpr) enabledKeys.push('anpr');
+      if (cfg.models.frs) enabledKeys.push('frs');
     } else if (Array.isArray(cfg.usecases)) {
       cfg.usecases.forEach((u: string) => {
         const def = AI_MODEL_DEFINITIONS.find(m => m.usecaseKey.toLowerCase() === u.toLowerCase());
@@ -567,8 +522,6 @@ export const AiModelsView: React.FC<AiModelsViewProps> = ({
     } else if (Array.isArray(cfg.enable)) {
       if (cfg.enable[0]) enabledKeys.push('anpr');
       if (cfg.enable[1]) enabledKeys.push('frs');
-      if (cfg.enable[2]) enabledKeys.push('ppe');
-      if (cfg.enable[3]) enabledKeys.push('footfall');
     }
 
     if (enabledKeys.length > 0) {

@@ -27,7 +27,8 @@ import {
   ChevronRight,
   Zap,
   Car,
-  UserCheck
+  UserCheck,
+  Sparkles
 } from 'lucide-react';
 import { ApiClient } from '../services/apiClient';
 
@@ -44,19 +45,24 @@ export interface ForensicDetection {
   watchlist_reason?: string;
   snapshot_crop?: string;
   frame_number?: number;
+  camera_code?: string;
 }
 
 export interface ForensicTask {
   task_id: string;
   case_id: string;
+  slug: string;
   footage_name: string;
   location_name: string;
   video_path: string;
+  file_size_bytes?: number;
   download_url?: string;
-  video_url?: string;
+  streaming_url?: string;
+  direct_video_url?: string;
   enable?: number[];
   usecases?: string[];
   models_requested: string[];
+  custom_model?: string;
   status: 'QUEUED' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
   progress_percent: number;
   duration_seconds: number;
@@ -68,6 +74,7 @@ export interface ForensicTask {
   watchlist_hits: number;
   detections: ForensicDetection[];
   created_at: string;
+  updated_at: string;
 }
 
 const DEFAULT_SAMPLE_VIDEO = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4';
@@ -85,6 +92,8 @@ export const ForensicAnalysisView: React.FC = () => {
   const [locationName, setLocationName] = useState('');
   const [durationMinutes, setDurationMinutes] = useState(2);
   const [selectedModels, setSelectedModels] = useState<string[]>(['ANPR']);
+  const [isCustomModelSelected, setIsCustomModelSelected] = useState<boolean>(false);
+  const [customModelName, setCustomModelName] = useState<string>('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -195,6 +204,13 @@ export const ForensicAnalysisView: React.FC = () => {
     setIsSubmitting(true);
     setUploadProgress(0);
 
+    const finalModels = [
+      ...selectedModels.filter(m => m !== 'CUSTOM'),
+      ...(isCustomModelSelected && customModelName.trim() ? [customModelName.trim()] : [])
+    ];
+    const requestedModels = finalModels.length > 0 ? finalModels : ['ANPR'];
+    const customModelVal = isCustomModelSelected && customModelName.trim() ? customModelName.trim() : undefined;
+
     try {
       let res;
       if (selectedFile) {
@@ -218,7 +234,8 @@ export const ForensicAnalysisView: React.FC = () => {
               s3_key: uploadInfo.s3_key,
               footage_name: footageName.trim() || selectedFile.name,
               location_name: locationName.trim() || 'Gujarat Highway Junction Node',
-              models_requested: selectedModels.length > 0 ? selectedModels : ['ANPR'],
+              models_requested: requestedModels,
+              custom_model: customModelVal,
               estimated_duration_minutes: durationMinutes,
             };
             res = await ApiClient.createForensicTask(payload);
@@ -235,7 +252,10 @@ export const ForensicAnalysisView: React.FC = () => {
           formData.append('case_id', caseId.trim());
           formData.append('footage_name', footageName.trim() || selectedFile.name);
           formData.append('location_name', locationName.trim() || 'Gujarat Highway Junction Node');
-          formData.append('models_requested', JSON.stringify(selectedModels.length > 0 ? selectedModels : ['ANPR']));
+          formData.append('models_requested', JSON.stringify(requestedModels));
+          if (customModelVal) {
+            formData.append('custom_model', customModelVal);
+          }
           formData.append('duration_minutes', String(durationMinutes));
 
           res = await ApiClient.uploadForensicTask(formData, (percent) => {
@@ -247,7 +267,8 @@ export const ForensicAnalysisView: React.FC = () => {
           case_id: caseId.trim(),
           footage_name: footageName.trim() || 'Evidence_CCTV_Footage.mp4',
           location_name: locationName.trim() || 'Gujarat Highway Junction Node',
-          models_requested: selectedModels.length > 0 ? selectedModels : ['ANPR'],
+          models_requested: requestedModels,
+          custom_model: customModelVal,
           estimated_duration_minutes: durationMinutes,
         };
         res = await ApiClient.createForensicTask(payload);
@@ -263,6 +284,8 @@ export const ForensicAnalysisView: React.FC = () => {
         setFootageName('');
         setLocationName('');
         setSelectedFile(null);
+        setIsCustomModelSelected(false);
+        setCustomModelName('');
         if (previewUrl) URL.revokeObjectURL(previewUrl);
         setPreviewUrl(null);
         fetchTasks();
@@ -836,28 +859,33 @@ export const ForensicAnalysisView: React.FC = () => {
                 </div>
               </div>
 
-              {/* AI Models Checklist (Standardized 4-Model Vision Pipeline) */}
+              {/* AI Models Checklist (Strictly ANPR, FRS & Custom Model) */}
               <div>
                 <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-2">
                   Select AI Vision Models to Run on Video Footage:
                 </label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                   {[
                     { id: 'ANPR', label: 'ANPR Plates', icon: Car },
                     { id: 'FACE_RECOGNITION', label: 'Face Recog (FRS)', icon: UserCheck },
-                    { id: 'PPE', label: 'PPE Safety', icon: ShieldAlert },
-                    { id: 'FOOTFALL', label: 'Footfall / Crowd', icon: Target }
+                    { id: 'CUSTOM', label: 'Custom Model', icon: Sparkles }
                   ].map((m) => {
-                    const isChecked = selectedModels.includes(m.id);
+                    const isChecked = m.id === 'CUSTOM' ? isCustomModelSelected : selectedModels.includes(m.id);
                     const Icon = m.icon;
                     return (
                       <button
                         key={m.id}
                         type="button"
-                        onClick={() => toggleModel(m.id)}
+                        onClick={() => {
+                          if (m.id === 'CUSTOM') {
+                            setIsCustomModelSelected(!isCustomModelSelected);
+                          } else {
+                            toggleModel(m.id);
+                          }
+                        }}
                         className={`p-3 rounded-xl border text-xs font-bold flex flex-col sm:flex-row items-center space-y-1 sm:space-y-0 sm:space-x-2 transition cursor-pointer text-center sm:text-left ${
                           isChecked
-                            ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300 shadow-sm'
+                            ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300 shadow-sm ring-1 ring-cyan-400/50'
                             : 'bg-[#02111f] border-[#0e3b63] text-slate-400 hover:text-white'
                         }`}
                       >
@@ -867,6 +895,22 @@ export const ForensicAnalysisView: React.FC = () => {
                     );
                   })}
                 </div>
+
+                {/* Sleek Custom Model Input Box */}
+                {isCustomModelSelected && (
+                  <div className="mt-2.5 p-3 rounded-xl bg-[#02111f] border border-cyan-500/40 animate-in fade-in duration-200">
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-cyan-300 mb-1">
+                      Specify Custom Model Name:
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. PPE Safety & Compliance Detection, Footfall Analytics & Heatmap"
+                      value={customModelName}
+                      onChange={(e) => setCustomModelName(e.target.value)}
+                      className="w-full bg-[#031b30] border border-[#0d3b66] rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:ring-1 focus:ring-cyan-400 focus:outline-none font-mono"
+                    />
+                  </div>
+                )}
               </div>
 
               {/* Upload Progress Bar */}
