@@ -34,6 +34,7 @@ from typing import Dict, Any, List, Optional
 
 DEFAULT_FORENSICS_FILE = "forensics.json"
 FORENSICS_BASE_DIR = "forensics"
+DEFAULT_RETENTION_HOURS = float(os.getenv("FORENSICS_RETENTION_HOURS", "24.0"))
 
 class ZTracsForensicsClient:
     def __init__(
@@ -157,17 +158,63 @@ class ZTracsForensicsListener:
         client: Optional[ZTracsForensicsClient] = None,
         poll_interval: float = 5.0,
         forensics_filename: str = DEFAULT_FORENSICS_FILE,
-        base_dir: str = FORENSICS_BASE_DIR
+        base_dir: str = FORENSICS_BASE_DIR,
+        retention_hours: float = DEFAULT_RETENTION_HOURS
     ):
         self.client = client or ZTracsForensicsClient()
         self.poll_interval = poll_interval
         self.forensics_filename = forensics_filename
         self.base_dir = base_dir
+        self.retention_hours = float(retention_hours)
         self.is_running = False
         self.active_tasks: Dict[str, Dict[str, Any]] = {}
         self._last_catalog_str = None
+        self.purged_tasks: set = set()
+        self._last_prune_time = 0.0
 
         os.makedirs(self.base_dir, exist_ok=True)
+
+    def _prune_expired_footage(self, force: bool = False):
+        """
+        Auto-Deletion Retention Policy for Forensic Video Footage:
+        - Scans forensics/{task_id}/ for video files older than retention_hours (default: 24h)
+        - Removes large video files from local disk to prevent disk full
+        - Tracks purged tasks so they are not repeatedly re-downloaded
+        """
+        now = time.time()
+        if not force and (now - self._last_prune_time < 60.0):
+            return
+
+        self._last_prune_time = now
+        retention_sec = self.retention_hours * 3600.0
+
+        if not os.path.exists(self.base_dir):
+            return
+
+        try:
+            for item in os.listdir(self.base_dir):
+                task_dir = os.path.join(self.base_dir, item)
+                if not os.path.isdir(task_dir):
+                    continue
+
+                for f in os.listdir(task_dir):
+                    if f.endswith(".tmp"):
+                        continue
+                    file_path = os.path.join(task_dir, f)
+                    if os.path.isfile(file_path):
+                        try:
+                            mtime = os.path.getmtime(file_path)
+                            age_sec = now - mtime
+                            if age_sec > retention_sec:
+                                size_mb = os.path.getsize(file_path) / (1024 * 1024)
+                                os.remove(file_path)
+                                self.purged_tasks.add(item)
+                                print(f"[FORENSICS RETENTION] Auto-purged 24h expired video footage ({size_mb:.2f} MB, age {age_sec/3600:.1f}h): '{file_path}'")
+                        except Exception as err:
+                            print(f"[FORENSICS RETENTION WARN] Could not prune {file_path}: {err}")
+        except Exception as e:
+            print(f"[FORENSICS RETENTION ERROR] Error during prune sweep: {e}")
+
 
     def sync_forensics_json(self, export_data: Optional[Dict[str, Any]] = None):
         """Generates and writes standardized forensics.json atomically to disk."""
@@ -205,6 +252,9 @@ class ZTracsForensicsListener:
         initial_load = True
         while self.is_running:
             try:
+                # Periodic Auto-Deletion sweep for expired 24h video footage
+                self._prune_expired_footage()
+
                 export_data = self.client.get_export_tasks()
                 tasks_list = export_data.get("tasks", [])
                 current_task_ids = set()
@@ -226,8 +276,11 @@ class ZTracsForensicsListener:
                     )
                     expected_size = task.get("file_size_bytes")
 
-                    # Download video if missing or incomplete
-                    needs_download = not os.path.exists(local_dest) or (expected_size and os.path.getsize(local_dest) != expected_size)
+                    # Download video if missing or incomplete (and not already purged after 24h)
+                    needs_download = (
+                        tid not in self.purged_tasks
+                        and (not os.path.exists(local_dest) or (expected_size and os.path.getsize(local_dest) != expected_size))
+                    )
                     if needs_download:
                         print(f"\n[FORENSICS] Syncing footage file for task: {tid} ({task.get('case_id')})")
                         ok = self.client.stream_download_footage(tid, local_dest, direct_url)
@@ -235,8 +288,13 @@ class ZTracsForensicsListener:
                             print(f"[FORENSICS] Successfully stored local footage: '{local_dest}'")
 
                     # Update task paths for local GPU inference workers
+                    is_local_present = os.path.exists(local_dest)
                     task["video_path"] = f"{self.base_dir}/{tid}/{clean_fn}".replace("\\", "/")
                     task["absolute_video_path"] = os.path.abspath(local_dest)
+                    task["local_exists"] = is_local_present
+                    if tid in self.purged_tasks:
+                        task["local_status"] = "PURGED_AFTER_24H"
+                        task["purged"] = True
 
                     # Compute standardized 4-element enable vector: [ANPR, FRS, PPE, FOOTFALL]
                     models_req = [str(m).upper() for m in (task.get("models_requested") or [])]
@@ -286,6 +344,7 @@ class ZTracsForensicsListener:
                         deleted_ids = set(self.active_tasks.keys()) - current_task_ids
                         for d_tid in deleted_ids:
                             old = self.active_tasks.pop(d_tid, {})
+                            self.purged_tasks.discard(d_tid)
                             del_dir = os.path.join(self.base_dir, d_tid)
                             if os.path.exists(del_dir):
                                 shutil.rmtree(del_dir, ignore_errors=True)
@@ -299,6 +358,14 @@ class ZTracsForensicsListener:
                             print(f" -> Case ID          : {old.get('case_id')}")
                             print(f" -> Forensics File   : '{self.forensics_filename}' ({total_tasks} jobs in {elapsed:.4f}s)")
                             print("=" * 65 + "\n")
+
+                        # Sweep orphaned directories
+                        if os.path.exists(self.base_dir):
+                            for item in os.listdir(self.base_dir):
+                                p = os.path.join(self.base_dir, item)
+                                if os.path.isdir(p) and item not in current_task_ids:
+                                    shutil.rmtree(p, ignore_errors=True)
+                                    print(f"[FORENSICS CLEANUP] Purged orphaned task directory: '{p}/'")
 
                     if initial_load:
                         print(f"[FORENSICS LISTENER] Initialized '{self.forensics_filename}' with {total_tasks} forensic job(s).")

@@ -36,6 +36,7 @@ from typing import Dict, Any, List, Optional
 DEFAULT_FACES_FILE = "faces.json"
 CLIPS_BASE_DIR = "clips"
 CACHE_FILE = ".frs_version_cache.json"
+DEFAULT_RETENTION_HOURS = float(os.getenv("FRS_CLIP_RETENTION_HOURS", "24.0"))
 
 class ZTracsFrsClient:
     def __init__(
@@ -168,17 +169,21 @@ class ZTracsFrsListener:
         poll_interval: float = 5.0,
         faces_filename: str = DEFAULT_FACES_FILE,
         clips_dir: str = CLIPS_BASE_DIR,
-        cache_file: str = CACHE_FILE
+        cache_file: str = CACHE_FILE,
+        retention_hours: float = DEFAULT_RETENTION_HOURS
     ):
         self.client = client or ZTracsFrsClient()
         self.poll_interval = poll_interval
         self.faces_filename = faces_filename
         self.clips_dir = clips_dir
         self.cache_file = cache_file
+        self.retention_hours = float(retention_hours)
         self.is_running = False
         self.active_targets: Dict[str, Dict[str, Any]] = {}
         self._last_catalog_str = None
         self.version_cache = self._load_version_cache()
+        self.purged_clips: set = set()
+        self._last_prune_time = 0.0
 
         os.makedirs(self.clips_dir, exist_ok=True)
 
@@ -197,6 +202,56 @@ class ZTracsFrsListener:
                 json.dump(self.version_cache, f, indent=2)
         except Exception:
             pass
+
+    def _prune_expired_clips(self, force: bool = False):
+        """
+        Auto-Deletion Retention Policy for FRS 1-minute video clips:
+        - Removes clips/{slug}/clip.mp4 older than retention_hours (default: 24h)
+        - NEVER deletes suspect reference photo (face_reference.jpg)
+        - Prevents re-download loops by caching purged clip status
+        """
+        now = time.time()
+        if not force and (now - self._last_prune_time < 60.0):
+            return
+
+        self._last_prune_time = now
+        retention_sec = self.retention_hours * 3600.0
+
+        if not os.path.exists(self.clips_dir):
+            return
+
+        try:
+            for item in os.listdir(self.clips_dir):
+                target_folder = os.path.join(self.clips_dir, item)
+                if not os.path.isdir(target_folder):
+                    continue
+
+                clip_path = os.path.join(target_folder, "clip.mp4")
+                if os.path.exists(clip_path):
+                    try:
+                        mtime = os.path.getmtime(clip_path)
+                        age_sec = now - mtime
+                        if age_sec > retention_sec:
+                            size_mb = os.path.getsize(clip_path) / (1024 * 1024)
+                            os.remove(clip_path)
+                            self.purged_clips.add(item)
+
+                            # Mark in version cache so it doesn't re-download
+                            for pid, tgt in self.active_targets.items():
+                                slug = tgt.get("slug") or pid.lower().replace("-", "_")
+                                if slug == item or pid == item:
+                                    r_ver = str(tgt.get("clip_version") or tgt.get("s3_clip_key") or "v1")
+                                    self.version_cache[f"{pid}_clip_purged"] = r_ver
+                                    self.purged_clips.add(pid)
+                                    self._save_version_cache()
+                                    break
+
+                            print(f"[FRS RETENTION] Auto-purged 24h expired video clip ({size_mb:.2f} MB, age {age_sec/3600:.1f}h): '{clip_path}'")
+                    except Exception as err:
+                        print(f"[FRS RETENTION WARN] Could not prune {clip_path}: {err}")
+        except Exception as e:
+            print(f"[FRS RETENTION ERROR] Error during prune sweep: {e}")
+
 
     def sync_faces_json(self, export_data: Optional[Dict[str, Any]] = None):
         """Generates and writes standardized faces.json atomically to disk."""
@@ -233,6 +288,9 @@ class ZTracsFrsListener:
         initial_load = True
         while self.is_running:
             try:
+                # Periodic Auto-Deletion sweep for expired 24h video clips
+                self._prune_expired_clips()
+
                 export_data = self.client.get_export_targets()
                 targets_list = export_data.get("targets", [])
                 
@@ -281,12 +339,16 @@ class ZTracsFrsListener:
                                     print(f"[FRS PHOTO WRITE WARN] Could not write photo for {pid}: {write_err}")
 
                         # 1b. Download Full 1-Minute Video Clip (Directly Streamed to Local Hard Drive)
-                        need_clip = not os.path.exists(local_clip_path) or cached_clip_ver != remote_clip_ver
+                        cached_clip_purged = self.version_cache.get(f"{pid}_clip_purged")
+                        is_purged = (cached_clip_purged == remote_clip_ver) or (slug in self.purged_clips) or (pid in self.purged_clips)
+
+                        need_clip = (not is_purged) and (not os.path.exists(local_clip_path) or cached_clip_ver != remote_clip_ver)
                         if need_clip:
                             direct_clip_url = tgt.get("clip_url") or tgt.get("clip_download_url")
                             downloaded = self.client.stream_download_clip(pid, local_clip_path, direct_url=direct_clip_url)
                             if downloaded:
                                 self.version_cache[f"{pid}_clip"] = remote_clip_ver
+                                self.version_cache.pop(f"{pid}_clip_purged", None)
                                 self._save_version_cache()
                                 print(f"[FRS LOCAL SYNC] Downloaded 1-min video clip for '{tgt.get('person_name')}' -> {local_clip_path}")
 
