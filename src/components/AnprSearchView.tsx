@@ -693,9 +693,6 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
               <span className="font-bold text-slate-800">
                 Found {filteredEvents.length} ANPR Detections Matching Query
               </span>
-              <span className="font-mono text-[11px] text-slate-500 hidden sm:inline">
-                • AI Confidence Score &gt; 94% Verified
-              </span>
             </div>
 
             <div className="flex items-center space-x-2">
@@ -725,18 +722,16 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
                 <tr>
                   <th className="p-3">Plate Crop</th>
                   <th className="p-3">Plate Number</th>
-                  <th className="p-3">Vehicle Details</th>
                   <th className="p-3">Camera Node</th>
                   <th className="p-3">Location & District</th>
                   <th className="p-3">Timestamp</th>
-                  <th className="p-3">AI Confidence</th>
                   <th className="p-3 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-sans">
                 {filteredEvents.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="p-8 text-center text-slate-400">
+                    <td colSpan={6} className="p-8 text-center text-slate-400">
                       No ANPR events found for plate query "{searchPlate}"
                     </td>
                   </tr>
@@ -811,30 +806,12 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
                           )}
                         </button>
                       </td>
-                      <td className="p-3">
-                        <div className="font-bold text-slate-800">{evt.vehicleType || 'VEHICLE'}</div>
-                        <div className="text-[11px] text-slate-500 font-mono">
-                          Speed: {evt.speedKmh !== undefined && evt.speedKmh !== null && evt.speedKmh > 0 ? `${evt.speedKmh} Km/h` : '—'}
-                        </div>
-                      </td>
                       <td className="p-3 font-mono font-bold text-[#0052CC]">{evt.cameraCode}</td>
                       <td className="p-3">
                         <div className="font-medium text-slate-900">{evt.district}</div>
                         <div className="text-[11px] text-slate-500 line-clamp-1">{evt.locationDescription}</div>
                       </td>
                       <td className="p-3 font-mono text-[11px] text-slate-600">{evt.timestamp}</td>
-                      <td className="p-3 font-mono">
-                        {evt.confidence !== undefined && evt.confidence !== null && evt.confidence > 0 ? (
-                          <>
-                            <span className="font-bold text-emerald-600">{evt.confidence}%</span>
-                            {evt.plateConfidence !== undefined && evt.plateConfidence !== null && evt.plateConfidence > 0 ? (
-                              <div className="text-[10px] text-slate-400">Plate: {evt.plateConfidence}%</div>
-                            ) : null}
-                          </>
-                        ) : (
-                          <span className="text-slate-400 font-normal">—</span>
-                        )}
-                      </td>
                       <td className="p-3 text-right space-x-1.5 whitespace-nowrap">
                         <button
                           onClick={() => {
@@ -1034,29 +1011,6 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
               <div>
                 <span className="text-[10px] text-slate-500 font-bold block uppercase">TIMESTAMP</span>
                 <span className="font-mono text-slate-700 text-[11px]">{selectedSnapshot.time}</span>
-              </div>
-
-              <div>
-                <span className="text-[10px] text-slate-500 font-bold block uppercase">VEHICLE TYPE</span>
-                <span className="font-bold text-slate-800">{selectedSnapshot.vehicleType || '—'}</span>
-              </div>
-              <div>
-                <span className="text-[10px] text-slate-500 font-bold block uppercase">DETECTED SPEED</span>
-                <span className="font-mono font-bold text-slate-800">
-                  {selectedSnapshot.speed && selectedSnapshot.speed > 0 ? `${selectedSnapshot.speed} Km/h` : '—'}
-                </span>
-              </div>
-              <div>
-                <span className="text-[10px] text-slate-500 font-bold block uppercase">AI CONFIDENCE</span>
-                <span className="font-mono font-bold text-emerald-600">
-                  {selectedSnapshot.confidence && selectedSnapshot.confidence > 0 ? `${selectedSnapshot.confidence}%` : '—'}
-                </span>
-              </div>
-              <div>
-                <span className="text-[10px] text-slate-500 font-bold block uppercase">PLATE CONFIDENCE</span>
-                <span className="font-mono font-bold text-emerald-600">
-                  {selectedSnapshot.plateConfidence && selectedSnapshot.plateConfidence > 0 ? `${selectedSnapshot.plateConfidence}%` : '—'}
-                </span>
               </div>
 
               {selectedSnapshot.location && (
