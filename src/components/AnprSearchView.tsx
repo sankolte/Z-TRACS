@@ -324,8 +324,32 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
     return timeB - timeA;
   });
 
+  // Filter out development test / debug seed plates so UI only shows authentic camera events
+  const isDebugDummyPlate = (plateStr: string) => {
+    const p = (plateStr || '').toUpperCase().replace(/[\s-]+/g, '');
+    const dummyExact = [
+      'GJ01TEST555',
+      'GJ01LIVE999',
+      'GJ01SPEED777',
+      'GJ01REAL888',
+      'GJ01PASS227',
+      'GJ01E2E711',
+      'GJ01CRIME2734',
+      'GJ03CD0111',
+      'GJ01AB1234',
+      'GJ01ZZ4321',
+      'MH12AB1234',
+    ];
+    if (dummyExact.includes(p)) return true;
+    if (p.includes('TEST') || p.includes('SPEED7') || p.includes('E2E7') || p.includes('PASS227')) return true;
+    return false;
+  };
+
   // Filtered ANPR records
   const filteredEvents = allEventsList.filter(evt => {
+    // Hide test / debug dummy records from UI display (keeps RDS completely untouched)
+    if (isDebugDummyPlate(evt.plateNumber)) return false;
+
     if (searchPlate.trim()) {
       if (!evt.plateNumber.toLowerCase().includes(searchPlate.trim().toLowerCase())) return false;
     }
