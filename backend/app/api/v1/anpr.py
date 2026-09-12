@@ -47,6 +47,10 @@ IN_MEMORY_DETECTIONS: List[Dict[str, Any]] = []
 # In-memory alerts buffer (keeps last 500 in memory + persistent RDS storage)
 IN_MEMORY_ALERTS: List[Dict[str, Any]] = []
 
+# 30-Minute Sighting Debounce / Cooldown Cache: (clean_plate, cam_code) -> epoch_timestamp
+ANPR_COOLDOWN_CACHE: Dict[str, float] = {}
+ANPR_COOLDOWN_SECONDS: float = 1800.0  # 30 minutes
+
 def _process_and_upload_snapshot(raw_snapshot: Optional[str], plate: str, identifier: str) -> Optional[str]:
     """Uploads base64 snapshot to S3 and returns S3 URL, or retains clean URL/base64."""
     if not raw_snapshot or not str(raw_snapshot).strip():
@@ -316,7 +320,19 @@ async def ingest_anpr_alert(payload: Dict[str, Any] = Body(...)):
         except Exception:
             pass
 
-    if conn:
+    now_ts = time.time()
+    clean_p = plate.upper().replace(" ", "")
+    cooldown_key = f"{clean_p}_{cam_code}"
+    last_seen_ts = ANPR_COOLDOWN_CACHE.get(cooldown_key)
+
+    should_record_db = True
+    if not is_hit and last_seen_ts and (now_ts - last_seen_ts < ANPR_COOLDOWN_SECONDS):
+        should_record_db = False
+        print(f"[COOLDOWN] Skipped repeat detection for plate {plate} at {cam_code} (cooldown: {int(ANPR_COOLDOWN_SECONDS - (now_ts - last_seen_ts))}s left)")
+    else:
+        ANPR_COOLDOWN_CACHE[cooldown_key] = now_ts
+
+    if conn and should_record_db:
         try:
             await conn.execute("""
                 INSERT INTO anpr_detections (
@@ -410,6 +426,7 @@ async def ingest_anpr_alert(payload: Dict[str, Any] = Body(...)):
         "alert_id": alert_id,
         "watchlistHit": is_hit,
         "watchlist_hit": is_hit,
+        "cooldownActive": not should_record_db,
         **(alert_obj or det_obj)
     }
     return ApiResponse.ok(resp_payload)

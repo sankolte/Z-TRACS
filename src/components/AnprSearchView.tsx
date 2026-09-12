@@ -48,6 +48,7 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
   const [selectedDistrict, setSelectedDistrict] = useState('ALL');
   const [selectedVehicleType, setSelectedVehicleType] = useState('ALL');
   const [watchlistOnly, setWatchlistOnly] = useState(false);
+  const [filterRepeats30m, setFilterRepeats30m] = useState(true);
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   const [liveDetections, setLiveDetections] = useState<any[]>([]);
 
@@ -364,6 +365,35 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
     return true;
   });
 
+  // 30-Minute Sighting Debounce / Repeat Filter (Eliminates identical plate spam within 30 mins)
+  const displayEvents = React.useMemo(() => {
+    if (!filterRepeats30m) return filteredEvents;
+
+    const debounced: AnprEvent[] = [];
+    const lastSeenMap = new Map<string, number>();
+    const COOLDOWN_MS = 30 * 60 * 1000; // 30 minutes
+
+    for (const evt of filteredEvents) {
+      // Critical Watchlist alerts are ALWAYS preserved & shown without suppression
+      if (evt.watchlistFlag) {
+        debounced.push(evt);
+        continue;
+      }
+
+      const cleanPlate = (evt.plateNumber || '').toUpperCase().replace(/[\s-]+/g, '');
+      const key = `${cleanPlate}_${evt.cameraCode || 'CAM'}`;
+      const evtTime = new Date(evt.timestamp).getTime() || 0;
+
+      const lastSeen = lastSeenMap.get(key);
+      if (lastSeen === undefined || Math.abs(lastSeen - evtTime) >= COOLDOWN_MS) {
+        lastSeenMap.set(key, evtTime);
+        debounced.push(evt);
+      }
+    }
+
+    return debounced;
+  }, [filteredEvents, filterRepeats30m]);
+
   // Unique list of active districts from props & events
   const activeDistrictNames = Array.from(
     new Set([
@@ -388,7 +418,7 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
       'Watchlist Match'
     ];
 
-    const rows = filteredEvents.map(evt => [
+    const rows = displayEvents.map(evt => [
       `"${evt.plateNumber}"`,
       `"${evt.cameraCode}"`,
       `"${evt.cameraName || ''}"`,
@@ -420,7 +450,7 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
       return;
     }
 
-    const rowsHtml = filteredEvents.map((evt, idx) => `
+    const rowsHtml = displayEvents.map((evt, idx) => `
       <tr style="background-color: ${idx % 2 === 0 ? '#ffffff' : '#f8fafc'}; font-family: monospace; font-size: 11px;">
         <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #0f172a;">${evt.plateNumber}</td>
         <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #0052cc;">${evt.cameraCode}</td>
@@ -669,7 +699,7 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
 
         {/* Sub-toolbar */}
         <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-100 text-xs">
-          <div className="flex items-center space-x-4">
+          <div className="flex flex-wrap items-center gap-3">
             <label className="flex items-center space-x-1.5 font-bold text-rose-700 cursor-pointer">
               <input
                 type="checkbox"
@@ -678,6 +708,16 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
                 className="rounded border-rose-300 text-rose-600 focus:ring-rose-500"
               />
               <span>Flagged Watchlist Matches Only</span>
+            </label>
+
+            <label className="flex items-center space-x-1.5 font-bold text-indigo-700 cursor-pointer bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-md border border-indigo-200 transition" title="Filter consecutive duplicate detections of the same vehicle at the same camera within 30 minutes">
+              <input
+                type="checkbox"
+                checked={filterRepeats30m}
+                onChange={(e) => setFilterRepeats30m(e.target.checked)}
+                className="rounded border-indigo-300 text-indigo-600 focus:ring-indigo-500"
+              />
+              <span>Debounce Repeats (30m Window)</span>
             </label>
           </div>
 
@@ -715,7 +755,7 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
           <div className="p-3.5 bg-[#EDF3FA] border-b border-slate-200 flex flex-wrap items-center justify-between gap-2 text-xs">
             <div className="flex items-center space-x-3">
               <span className="font-bold text-slate-800">
-                Found {filteredEvents.length} ANPR Detections Matching Query
+                Found {displayEvents.length} ANPR Detections {filterRepeats30m && filteredEvents.length !== displayEvents.length ? `(30m Window Debounced from ${filteredEvents.length} frames)` : 'Matching Query'}
               </span>
             </div>
 
@@ -753,14 +793,14 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-sans">
-                {filteredEvents.length === 0 ? (
+                {displayEvents.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="p-8 text-center text-slate-400">
                       No ANPR events found for plate query "{searchPlate}"
                     </td>
                   </tr>
                 ) : (
-                  filteredEvents.map(evt => (
+                  displayEvents.map(evt => (
                     <tr key={evt.id} className="hover:bg-blue-50/40 transition">
                       <td className="p-3">
                         {evt.imageCropUrl ? (
@@ -880,7 +920,7 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
       ) : (
         /* Grid View */
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredEvents.map(evt => (
+          {displayEvents.map(evt => (
             <div key={evt.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs space-y-3">
               <div 
                 onClick={() => {
