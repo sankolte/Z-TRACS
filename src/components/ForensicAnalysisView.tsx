@@ -833,32 +833,6 @@ export const ForensicAnalysisView: React.FC = () => {
                 </div>
               </div>
 
-              {/* Duration Slider */}
-              <div>
-                <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1.5">
-                  <span>Footage Duration:</span>
-                  <span className="text-cyan-400 font-mono font-bold">
-                    {durationMinutes >= 60 ? `${(durationMinutes / 60).toFixed(1)} Hours` : `${durationMinutes} Minutes`}
-                  </span>
-                </div>
-                <input
-                  type="range"
-                  min="1"
-                  max="240"
-                  step="1"
-                  value={durationMinutes}
-                  onChange={(e) => setDurationMinutes(Number(e.target.value))}
-                  className="w-full accent-cyan-400 cursor-pointer"
-                />
-                <div className="flex justify-between text-[9px] text-slate-500 font-mono mt-1">
-                  <span>1 Min</span>
-                  <span>30 Mins</span>
-                  <span>1 Hour</span>
-                  <span>2 Hours</span>
-                  <span>4 Hours</span>
-                </div>
-              </div>
-
               {/* AI Models Checklist (Strictly ANPR, FRS & Custom Model) */}
               <div>
                 <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-2">
