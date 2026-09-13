@@ -3,16 +3,11 @@ import { Language, UserRole } from '../types';
 import { useRBAC } from '../context/RBACContext';
 import {
   LayoutDashboard,
-  MonitorPlay,
   Radio,
   ScanLine,
   Route,
   BellRing,
   FolderSearch,
-  Network,
-  Server,
-  Plug,
-  GitBranch,
   Map,
   Camera,
   UserPlus,
@@ -77,8 +72,7 @@ const ROLE_ALLOWED_TABS: Record<UserRole, NavTab[]> = {
   STATE_ADMIN: [
     'overview', 'sentinel-live-wall', 'live-view', 'anpr-search', 'alerts',
     'gis', 'vehicle-journey', 'registry', 'onboarding', 'health', 'detection-area', 'ai-models', 'face-recognition', 'investigations', 'forensic-analysis',
-    'administration', 'audit', 'reports', 'gap-analysis', 'departments', 'districts',
-    'federation-overview', 'vms-management', 'connectors', 'event-flow'
+    'administration', 'audit', 'reports', 'gap-analysis', 'departments', 'districts'
   ],
   DISTRICT_ADMIN: [
     'overview', 'sentinel-live-wall', 'live-view', 'anpr-search', 'alerts',
@@ -149,15 +143,6 @@ const NAV_GROUPS: {
       { id: 'gap-analysis', label: 'Gap Analysis DPR', shortLabel: 'Gap DPR', icon: Landmark },
       { id: 'departments', label: 'Department Registry', shortLabel: 'Depts', icon: Building2 },
       { id: 'districts', label: 'District Jurisdiction', shortLabel: 'Districts', icon: Landmark },
-    ]
-  },
-  {
-    label: 'FEDERATION & PIPELINE',
-    items: [
-      { id: 'federation-overview', label: 'VMS Federation Overview', shortLabel: 'Federation', icon: Network },
-      { id: 'vms-management', label: 'VMS Reference Systems', shortLabel: 'VMS', icon: Server },
-      { id: 'connectors', label: 'VMS Connectors', shortLabel: 'Conn.', icon: Plug },
-      { id: 'event-flow', label: 'Event Pipeline DLQ', shortLabel: 'Events', icon: GitBranch },
     ]
   }
 ];
