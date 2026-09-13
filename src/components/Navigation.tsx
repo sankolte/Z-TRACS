@@ -75,31 +75,31 @@ interface NavigationProps {
 
 const ROLE_ALLOWED_TABS: Record<UserRole, NavTab[]> = {
   STATE_ADMIN: [
-    'overview', 'sentinel-live-wall', 'command-center', 'live-view', 'anpr-search', 'alerts',
+    'overview', 'sentinel-live-wall', 'live-view', 'anpr-search', 'alerts',
     'gis', 'vehicle-journey', 'registry', 'onboarding', 'health', 'detection-area', 'ai-models', 'face-recognition', 'investigations', 'forensic-analysis',
     'administration', 'audit', 'reports', 'gap-analysis', 'departments', 'districts',
     'federation-overview', 'vms-management', 'connectors', 'event-flow'
   ],
   DISTRICT_ADMIN: [
-    'overview', 'sentinel-live-wall', 'command-center', 'live-view', 'anpr-search', 'alerts',
+    'overview', 'sentinel-live-wall', 'live-view', 'anpr-search', 'alerts',
     'gis', 'vehicle-journey', 'registry', 'onboarding', 'health', 'detection-area', 'ai-models', 'face-recognition', 'investigations', 'forensic-analysis',
     'administration', 'audit', 'reports', 'gap-analysis', 'districts'
   ],
   DEPARTMENT_ADMIN: [
-    'overview', 'sentinel-live-wall', 'command-center', 'live-view', 'gis', 'registry', 'onboarding',
+    'overview', 'sentinel-live-wall', 'live-view', 'gis', 'registry', 'onboarding',
     'health', 'detection-area', 'ai-models', 'face-recognition', 'forensic-analysis', 'administration', 'audit', 'reports', 'departments'
   ],
   DISTRICT_OFFICER: [
-    'overview', 'sentinel-live-wall', 'command-center', 'live-view', 'anpr-search', 'alerts',
+    'overview', 'sentinel-live-wall', 'live-view', 'anpr-search', 'alerts',
     'gis', 'vehicle-journey', 'registry', 'health', 'detection-area', 'ai-models', 'face-recognition', 'investigations', 'forensic-analysis', 'reports', 'districts', 'gap-analysis'
   ],
   CONTROL_ROOM_OPERATOR: [
-    'sentinel-live-wall', 'command-center', 'live-view', 'anpr-search', 'alerts',
+    'sentinel-live-wall', 'live-view', 'anpr-search', 'alerts',
     'gis', 'vehicle-journey', 'health', 'detection-area', 'ai-models', 'face-recognition', 'forensic-analysis'
   ],
   POLICE_OFFICER: [
     'anpr-search', 'vehicle-journey', 'alerts', 'investigations', 'forensic-analysis',
-    'sentinel-live-wall', 'command-center', 'live-view', 'gis', 'registry', 'health', 'detection-area', 'ai-models', 'face-recognition', 'reports', 'audit'
+    'sentinel-live-wall', 'live-view', 'gis', 'registry', 'health', 'detection-area', 'ai-models', 'face-recognition', 'reports', 'audit'
   ],
   STATE_AUDITOR: [
     'overview', 'gis', 'registry', 'health', 'detection-area', 'ai-models', 'face-recognition', 'forensic-analysis', 'reports', 'audit'
@@ -116,7 +116,6 @@ const NAV_GROUPS: {
     items: [
       { id: 'overview', label: 'Overview Dashboard', shortLabel: 'Overview', icon: LayoutDashboard },
       { id: 'sentinel-live-wall', label: 'Live Feeds Grid', shortLabel: 'Live Feed', icon: Radio },
-      { id: 'command-center', label: 'Command Center Video Wall', shortLabel: 'Command', icon: MonitorPlay },
       { id: 'alerts', label: 'Real-Time Alert Center', shortLabel: 'Alerts', icon: BellRing, badge: 'alerts' },
     ]
   },

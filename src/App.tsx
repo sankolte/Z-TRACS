@@ -493,7 +493,7 @@ function MainApp() {
         onLoginSuccess={(loggedInUser) => {
           setAppScreen('dashboard');
           if (loggedInUser.role === 'CONTROL_ROOM_OPERATOR') {
-            setActiveTab('command-center');
+            setActiveTab('sentinel-live-wall');
           } else if (loggedInUser.role === 'POLICE_OFFICER') {
             setActiveTab('anpr-search');
           } else {
@@ -554,24 +554,8 @@ function MainApp() {
           />
         )}
 
-        {/* MODEL 2: Command Center & Video Wall */}
-        {activeTab === 'command-center' && (
-          <CommandCenterView
-            cameras={cameras}
-            anprEvents={anprEvents}
-            alerts={alerts}
-            departments={departments}
-            onSelectCamera={(cam) => setSelectedCameraForDetail(cam)}
-            onNavigateTab={setActiveTab}
-            onSelectAnprEvent={(evt) => {
-              setSelectedPlateForJourney(evt.plateNumber);
-              setActiveTab('vehicle-journey');
-            }}
-          />
-        )}
-
         {/* SENTINEL GUJARAT: Unified Live CCTV Feed Wall (31 cameras) */}
-        {(activeTab === 'sentinel-live-wall' || activeTab === 'live-view') && (
+        {(activeTab === 'sentinel-live-wall' || activeTab === 'live-view' || activeTab === 'command-center') && (
           <SentinelLiveWallView />
         )}
 
