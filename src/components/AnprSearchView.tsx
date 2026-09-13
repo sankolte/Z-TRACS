@@ -80,6 +80,13 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
   const [newPlateInput, setNewPlateInput] = useState('');
   const [watchlistMsg, setWatchlistMsg] = useState('');
 
+  // Export & Report Generator Modal Filter States
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [exportCamera, setExportCamera] = useState('ALL');
+  const [exportDistrict, setExportDistrict] = useState('ALL');
+  const [exportFromDate, setExportFromDate] = useState('');
+  const [exportToDate, setExportToDate] = useState('');
+
   const resetFilters = () => {
     setSearchPlate('');
     setSelectedDept('ALL');
@@ -446,14 +453,78 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
     ])
   ).sort();
 
+  // Dynamic list of unique available cameras across all events
+  const availableCameras = React.useMemo(() => {
+    const cams = new Set<string>();
+    allEventsList.forEach(e => {
+      if (e.cameraCode) cams.add(e.cameraCode);
+    });
+    return Array.from(cams).sort();
+  }, [allEventsList]);
+
+  // Filter helper specifically for custom exports & reports (Camera, District, Date)
+  const getFilteredExportData = () => {
+    return displayEvents.filter(evt => {
+      // 1. Camera node filter
+      if (exportCamera !== 'ALL' && evt.cameraCode !== exportCamera) {
+        return false;
+      }
+      // 2. District filter
+      if (exportDistrict !== 'ALL' && evt.district.toLowerCase() !== exportDistrict.toLowerCase()) {
+        return false;
+      }
+      // 3. Date range filter (converted to Indian Standard Time YYYY-MM-DD)
+      if (exportFromDate || exportToDate) {
+        const d = new Date(evt.timestamp);
+        if (!isNaN(d.getTime())) {
+          const istDateStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(d);
+          if (exportFromDate && istDateStr < exportFromDate) return false;
+          if (exportToDate && istDateStr > exportToDate) return false;
+        }
+      }
+      return true;
+    });
+  };
+
+  // Quick Date Preset Shortcuts
+  const setExportDatePreset = (preset: 'all' | 'today' | 'yesterday' | 'week') => {
+    const now = new Date();
+    const getIstDate = (dateObj: Date) => 
+      new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(dateObj);
+
+    if (preset === 'all') {
+      setExportFromDate('');
+      setExportToDate('');
+    } else if (preset === 'today') {
+      const todayStr = getIstDate(now);
+      setExportFromDate(todayStr);
+      setExportToDate(todayStr);
+    } else if (preset === 'yesterday') {
+      const yest = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      const yestStr = getIstDate(yest);
+      setExportFromDate(yestStr);
+      setExportToDate(yestStr);
+    } else if (preset === 'week') {
+      const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      setExportFromDate(getIstDate(weekAgo));
+      setExportToDate(getIstDate(now));
+    }
+  };
+
   const handleExportExcel = () => {
+    const itemsToExport = getFilteredExportData();
+    if (itemsToExport.length === 0) {
+      alert('No ANPR detections match the selected Camera, District, and Date filters.');
+      return;
+    }
+
     const headers = [
       'Plate Number',
       'Camera Code',
       'Camera Name',
       'District',
       'Location & Details',
-      'Timestamp',
+      'Timestamp (IST)',
       'Vehicle Type',
       'Color',
       'Speed (km/h)',
@@ -462,7 +533,7 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
       'Watchlist Match'
     ];
 
-    const rows = displayEvents.map(evt => [
+    const rows = itemsToExport.map(evt => [
       `"${evt.plateNumber}"`,
       `"${evt.cameraCode}"`,
       `"${evt.cameraName || ''}"`,
@@ -471,9 +542,9 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
       `"${formatToIST(evt.timestamp)}"`,
       `"${evt.vehicleType}"`,
       `"${evt.color}"`,
-      evt.speedKmh,
-      evt.confidence,
-      evt.plateConfidence,
+      evt.speedKmh !== undefined ? evt.speedKmh : '',
+      evt.confidence !== undefined ? evt.confidence : '',
+      evt.plateConfidence !== undefined ? evt.plateConfidence : '',
       evt.watchlistFlag ? 'YES (CRIME BRANCH WATCHLIST)' : 'NO'
     ]);
 
@@ -482,26 +553,37 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `ANPR_Detection_Report_Gujarat_${Date.now()}.csv`;
+    const scopeTag = exportCamera !== 'ALL' ? exportCamera : (exportDistrict !== 'ALL' ? exportDistrict : 'Gujarat');
+    a.download = `ANPR_Report_${scopeTag}_${Date.now()}.csv`;
     a.click();
     URL.revokeObjectURL(url);
+    setIsExportModalOpen(false);
   };
 
   const handlePrintReport = () => {
+    const itemsToPrint = getFilteredExportData();
+    if (itemsToPrint.length === 0) {
+      alert('No ANPR detections match the selected Camera, District, and Date filters.');
+      return;
+    }
+
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
       alert('Please allow popups to print ANPR Detection Report');
       return;
     }
 
-    const rowsHtml = displayEvents.map((evt, idx) => `
+    const scopeTitle = exportCamera !== 'ALL' ? `Camera Node ${exportCamera}` : (exportDistrict !== 'ALL' ? `${exportDistrict} Jurisdiction` : 'Statewide Gujarat');
+    const dateRangeStr = (exportFromDate || exportToDate) ? `${exportFromDate || 'Start'} to ${exportToDate || 'Current'}` : 'All Recorded Dates';
+
+    const rowsHtml = itemsToPrint.map((evt, idx) => `
       <tr style="background-color: ${idx % 2 === 0 ? '#ffffff' : '#f8fafc'}; font-family: monospace; font-size: 11px;">
         <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #0f172a;">${evt.plateNumber}</td>
         <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #0052cc;">${evt.cameraCode}</td>
         <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; color: #334155;">${evt.district}</td>
         <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; color: #475569;">${evt.locationDescription}</td>
         <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; color: #64748b;">${formatToIST(evt.timestamp)}</td>
-        <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #059669;">${evt.confidence}%</td>
+        <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #059669;">${evt.confidence ? `${evt.confidence}%` : 'N/A'}</td>
         <td style="padding: 8px; border-bottom: 1px solid #e2e8f0;">
           ${evt.watchlistFlag ? '<span style="color: #dc2626; font-weight: bold;">CRIME BRANCH WATCHLIST</span>' : '<span style="color: #64748b;">STANDARD</span>'}
         </td>
@@ -532,12 +614,13 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
             </div>
             <div style="text-align: right; font-size: 11px; font-family: monospace;">
               <strong>Generated:</strong> ${new Date().toLocaleString()}<br/>
-              <strong>Total Detected Plates:</strong> ${filteredEvents.length} Records
+              <strong>Scope:</strong> ${scopeTitle}<br/>
+              <strong>Exported Records:</strong> ${itemsToPrint.length} Records
             </div>
           </div>
 
           <div class="meta">
-            <strong>Active Query Parameters:</strong> Plate Filter: "${searchPlate || 'ALL'}" | District Jurisdiction: "${selectedDistrict}" | Vehicle Type: "${selectedVehicleType}" | Watchlist Hits Only: ${watchlistOnly ? 'YES' : 'NO'}
+            <strong>Active Export Filters:</strong> Camera: ${exportCamera === 'ALL' ? 'All Cameras' : exportCamera} | District Jurisdiction: ${exportDistrict === 'ALL' ? 'All Districts' : exportDistrict} | Date Range: ${dateRangeStr}
           </div>
 
           <table>
@@ -547,7 +630,7 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
                 <th>Camera Code</th>
                 <th>District</th>
                 <th>Location Description</th>
-                <th>Timestamp</th>
+                <th>Timestamp (IST)</th>
                 <th>Confidence</th>
                 <th>Watchlist Flag</th>
               </tr>
@@ -568,6 +651,7 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
       </html>
     `);
     printWindow.document.close();
+    setIsExportModalOpen(false);
   };
 
   return (
@@ -805,16 +889,16 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
 
             <div className="flex items-center space-x-2">
               <button
-                onClick={handleExportExcel}
+                onClick={() => setIsExportModalOpen(true)}
                 className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] rounded transition flex items-center space-x-1 cursor-pointer shadow-2xs"
-                title="Download CSV / Excel File"
+                title="Custom Export CSV / Excel File"
               >
                 <FileSpreadsheet className="w-3.5 h-3.5" />
                 <span>Export CSV</span>
               </button>
 
               <button
-                onClick={handlePrintReport}
+                onClick={() => setIsExportModalOpen(true)}
                 className="px-2.5 py-1 bg-slate-800 hover:bg-slate-900 text-white font-bold text-[11px] rounded transition flex items-center space-x-1 cursor-pointer shadow-2xs"
                 title="Print Audit Report"
               >
@@ -859,7 +943,7 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
                                 camName: evt.cameraName,
                                 district: evt.district,
                                 location: evt.locationDescription,
-                                time: evt.timestamp,
+                                time: formatToIST(evt.timestamp),
                                 vehicleType: evt.vehicleType,
                                 color: evt.color,
                                 speed: evt.speedKmh,
@@ -1227,6 +1311,172 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
               >
                 <span>Analyze Vehicle Journey →</span>
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* EXPORT & AUDIT REPORT GENERATOR MODAL */}
+      {isExportModalOpen && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
+          onClick={() => setIsExportModalOpen(false)}
+        >
+          <div 
+            className="bg-white rounded-xl max-w-lg w-full overflow-hidden shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="bg-slate-900 text-white px-5 py-4 flex items-center justify-between">
+              <div className="flex items-center space-x-2.5">
+                <FileSpreadsheet className="w-5 h-5 text-emerald-400" />
+                <div>
+                  <h3 className="font-bold text-sm text-white">ANPR Evidence Export & Report</h3>
+                  <p className="text-[10px] text-slate-300">Configure Camera, District, and Date filters for download or print</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setIsExportModalOpen(false)}
+                className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Filter Controls Body */}
+            <div className="p-5 space-y-4 bg-white text-xs">
+              {/* 1. Camera Filter */}
+              <div>
+                <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5 mb-1.5">
+                  <Camera className="w-3.5 h-3.5 text-[#0052CC]" />
+                  <span>Filter by Camera Node:</span>
+                </label>
+                <select
+                  value={exportCamera}
+                  onChange={(e) => setExportCamera(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-mono font-bold text-slate-800 focus:ring-1 focus:ring-[#0052CC]"
+                >
+                  <option value="ALL">All Cameras ({availableCameras.length} Active Nodes)</option>
+                  {availableCameras.map(cam => (
+                    <option key={cam} value={cam}>{cam}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* 2. District Filter */}
+              <div>
+                <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5 mb-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Filter by District Jurisdiction:</span>
+                </label>
+                <select
+                  value={exportDistrict}
+                  onChange={(e) => setExportDistrict(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold text-slate-800 focus:ring-1 focus:ring-[#0052CC]"
+                >
+                  <option value="ALL">All Districts ({activeDistrictNames.length} Active Jurisdictions)</option>
+                  {activeDistrictNames.map(dist => (
+                    <option key={dist} value={dist}>{dist}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* 3. Date Filter */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                  <Calendar className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>Filter by Date Range (IST):</span>
+                </label>
+
+                {/* Quick Date Presets */}
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setExportDatePreset('all')}
+                    className={`px-2.5 py-1 text-[11px] font-bold rounded border transition cursor-pointer ${
+                      !exportFromDate && !exportToDate 
+                        ? 'bg-slate-900 text-white border-slate-900' 
+                        : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
+                    }`}
+                  >
+                    All Time
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setExportDatePreset('today')}
+                    className="px-2.5 py-1 text-[11px] font-bold rounded border border-slate-200 bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer"
+                  >
+                    Today
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setExportDatePreset('yesterday')}
+                    className="px-2.5 py-1 text-[11px] font-bold rounded border border-slate-200 bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer"
+                  >
+                    Yesterday
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setExportDatePreset('week')}
+                    className="px-2.5 py-1 text-[11px] font-bold rounded border border-slate-200 bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer"
+                  >
+                    Last 7 Days
+                  </button>
+                </div>
+
+                {/* Custom Date Inputs */}
+                <div className="grid grid-cols-2 gap-2 pt-1">
+                  <div>
+                    <span className="text-[10px] font-medium text-slate-500 block mb-0.5">From Date:</span>
+                    <input
+                      type="date"
+                      value={exportFromDate}
+                      onChange={(e) => setExportFromDate(e.target.value)}
+                      className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-mono text-slate-800"
+                    />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-medium text-slate-500 block mb-0.5">To Date:</span>
+                    <input
+                      type="date"
+                      value={exportToDate}
+                      onChange={(e) => setExportToDate(e.target.value)}
+                      className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-mono text-slate-800"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Actions Footer */}
+            <div className="p-4 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2">
+              <button
+                type="button"
+                onClick={() => setIsExportModalOpen(false)}
+                className="px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold text-xs rounded-lg transition cursor-pointer"
+              >
+                Cancel
+              </button>
+
+              <div className="flex items-center space-x-2">
+                <button
+                  type="button"
+                  onClick={handleExportExcel}
+                  className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg transition flex items-center space-x-1.5 shadow-2xs cursor-pointer"
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5" />
+                  <span>Download CSV</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handlePrintReport}
+                  className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-lg transition flex items-center space-x-1.5 shadow-2xs cursor-pointer"
+                >
+                  <Printer className="w-3.5 h-3.5 text-blue-400" />
+                  <span>Print Audit Report</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
