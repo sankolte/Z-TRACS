@@ -58,8 +58,8 @@ export const VehicleJourneyView: React.FC<VehicleJourneyViewProps> = ({
   onSelectCameraByCode,
   onCreateInvestigationCase,
 }) => {
-  const [searchPlate, setSearchPlate] = useState(initialPlate || 'GJ01AB1234');
-  const [activePlate, setActivePlate] = useState(initialPlate || 'GJ01AB1234');
+  const [searchPlate, setSearchPlate] = useState(initialPlate || 'GJ24K7897');
+  const [activePlate, setActivePlate] = useState(initialPlate || 'GJ24K7897');
   const [selectedSightingId, setSelectedSightingId] = useState<string | null>(null);
   const [liveAlerts, setLiveAlerts] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -455,8 +455,17 @@ export const VehicleJourneyView: React.FC<VehicleJourneyViewProps> = ({
     setIsCaseModalOpen(false);
   };
 
-  // Recent popular plates for quick testing
-  const quickPlates = ['GJ01AB1234', 'GJ05CD5678', 'GJ27XY9999', 'GJ01EF9012', 'GJ03GH3456'];
+  // Extract real detected plates from database detections
+  const detectedPlatesSet = new Set<string>();
+  (liveAlerts || []).forEach(a => {
+    const p = (a.plateNumber || a.number_plate || a.plate || '').trim().toUpperCase();
+    if (p && p.length >= 6) {
+      detectedPlatesSet.add(p);
+    }
+  });
+  // Top real pipeline detected plates from RDS S3 evidence vault
+  const topPipelinePlates = ['GJ24K7897', 'GJ02BD8938', 'GJ02ER9727', 'GJ38B8178', 'GJ27DB7349', 'MH47BL2632', 'GJ01AB1234'];
+  const quickPlates = Array.from(new Set([...topPipelinePlates, ...Array.from(detectedPlatesSet)])).slice(0, 8);
 
   return (
     <div className="space-y-4 animate-in fade-in duration-200 select-none">

@@ -147,7 +147,7 @@ function MainApp() {
   // Cross-module filter & vehicle journey state
   const [selectedDeptFilter, setSelectedDeptFilter] = useState<string>('ALL');
   const [selectedDistrictFilter, setSelectedDistrictFilter] = useState<string>('ALL');
-  const [selectedPlateForJourney, setSelectedPlateForJourney] = useState<string>('GJ01AB1234');
+  const [selectedPlateForJourney, setSelectedPlateForJourney] = useState<string>('GJ24K7897');
   const [selectedConfigCamCode, setSelectedConfigCamCode] = useState<string>('CAM-001');
 
   // Master State Store (Model 1 + Model 2 + Model 3)
