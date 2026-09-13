@@ -24,8 +24,14 @@ echo "📦 [3/5] Installing Python dependencies..."
 pip install --upgrade pip
 pip install -r backend/requirements.txt
 
-echo "🛑 [4/5] Stopping previous PM2 instances if running..."
+echo "🛑 [4/5] Stopping previous PM2 instances & clearing port 8000 zombies..."
 pm2 delete all || true
+echo "🧹 Killing any lingering zombie processes holding port 8000..."
+sudo fuser -k 8000/tcp || true
+sleep 1
+
+echo "🗄️ Verifying AWS RDS Users & Hierarchical RBAC Schema..."
+venv/bin/python backend/app/db/init_users_table.py
 
 echo "⚡ [5/5] Starting FastAPI Backend & 3 AI Ingestion Daemons..."
 # Start FastAPI backend (correct root venv path with --app-dir)

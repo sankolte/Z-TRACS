@@ -13,10 +13,12 @@ from app.api.v1.evidence import router as evidence_router
 from app.api.v1.anpr import router as anpr_router
 from app.api.v1.frs import router as frs_router
 from app.api.v1.forensics import router as forensics_router
+from app.api.v1.users import router as users_router
 
 api_v1_router = APIRouter(prefix="/api/v1")
 
 api_v1_router.include_router(auth_router)
+api_v1_router.include_router(users_router)
 api_v1_router.include_router(cameras_router)
 api_v1_router.include_router(gis_router)
 api_v1_router.include_router(vms_router)

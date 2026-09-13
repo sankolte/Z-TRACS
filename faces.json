@@ -1,5 +1,93 @@
 {
   "status": "success",
-  "total_targets": 0,
-  "targets": []
+  "total_targets": 2,
+  "export_timestamp": "2026-09-12T17:47:39Z",
+  "global_config": {
+    "face_detector": "yolov8n-face",
+    "feature_extractor": "arcface_r100",
+    "embedding_dimension": 512,
+    "default_threshold": 0.78,
+    "min_face_size_pixels": [
+      40,
+      40
+    ]
+  },
+  "targets": [
+    {
+      "person_id": "TGT-GJ-002",
+      "person_name": "vishal maurya",
+      "slug": "vishal_maurya",
+      "case_id": "fgerfger",
+      "category": "CRITICAL_SUSPECT",
+      "alert_priority": "HIGH",
+      "enabled": 1,
+      "s3_key": "frs/targets/TGT-GJ-002/face_reference.jpg",
+      "photo_version": "v_1789228374",
+      "photo_download_url": "/frs/targets/TGT-GJ-002/photo",
+      "clip_download_url": "/frs/targets/TGT-GJ-002/clip",
+      "clip_version": "v_1789228374_7b4448cd",
+      "clip_url": "https://ztracs-evidence-vault-dev.s3.amazonaws.com/frs/targets/TGT-GJ-002/clip.mp4?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAVY2PHCLSU4JUA4OX%2F20260912%2Fap-south-1%2Fs3%2Faws4_request&X-Amz-Date=20260912T155254Z&X-Amz-Expires=86400&X-Amz-SignedHeaders=host&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEOv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCmFwLXNvdXRoLTEiRjBEAiBq5qeJDyoMcycYHYvozMIhPOljE9rgS9158vfFELw%2BZgIgEFAGpgG%2FuklRAIpDP%2FflAkfGmglxkTcyinc0XVmGIqsqyAUItP%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgwzOTY5MTM3NDI1NjUiDCMmV7ACtbaR9DGFHyqcBaR%2B8fMlDuBeH8p2RA1NwdJETR3ZOxK2EeSJHTwQtD17QfqBpHbTWI02ySweK7zm%2ByJIueNQpaYzRuUP6SMjMUoYTiJKIt0KkaApxj183wxdNCjmg25VLxcKAkJznjGFamcD%2Bwjy4WT2ZS0%2FxsmH38XXUhlobHhY7rIA5RcGkcXdVwqD%2BaQ%2BlqTSjQqJy8v0ZH1uzbZxX8CihRiCUJMuB%2FJjHHYQnAErNNqCWRIHBujltgbZFX2SE0%2FxhJBw8Dpa77GrK8yX07%2FcZHL0NByXutNptcIFZojAsFb0dmNrE%2FHWM1%2BLneDapbyPMa4LSBkh0a%2BcYh8DoEpwW5ihuiFAzrx%2FbC9h5V%2BG%2BfsjdmOehb942Nn1TjVCv%2FU%2FIb6aUHnaTzP%2Bd3SUa9MoNerXOia4DDEjJMKIfbsnlWoCZhtUKR4DmsiIAc15qV%2Bd9MiS3lfQaCmyO%2BTS3uIf49k0swNhTmCamyqdziJmz43RzgJmr%2B28kkGjoyhL5qz%2F6aURFDjHuFnH4YAmH3YplN2qtC6nV8He04t86Ngb5WZcrKnwqlD5E%2BS59NQyoUpoGpC%2FRC2A0VN2MBiaZBDU1hvPTLLEhPTRsalskg2OfTeCW7xzUGmMb9SSMhmgpdz%2FbyM8%2FXkMiiphO8UVwKDfM70wO%2FSh9oElw6hgFUZg%2Bi4e2a%2BGLoA4BbNbQksOL%2Bck%2FSYX4YbTf5Y6A5LOthygKrkcbbONawhX%2Bpo82utllmGBzdaP4jvL9Ee6aupHrwIQW5aCzzG9%2BJDEZjRdF1GdXk8viD3Alz9oIae%2FlfTbbWVGNxpq6EI59DDtJA5xrLNYIDu%2B%2Bl7xBYO6WclFHg6s2auciwNmLnVCiVAU%2FB%2FqbxTHsC8WVkBsmUrZvjI02AHBGkcrMPjqlNUGOrIBZHZuxKcpUJbxOpjuyAND0XqUSx5kiWnp1WZvZxyCUbPYuyzihTyVGKhl0wLlhu4tku1bVwZ1WZP5H0mgy1IDHyUtVa9UgYDAE5R1M7%2FYr8pl5wRpS0dpzuWvD0Ip4pA7PxKQdQ1y2D2qpKJbh6FvODqAbyoNtcrD50hzZRczlvRCjLffgMNDioThuYYrrS4eWBOS0SHnnS0DTLBVSy0E7aPfP72cUfepxBBRjnQK1bWr0A%3D%3D&X-Amz-Signature=4f23d3db56fef73e90ae3121a0721a039723cd6be4c3b7063aefb65fb5a6732f",
+      "media_source": {
+        "clip_path": "clips/vishal_maurya/clip.mp4",
+        "face_image_path": "clips/vishal_maurya/face_reference.jpg",
+        "embeddings_path": "clips/vishal_maurya/embeddings.npy",
+        "s3_key": "frs/targets/TGT-GJ-002/face_reference.jpg",
+        "s3_clip_key": "frs/targets/TGT-GJ-002/clip.mp4",
+        "photo_version": "v_1789228374",
+        "clip_version": "v_1789228374_7b4448cd"
+      },
+      "inference_rules": {
+        "similarity_threshold": 0.7799999713897705,
+        "target_cameras": [
+          "ALL"
+        ],
+        "trigger_cooldown_seconds": 30
+      },
+      "media_path": "clips/vishal_maurya/clip.mp4",
+      "face_image_path": "clips/vishal_maurya/face_reference.jpg",
+      "target_cameras": [
+        "ALL"
+      ],
+      "similarity_threshold": 0.7799999713897705,
+      "notes": "Suspect enrolled for live facial recognition tracking across Gujarat CCTV network."
+    },
+    {
+      "person_id": "TGT-GJ-001",
+      "person_name": "gefg",
+      "slug": "gefg",
+      "case_id": "ergvefdgerf",
+      "category": "CRITICAL_SUSPECT",
+      "alert_priority": "HIGH",
+      "enabled": 1,
+      "s3_key": "frs/targets/TGT-GJ-001/face_reference.jpg",
+      "photo_version": "v_1789227901",
+      "photo_download_url": "/frs/targets/TGT-GJ-001/photo",
+      "clip_download_url": "/frs/targets/TGT-GJ-001/clip",
+      "clip_version": "v_1789227901_60fafc06",
+      "clip_url": "https://ztracs-evidence-vault-dev.s3.amazonaws.com/frs/targets/TGT-GJ-001/clip.mp4?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAVY2PHCLSU4JUA4OX%2F20260912%2Fap-south-1%2Fs3%2Faws4_request&X-Amz-Date=20260912T154501Z&X-Amz-Expires=86400&X-Amz-SignedHeaders=host&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEOv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCmFwLXNvdXRoLTEiRjBEAiBq5qeJDyoMcycYHYvozMIhPOljE9rgS9158vfFELw%2BZgIgEFAGpgG%2FuklRAIpDP%2FflAkfGmglxkTcyinc0XVmGIqsqyAUItP%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgwzOTY5MTM3NDI1NjUiDCMmV7ACtbaR9DGFHyqcBaR%2B8fMlDuBeH8p2RA1NwdJETR3ZOxK2EeSJHTwQtD17QfqBpHbTWI02ySweK7zm%2ByJIueNQpaYzRuUP6SMjMUoYTiJKIt0KkaApxj183wxdNCjmg25VLxcKAkJznjGFamcD%2Bwjy4WT2ZS0%2FxsmH38XXUhlobHhY7rIA5RcGkcXdVwqD%2BaQ%2BlqTSjQqJy8v0ZH1uzbZxX8CihRiCUJMuB%2FJjHHYQnAErNNqCWRIHBujltgbZFX2SE0%2FxhJBw8Dpa77GrK8yX07%2FcZHL0NByXutNptcIFZojAsFb0dmNrE%2FHWM1%2BLneDapbyPMa4LSBkh0a%2BcYh8DoEpwW5ihuiFAzrx%2FbC9h5V%2BG%2BfsjdmOehb942Nn1TjVCv%2FU%2FIb6aUHnaTzP%2Bd3SUa9MoNerXOia4DDEjJMKIfbsnlWoCZhtUKR4DmsiIAc15qV%2Bd9MiS3lfQaCmyO%2BTS3uIf49k0swNhTmCamyqdziJmz43RzgJmr%2B28kkGjoyhL5qz%2F6aURFDjHuFnH4YAmH3YplN2qtC6nV8He04t86Ngb5WZcrKnwqlD5E%2BS59NQyoUpoGpC%2FRC2A0VN2MBiaZBDU1hvPTLLEhPTRsalskg2OfTeCW7xzUGmMb9SSMhmgpdz%2FbyM8%2FXkMiiphO8UVwKDfM70wO%2FSh9oElw6hgFUZg%2Bi4e2a%2BGLoA4BbNbQksOL%2Bck%2FSYX4YbTf5Y6A5LOthygKrkcbbONawhX%2Bpo82utllmGBzdaP4jvL9Ee6aupHrwIQW5aCzzG9%2BJDEZjRdF1GdXk8viD3Alz9oIae%2FlfTbbWVGNxpq6EI59DDtJA5xrLNYIDu%2B%2Bl7xBYO6WclFHg6s2auciwNmLnVCiVAU%2FB%2FqbxTHsC8WVkBsmUrZvjI02AHBGkcrMPjqlNUGOrIBZHZuxKcpUJbxOpjuyAND0XqUSx5kiWnp1WZvZxyCUbPYuyzihTyVGKhl0wLlhu4tku1bVwZ1WZP5H0mgy1IDHyUtVa9UgYDAE5R1M7%2FYr8pl5wRpS0dpzuWvD0Ip4pA7PxKQdQ1y2D2qpKJbh6FvODqAbyoNtcrD50hzZRczlvRCjLffgMNDioThuYYrrS4eWBOS0SHnnS0DTLBVSy0E7aPfP72cUfepxBBRjnQK1bWr0A%3D%3D&X-Amz-Signature=0683b03b934d8ad1c7ca0678ddb3e7a0fdd30775441a6a9c58f460c468db2b5a",
+      "media_source": {
+        "clip_path": "clips/gefg/clip.mp4",
+        "face_image_path": "clips/gefg/face_reference.jpg",
+        "embeddings_path": "clips/gefg/embeddings.npy",
+        "s3_key": "frs/targets/TGT-GJ-001/face_reference.jpg",
+        "s3_clip_key": "frs/targets/TGT-GJ-001/clip.mp4",
+        "photo_version": "v_1789227901",
+        "clip_version": "v_1789227901_60fafc06"
+      },
+      "inference_rules": {
+        "similarity_threshold": 0.7799999713897705,
+        "target_cameras": [
+          "ALL"
+        ],
+        "trigger_cooldown_seconds": 30
+      },
+      "media_path": "clips/gefg/clip.mp4",
+      "face_image_path": "clips/gefg/face_reference.jpg",
+      "target_cameras": [
+        "ALL"
+      ],
+      "similarity_threshold": 0.7799999713897705,
+      "notes": "Suspect enrolled for live facial recognition tracking across Gujarat CCTV network."
+    }
+  ]
 }

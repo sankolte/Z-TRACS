@@ -827,7 +827,7 @@ function MainApp() {
                   role: currentRole,
                   avatar: currentUser.avatar,
                 },
-                action: 'CREATE_CAMERA',
+                action: 'CREATE_USER',
                 resource: `USER: ${newUser.badge} (${newUser.name})`,
                 district: newUser.district || 'Statewide',
                 result: 'Success',

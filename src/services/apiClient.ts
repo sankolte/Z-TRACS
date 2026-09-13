@@ -12,7 +12,15 @@ const getDynamicApiBase = (): string => {
       }
       return '/api/v1';
     }
-    // Connect directly to live EC2 backend for seamless local preview & demos
+    
+    // If testing locally on localhost / 127.0.0.1, connect to local FastAPI backend
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      const envUrl = (import.meta as any).env?.VITE_API_BASE_URL;
+      if (envUrl) return envUrl;
+      return 'http://127.0.0.1:8000/api/v1';
+    }
+
+    // Connect directly to live EC2 backend for preview & demos
     return 'http://43.204.235.231:8000/api/v1';
   }
 
@@ -934,5 +942,125 @@ export class ApiClient {
       console.warn(`[API] GET /anpr/journey/${plate} failed:`, err);
       return { plateNumber: plate, totalSightings: 0, sightings: [] };
     }
+  }
+
+  // ─── Authentication & Multi-Tier RBAC APIs ──────────────────────────────
+  static getAuthToken(): string | null {
+    try {
+      return localStorage.getItem('ztracs_jwt_token');
+    } catch {
+      return null;
+    }
+  }
+
+  static setAuthToken(token: string): void {
+    try {
+      localStorage.setItem('ztracs_jwt_token', token);
+    } catch {}
+  }
+
+  static clearAuthToken(): void {
+    try {
+      localStorage.removeItem('ztracs_jwt_token');
+    } catch {}
+  }
+
+  private static getHeaders(): Record<string, string> {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    const token = this.getAuthToken();
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    return headers;
+  }
+
+  static async loginUser(credentials: { username: string; password: string; role?: string }): Promise<any> {
+    const res = await fetch(`${API_BASE}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(credentials)
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      throw new Error(json.detail || json.message || 'Authentication failed. Please verify credentials.');
+    }
+    if (json.data?.accessToken) {
+      this.setAuthToken(json.data.accessToken);
+    }
+    return json.data;
+  }
+
+  static async verifyForgotPin(badge: string, resetPin: string): Promise<any> {
+    const res = await fetch(`${API_BASE}/auth/forgot-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ badge, reset_pin: resetPin })
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      throw new Error(json.detail || json.message || 'Verification failed');
+    }
+    return json.data;
+  }
+
+  static async resetPasswordWithPin(badge: string, resetPin: string, newPassword: string): Promise<any> {
+    const res = await fetch(`${API_BASE}/auth/reset-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ badge, reset_pin: resetPin, new_password: newPassword })
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      throw new Error(json.detail || json.message || 'Password reset failed');
+    }
+    return json.data;
+  }
+
+  static async getUsers(params?: { district?: string; role?: string; status?: string; search?: string }): Promise<any> {
+    const q = new URLSearchParams();
+    if (params?.district && params.district !== 'ALL' && params.district !== 'Statewide (All)') {
+      q.append('district', params.district);
+    }
+    if (params?.role && params.role !== 'ALL') q.append('role', params.role);
+    if (params?.status && params.status !== 'ALL') q.append('status', params.status);
+    if (params?.search) q.append('search', params.search);
+
+    const res = await fetch(`${API_BASE}/users?${q.toString()}`, {
+      headers: this.getHeaders()
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Failed to fetch user directory');
+    }
+    const json = await res.json();
+    return json.data?.users || [];
+  }
+
+  static async provisionUser(payload: any): Promise<any> {
+    const res = await fetch(`${API_BASE}/users`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify(payload)
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      throw new Error(json.detail || 'Failed to provision user');
+    }
+    return json.data;
+  }
+
+  static async toggleUserStatus(userId: string, status: 'ACTIVE' | 'SUSPENDED'): Promise<any> {
+    const res = await fetch(`${API_BASE}/users/${userId}/status`, {
+      method: 'PATCH',
+      headers: this.getHeaders(),
+      body: JSON.stringify({ status })
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      throw new Error(json.detail || 'Failed to update user status');
+    }
+    return json.data;
   }
 }

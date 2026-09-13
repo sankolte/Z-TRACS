@@ -3,10 +3,11 @@ import {
   Shield, Lock, UserCheck, KeyRound, ArrowRight,
   ShieldCheck, UserCog, Radio, BadgeCheck, Eye, EyeOff,
   AlertTriangle, Clock, Globe, ChevronRight, ArrowLeft,
-  CheckCircle2, Monitor, Users, Building2, FileText
+  CheckCircle2, Monitor, Users, Building2, FileText, X, Key, Check
 } from 'lucide-react';
 import { UserRole, User } from '../types';
 import { useRBAC } from '../context/RBACContext';
+import { ApiClient } from '../services/apiClient';
 
 interface LoginViewProps {
   onLoginSuccess: (user: User) => void;
@@ -20,7 +21,19 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onBack, de
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [loginError, setLoginError] = useState('');
-  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(true);
+
+  // Self-Service PIN & Password Reset Modal State
+  const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
+  const [forgotBadge, setForgotBadge] = useState('');
+  const [forgotPin, setForgotPin] = useState('');
+  const [isPinVerified, setIsPinVerified] = useState(false);
+  const [verifiedOfficerInfo, setVerifiedOfficerInfo] = useState<{ name: string; badge: string } | null>(null);
+  const [newPassInput, setNewPassInput] = useState('');
+  const [confirmPassInput, setConfirmPassInput] = useState('');
+  const [isResetting, setIsResetting] = useState(false);
+  const [resetErrorMsg, setResetErrorMsg] = useState('');
+  const [resetSuccessMsg, setResetSuccessMsg] = useState('');
 
   useEffect(() => {
     const t = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -49,7 +62,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onBack, de
         id: 'usr-001', name: 'Rajesh K. Sharma, IPS', badge: 'GJ-POL-2018-09',
         email: 'adgp.telecom@gujaratpolice.gov.in', role: 'STATE_ADMIN',
         departmentId: 'DEPT-POL-01', departmentName: 'Gujarat Police (Traffic & Law Enforcement)',
-        district: 'Gandhinagar',
+        district: 'Statewide (All)',
         avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
         status: 'ACTIVE', lastLogin: '2026-08-20 10:35:12 IST',
       }
@@ -111,25 +124,91 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onBack, de
   const [selectedRoleIndex, setSelectedRoleIndex] = useState<number>(defaultIdx >= 0 ? defaultIdx : 0);
   const selectedPersona = rbacRolesList[selectedRoleIndex];
   const [badgeInput, setBadgeInput] = useState(selectedPersona.user.badge);
-  const [passwordInput, setPasswordInput] = useState('');
+  const [passwordInput, setPasswordInput] = useState('Admin@1234');
 
   const handleRoleSelect = (index: number) => {
     setSelectedRoleIndex(index);
     setBadgeInput(rbacRolesList[index].user.badge);
+    setPasswordInput('Admin@1234');
     setLoginError('');
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
     if (!badgeInput.trim()) { setLoginError('Employee / Badge ID is required.'); return; }
+    if (!passwordInput.trim()) { setLoginError('Passphrase is required.'); return; }
     if (!agreedToTerms) { setLoginError('Please acknowledge the terms of access to continue.'); return; }
+    
     setIsLoading(true);
-    setTimeout(() => {
+    try {
+      const data = await ApiClient.loginUser({
+        username: badgeInput.trim(),
+        password: passwordInput.trim(),
+        role: selectedPersona.role
+      });
       setIsLoading(false);
-      switchUser(selectedPersona.user);
-      onLoginSuccess(selectedPersona.user);
-    }, 1200);
+      const authUser: User = data.user;
+      switchUser(authUser);
+      onLoginSuccess(authUser);
+    } catch (err: any) {
+      setIsLoading(false);
+      setLoginError(err.message || 'Authentication failed. Please verify credentials or reset via Smart Card PIN.');
+    }
+  };
+
+  const handleVerifyForgotPin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setResetErrorMsg('');
+    setResetSuccessMsg('');
+    if (!forgotBadge.trim()) { setResetErrorMsg('Employee Badge ID is required.'); return; }
+    if (!forgotPin.trim()) { setResetErrorMsg('4-Digit Smart Card PIN is required.'); return; }
+
+    setIsResetting(true);
+    try {
+      const res = await ApiClient.verifyForgotPin(forgotBadge.trim(), forgotPin.trim());
+      setIsPinVerified(true);
+      setVerifiedOfficerInfo({ name: res.name, badge: res.badge });
+      setIsResetting(false);
+    } catch (err: any) {
+      setIsResetting(false);
+      setResetErrorMsg(err.message || 'Verification failed. Invalid Badge ID or PIN.');
+    }
+  };
+
+  const handleResetPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setResetErrorMsg('');
+    setResetSuccessMsg('');
+    if (newPassInput.length < 8) {
+      setResetErrorMsg('Passphrase must be at least 8 characters long.');
+      return;
+    }
+    if (newPassInput !== confirmPassInput) {
+      setResetErrorMsg('Passphrases do not match. Please re-enter.');
+      return;
+    }
+
+    setIsResetting(true);
+    try {
+      await ApiClient.resetPasswordWithPin(forgotBadge.trim(), forgotPin.trim(), newPassInput.trim());
+      setIsResetting(false);
+      setResetSuccessMsg('Passphrase successfully reset! You may now log in.');
+      setPasswordInput(newPassInput.trim());
+      setBadgeInput(forgotBadge.trim());
+      setTimeout(() => {
+        setIsForgotModalOpen(false);
+        setIsPinVerified(false);
+        setForgotBadge('');
+        setForgotPin('');
+        setNewPassInput('');
+        setConfirmPassInput('');
+        setResetSuccessMsg('');
+      }, 1500);
+    } catch (err: any) {
+      setIsResetting(false);
+      setResetErrorMsg(err.message || 'Password update failed.');
+    }
   };
 
   const timeStr = currentTime.toLocaleTimeString('en-IN', { hour12: false });
@@ -483,10 +562,45 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onBack, de
 
                 {/* HELP LINKS */}
                 <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500 pt-1 border-t border-slate-100">
-                  <a href="#" className="hover:text-[#0052CC] transition hover:underline">Forgot Badge ID?</a>
-                  <a href="#" className="hover:text-[#0052CC] transition hover:underline">Reset Password</a>
-                  <a href="#" className="hover:text-[#0052CC] transition hover:underline">NIC Help Desk</a>
-                  <a href="#" className="hover:text-[#0052CC] transition hover:underline">IT Grievance</a>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForgotBadge(badgeInput);
+                      setForgotPin('');
+                      setIsPinVerified(false);
+                      setResetErrorMsg('');
+                      setResetSuccessMsg('');
+                      setIsForgotModalOpen(true);
+                    }}
+                    className="hover:text-[#0052CC] transition hover:underline text-left cursor-pointer"
+                  >
+                    Forgot Passphrase?
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForgotBadge(badgeInput);
+                      setForgotPin('');
+                      setIsPinVerified(false);
+                      setResetErrorMsg('');
+                      setResetSuccessMsg('');
+                      setIsForgotModalOpen(true);
+                    }}
+                    className="hover:text-[#0052CC] transition hover:underline font-semibold text-[#0052CC] cursor-pointer"
+                  >
+                    Smart Card PIN Reset
+                  </button>
+                  <span className="text-slate-300">|</span>
+                  <a
+                    href="#help"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      alert("Gujarat Police State IT Command Desk: 079-23250000 | IP: 10.142.1.25 (NIC/SDC)");
+                    }}
+                    className="hover:text-[#0052CC] transition hover:underline"
+                  >
+                    NIC Help Desk
+                  </a>
                 </div>
 
               </form>
@@ -502,6 +616,180 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onBack, de
             </div>
           </div>
         </div>
+
+        {/* ── SMART CARD PIN & PASSPHRASE RESET MODAL ── */}
+        {isForgotModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+            <div className="bg-white border-2 border-slate-300 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
+              {/* Modal Header */}
+              <div className="bg-[#00253E] text-white px-6 py-4 flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="w-9 h-9 rounded-lg bg-blue-600/30 border border-blue-400 flex items-center justify-center">
+                    <Key className="w-5 h-5 text-blue-300" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-white">Smart Card PIN Self-Service</h3>
+                    <p className="text-[10px] text-slate-300">Government of Gujarat • e-Pramaan Auth</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsForgotModalOpen(false)}
+                  className="p-1 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="p-6 space-y-4">
+                {resetErrorMsg && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 flex items-center space-x-2">
+                    <AlertTriangle className="w-4 h-4 shrink-0" />
+                    <span>{resetErrorMsg}</span>
+                  </div>
+                )}
+
+                {resetSuccessMsg && (
+                  <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-800 flex items-center space-x-2 font-bold">
+                    <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
+                    <span>{resetSuccessMsg}</span>
+                  </div>
+                )}
+
+                {!isPinVerified ? (
+                  <form onSubmit={handleVerifyForgotPin} className="space-y-4">
+                    <div className="text-xs text-slate-600 leading-relaxed">
+                      Verify your <strong>Official Employee / Badge ID</strong> and your <strong>4-Digit Gujarat Smart Card Security PIN</strong> to authorize a password reset.
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                        Employee Badge ID
+                      </label>
+                      <input
+                        type="text"
+                        value={forgotBadge}
+                        onChange={(e) => setForgotBadge(e.target.value)}
+                        placeholder="e.g. GJ-POL-2018-09"
+                        className="w-full px-3 py-2 text-xs font-mono border border-slate-300 rounded-lg focus:outline-none focus:border-[#0052CC]"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <label className="text-[11px] font-bold text-slate-700">
+                          4-Digit Smart Card / e-Pramaan PIN
+                        </label>
+                        <span className="text-[10px] text-blue-600 font-medium">Default Test PIN: 1234</span>
+                      </div>
+                      <input
+                        type="password"
+                        maxLength={4}
+                        value={forgotPin}
+                        onChange={(e) => setForgotPin(e.target.value)}
+                        placeholder="••••"
+                        className="w-full px-3 py-2 text-center tracking-widest text-base font-mono border border-slate-300 rounded-lg focus:outline-none focus:border-[#0052CC]"
+                        required
+                      />
+                    </div>
+
+                    <div className="flex justify-end space-x-2 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setIsForgotModalOpen(false)}
+                        className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={isResetting}
+                        className="px-5 py-2 text-xs font-bold text-white bg-[#0052CC] hover:bg-blue-700 rounded-lg transition shadow flex items-center space-x-2 disabled:opacity-60 cursor-pointer"
+                      >
+                        {isResetting ? (
+                          <span>Authenticating…</span>
+                        ) : (
+                          <>
+                            <ShieldCheck className="w-4 h-4" />
+                            <span>Verify Smart Card PIN</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <form onSubmit={handleResetPasswordSubmit} className="space-y-4">
+                    {verifiedOfficerInfo && (
+                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center space-x-3">
+                        <CheckCircle2 className="w-5 h-5 text-blue-600 shrink-0" />
+                        <div className="text-xs">
+                          <div className="font-bold text-blue-950">{verifiedOfficerInfo.name}</div>
+                          <div className="text-[10px] text-blue-700 font-mono">Badge: {verifiedOfficerInfo.badge} • Identity Confirmed via RDS</div>
+                        </div>
+                      </div>
+                    )}
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                        New Security Passphrase
+                      </label>
+                      <input
+                        type="password"
+                        value={newPassInput}
+                        onChange={(e) => setNewPassInput(e.target.value)}
+                        placeholder="Min. 8 characters"
+                        className="w-full px-3 py-2 text-xs font-mono border border-slate-300 rounded-lg focus:outline-none focus:border-[#0052CC]"
+                        required
+                        minLength={8}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                        Confirm New Security Passphrase
+                      </label>
+                      <input
+                        type="password"
+                        value={confirmPassInput}
+                        onChange={(e) => setConfirmPassInput(e.target.value)}
+                        placeholder="Re-enter password"
+                        className="w-full px-3 py-2 text-xs font-mono border border-slate-300 rounded-lg focus:outline-none focus:border-[#0052CC]"
+                        required
+                        minLength={8}
+                      />
+                    </div>
+
+                    <div className="flex justify-end space-x-2 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setIsForgotModalOpen(false)}
+                        className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={isResetting}
+                        className="px-5 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition shadow flex items-center space-x-2 disabled:opacity-60 cursor-pointer"
+                      >
+                        {isResetting ? (
+                          <span>Updating AWS RDS…</span>
+                        ) : (
+                          <>
+                            <Check className="w-4 h-4" />
+                            <span>Update Passphrase</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </main>
 
       {/* ── FOOTER ── */}

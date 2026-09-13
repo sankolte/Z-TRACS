@@ -52,7 +52,7 @@ export const ROLE_PERMISSIONS_MAP: Record<UserRole, RolePermissions> = {
     canBulkImport: true,
     canViewReports: true,
     canExportReports: true,
-    canManageUsers: false,
+    canManageUsers: true,
     canManageRoles: false,
     canViewAuditLogs: true,
     districtScoped: true,

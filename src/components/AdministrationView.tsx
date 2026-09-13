@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Users, 
   ShieldCheck, 
@@ -27,12 +27,16 @@ import {
   MapPin,
   X,
   Eye,
-  EyeOff
+  EyeOff,
+  Copy,
+  Check,
+  LockKeyhole
 }
 from 'lucide-react';
 import { User, VmsReference, SubsystemStatus, UserRole, Department, District } from '../types';
 import { INITIAL_USERS, INITIAL_VMS_REFERENCES, INITIAL_SUBSYSTEMS, INITIAL_DEPARTMENTS, INITIAL_DISTRICTS } from '../data/mockData';
-import { ROLE_PERMISSIONS_MAP } from '../context/RBACContext';
+import { ROLE_PERMISSIONS_MAP, useRBAC } from '../context/RBACContext';
+import { ApiClient } from '../services/apiClient';
 
 interface AdministrationViewProps {
   departments?: Department[];
@@ -45,6 +49,7 @@ export const AdministrationView: React.FC<AdministrationViewProps> = ({
   districts = INITIAL_DISTRICTS,
   onAddUser,
 }) => {
+  const { currentUser, currentRole } = useRBAC();
   const [activeAdminSubTab, setActiveAdminSubTab] = useState<'users' | 'roles' | 'vms' | 'system' | 'api' | 'templates'>('users');
   const [usersList, setUsersList] = useState<User[]>(INITIAL_USERS);
   const [vmsList, setVmsList] = useState<VmsReference[]>(INITIAL_VMS_REFERENCES);
@@ -60,6 +65,18 @@ export const AdministrationView: React.FC<AdministrationViewProps> = ({
   const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [showPassphrase, setShowPassphrase] = useState(false);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
+
+  // One-Time Credential Handover Card State
+  const [createdCredentials, setCreatedCredentials] = useState<{
+    name: string;
+    badge: string;
+    role: string;
+    district: string;
+    passphrase: string;
+    pin: string;
+  } | null>(null);
+  const [copiedCreds, setCopiedCreds] = useState(false);
 
   // New User Form State
   const [formData, setFormData] = useState({
@@ -70,7 +87,7 @@ export const AdministrationView: React.FC<AdministrationViewProps> = ({
     passphrase: '',
     role: 'CONTROL_ROOM_OPERATOR' as UserRole,
     departmentId: 'DEPT-POL-01',
-    district: 'Statewide (All)',
+    district: currentRole === 'DISTRICT_ADMIN' ? (currentUser.district || 'Ahmedabad') : 'Statewide (All)',
     status: 'ACTIVE' as 'ACTIVE' | 'INACTIVE' | 'SUSPENDED',
     allowedModules: ['overview', 'cctv-gis', 'sentinel-live-wall', 'anpr-search'],
   });
@@ -88,8 +105,57 @@ export const AdministrationView: React.FC<AdministrationViewProps> = ({
     { id: 'administration', name: 'System Administration & RBAC' },
   ];
 
+  // Load verified users from AWS RDS PostgreSQL backend
+  const loadUsersFromApi = React.useCallback(async () => {
+    setIsLoadingUsers(true);
+    try {
+      const activeDistrict = currentRole === 'DISTRICT_ADMIN' ? currentUser.district : undefined;
+      const data = await ApiClient.getUsers({
+        district: activeDistrict,
+        role: selectedRoleFilter,
+        status: selectedStatusFilter,
+        search: userSearch
+      });
+      if (Array.isArray(data) && data.length > 0) {
+        const mapped: User[] = data.map((u: any) => ({
+          id: u.id,
+          name: u.name,
+          badge: u.badge_id,
+          email: u.email,
+          mobile: u.mobile || '',
+          role: u.role,
+          departmentId: u.department_id,
+          departmentName: u.department_name,
+          district: u.district,
+          status: u.status,
+          avatar: u.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80',
+          lastLogin: u.last_login || 'Never',
+          allowedModules: u.allowed_modules || []
+        }));
+        setUsersList(mapped);
+      }
+    } catch (err) {
+      console.warn('API users fetch fallback:', err);
+    } finally {
+      setIsLoadingUsers(false);
+    }
+  }, [currentRole, currentUser.district, selectedRoleFilter, selectedStatusFilter, userSearch]);
+
+  useEffect(() => {
+    loadUsersFromApi();
+  }, [loadUsersFromApi]);
+
   // Filtered users calculation
   const filteredUsers = usersList.filter(u => {
+    // Enforce district boundary for District Admin
+    if (currentRole === 'DISTRICT_ADMIN' && currentUser.district) {
+      const uDist = (u.district || '').toLowerCase();
+      const myDist = currentUser.district.toLowerCase();
+      if (uDist !== myDist && uDist !== 'statewide (all)' && uDist !== '') {
+        return false;
+      }
+    }
+
     const matchSearch = u.name.toLowerCase().includes(userSearch.toLowerCase()) ||
       u.badge.toLowerCase().includes(userSearch.toLowerCase()) ||
       u.email.toLowerCase().includes(userSearch.toLowerCase()) ||
@@ -102,34 +168,63 @@ export const AdministrationView: React.FC<AdministrationViewProps> = ({
     return matchSearch && matchRole && matchDept && matchStatus;
   });
 
-  const handleCreateUserSubmit = (e: React.FormEvent) => {
+  const handleCreateUserSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.badge || !formData.email) return;
 
     const selectedDeptObj = departments.find(d => d.id === formData.departmentId);
+    const assignedDistrict = currentRole === 'DISTRICT_ADMIN'
+      ? (currentUser.district || 'Ahmedabad')
+      : (formData.district === 'Statewide (All)' ? undefined : formData.district);
 
-    const newUser: User = {
-      id: `usr-${Date.now().toString().slice(-4)}`,
-      name: formData.name,
-      badge: formData.badge,
-      email: formData.email,
+    const payload = {
+      badge_id: formData.badge.trim().toUpperCase(),
+      name: formData.name.trim(),
+      email: formData.email.trim().toLowerCase(),
       mobile: formData.mobile || '+91 98250 00000',
-      passphrase: formData.passphrase || 'Pass@123',
       role: formData.role,
-      departmentId: formData.departmentId,
-      departmentName: selectedDeptObj?.name || 'Gujarat Police',
-      district: formData.district === 'Statewide (All)' ? undefined : formData.district,
-      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80',
+      department_id: formData.departmentId,
+      department_name: selectedDeptObj?.name || 'Gujarat Police',
+      district: assignedDistrict || 'Statewide (All)',
       status: formData.status,
-      lastLogin: 'Never (Newly Created)',
-      allowedModules: formData.allowedModules,
+      passphrase: formData.passphrase || 'Admin@1234',
+      reset_pin: '1234',
+      allowed_modules: formData.allowedModules
     };
 
-    if (editingUser) {
-      setUsersList(prev => prev.map(u => u.id === editingUser.id ? { ...newUser, id: u.id } : u));
-    } else {
+    try {
+      const res = await ApiClient.provisionUser(payload);
+      const newUser: User = {
+        id: res.user?.id || `usr-${Date.now().toString().slice(-4)}`,
+        name: formData.name,
+        badge: formData.badge.toUpperCase(),
+        email: formData.email,
+        mobile: formData.mobile || '+91 98250 00000',
+        passphrase: formData.passphrase || 'Admin@1234',
+        role: formData.role,
+        departmentId: formData.departmentId,
+        departmentName: selectedDeptObj?.name || 'Gujarat Police',
+        district: assignedDistrict,
+        avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80',
+        status: formData.status,
+        lastLogin: 'Never (Newly Created)',
+        allowedModules: formData.allowedModules,
+      };
+
       setUsersList(prev => [newUser, ...prev]);
       if (onAddUser) onAddUser(newUser);
+
+      setCreatedCredentials({
+        name: formData.name,
+        badge: formData.badge.toUpperCase(),
+        role: formData.role,
+        district: assignedDistrict || 'Statewide (All)',
+        passphrase: res.temporaryPassphrase || payload.passphrase,
+        pin: res.resetPin || '1234'
+      });
+    } catch (err: any) {
+      alert(`Provisioning Error: ${err.message || 'Could not save user to AWS RDS'}`);
+      return;
     }
 
     setIsAddUserModalOpen(false);
@@ -146,7 +241,7 @@ export const AdministrationView: React.FC<AdministrationViewProps> = ({
       passphrase: '',
       role: 'CONTROL_ROOM_OPERATOR',
       departmentId: 'DEPT-POL-01',
-      district: 'Statewide (All)',
+      district: currentRole === 'DISTRICT_ADMIN' ? (currentUser.district || 'Ahmedabad') : 'Statewide (All)',
       status: 'ACTIVE',
       allowedModules: ['overview', 'cctv-gis', 'sentinel-live-wall', 'anpr-search'],
     });
@@ -159,24 +254,28 @@ export const AdministrationView: React.FC<AdministrationViewProps> = ({
       badge: u.badge,
       email: u.email,
       mobile: u.mobile || '',
-      passphrase: u.passphrase || 'Pass@123',
+      passphrase: u.passphrase || 'Admin@1234',
       role: u.role,
       departmentId: u.departmentId || 'DEPT-POL-01',
-      district: u.district || 'Statewide (All)',
+      district: u.district || (currentRole === 'DISTRICT_ADMIN' ? (currentUser.district || 'Ahmedabad') : 'Statewide (All)'),
       status: u.status,
       allowedModules: u.allowedModules || ['overview', 'cctv-gis', 'sentinel-live-wall'],
     });
     setIsAddUserModalOpen(true);
   };
 
-  const handleToggleUserStatus = (userId: string) => {
-    setUsersList(prev => prev.map(u => {
-      if (u.id === userId) {
-        const nextStatus = u.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE';
-        return { ...u, status: nextStatus };
-      }
-      return u;
-    }));
+  const handleToggleUserStatus = async (userId: string) => {
+    const target = usersList.find(u => u.id === userId);
+    if (!target) return;
+    const nextStatus = target.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE';
+
+    try {
+      await ApiClient.toggleUserStatus(userId, nextStatus);
+    } catch (err) {
+      console.warn('Could not update status on backend, updating locally:', err);
+    }
+
+    setUsersList(prev => prev.map(u => u.id === userId ? { ...u, status: nextStatus } : u));
   };
 
   const handleExportUserRoster = () => {
@@ -256,6 +355,47 @@ export const AdministrationView: React.FC<AdministrationViewProps> = ({
       {/* SUB-TAB 1: USER DIRECTORY & MANAGEMENT */}
       {activeAdminSubTab === 'users' && (
         <div className="space-y-4">
+
+          {/* Hierarchical Access Scope Banner */}
+          <div className={`p-3.5 rounded-xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${
+            currentRole === 'STATE_ADMIN'
+              ? 'bg-red-50/70 border-red-200 text-red-950'
+              : 'bg-emerald-50/70 border-emerald-200 text-emerald-950'
+          }`}>
+            <div className="flex items-center space-x-3">
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs ${
+                currentRole === 'STATE_ADMIN' ? 'bg-red-600 text-white' : 'bg-emerald-600 text-white'
+              }`}>
+                {currentRole === 'STATE_ADMIN' ? 'L5' : 'L4'}
+              </div>
+              <div>
+                <div className="text-xs font-bold flex items-center space-x-2">
+                  <span>
+                    {currentRole === 'STATE_ADMIN'
+                      ? 'State Administrator • Omniscient Governance Authority'
+                      : `District Administrator • ${currentUser.district || 'Ahmedabad'} Jurisdiction`}
+                  </span>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-black uppercase ${
+                    currentRole === 'STATE_ADMIN' ? 'bg-red-100 text-red-800' : 'bg-emerald-100 text-emerald-800'
+                  }`}>
+                    {currentRole === 'STATE_ADMIN' ? 'Statewide (All 33 Districts)' : 'District-Scoped Only'}
+                  </span>
+                </div>
+                <div className="text-[11px] text-slate-600 mt-0.5">
+                  {currentRole === 'STATE_ADMIN'
+                    ? 'Authorized to provision State/District Administrators and supervise statewide personnel in AWS RDS.'
+                    : `Strictly locked to ${currentUser.district || 'Ahmedabad'}. Personnel provisioning restricted to local operational officers.`}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-2 text-xs">
+              <span className="text-slate-500 font-medium">Logged in as:</span>
+              <span className="font-bold font-mono text-slate-800 bg-white px-2 py-1 rounded border border-slate-200">
+                {currentUser.badge} ({currentUser.name})
+              </span>
+            </div>
+          </div>
 
           {/* User Roster KPI Metrics Strip */}
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-3.5">
@@ -719,14 +859,25 @@ export const AdministrationView: React.FC<AdministrationViewProps> = ({
               {/* Row 3: System Role & Passphrase */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Assigned RBAC System Role *</label>
+                  <label className="font-bold text-slate-700 block mb-1">
+                    Assigned RBAC System Role *
+                    {currentRole === 'DISTRICT_ADMIN' && (
+                      <span className="text-[10px] text-emerald-700 font-bold ml-2">
+                        (Level 3 Field/Operator Only)
+                      </span>
+                    )}
+                  </label>
                   <select
                     value={formData.role}
                     onChange={(e) => setFormData(prev => ({ ...prev, role: e.target.value as UserRole }))}
                     className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg font-bold text-slate-900 focus:ring-1 focus:ring-[#0052CC]"
                   >
-                    <option value="STATE_ADMIN">State Administrator (Level 5 — Full Access)</option>
-                    <option value="DISTRICT_ADMIN">District Administrator (Level 4 — Collector/Admin)</option>
+                    {currentRole === 'STATE_ADMIN' && (
+                      <>
+                        <option value="STATE_ADMIN">State Administrator (Level 5 — Full Access)</option>
+                        <option value="DISTRICT_ADMIN">District Administrator (Level 4 — Collector/SP)</option>
+                      </>
+                    )}
                     <option value="CONTROL_ROOM_OPERATOR">Control Room Operator (Level 3 — Video Wall Monitoring)</option>
                     <option value="POLICE_OFFICER">Police Field Officer (Level 3 — ANPR & Patrol)</option>
                   </select>
@@ -740,7 +891,7 @@ export const AdministrationView: React.FC<AdministrationViewProps> = ({
                       required
                       value={formData.passphrase}
                       onChange={(e) => setFormData(prev => ({ ...prev, passphrase: e.target.value }))}
-                      placeholder="Enter secure passphrase..."
+                      placeholder="Default: Admin@1234"
                       className="w-full p-2.5 pr-10 bg-slate-50 border border-slate-300 rounded-lg font-mono text-slate-900 focus:ring-1 focus:ring-[#0052CC]"
                     />
                     <button
@@ -770,13 +921,23 @@ export const AdministrationView: React.FC<AdministrationViewProps> = ({
                 </div>
 
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">District Jurisdiction Scope *</label>
+                  <label className="font-bold text-slate-700 block mb-1">
+                    District Jurisdiction Scope *
+                    {currentRole === 'DISTRICT_ADMIN' && (
+                      <span className="text-[10px] text-amber-700 font-bold ml-2">
+                        (Locked: {currentUser.district || 'Ahmedabad'})
+                      </span>
+                    )}
+                  </label>
                   <select
-                    value={formData.district}
+                    value={currentRole === 'DISTRICT_ADMIN' ? (currentUser.district || 'Ahmedabad') : formData.district}
+                    disabled={currentRole === 'DISTRICT_ADMIN'}
                     onChange={(e) => setFormData(prev => ({ ...prev, district: e.target.value }))}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 focus:ring-1 focus:ring-[#0052CC]"
+                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 focus:ring-1 focus:ring-[#0052CC] disabled:opacity-75 disabled:bg-slate-100"
                   >
-                    <option value="Statewide (All)">Statewide (All 33 Districts)</option>
+                    {currentRole !== 'DISTRICT_ADMIN' && (
+                      <option value="Statewide (All)">Statewide (All 33 Districts)</option>
+                    )}
                     {districts.map(d => (
                       <option key={d.id} value={d.name}>{d.name}</option>
                     ))}
@@ -812,7 +973,7 @@ export const AdministrationView: React.FC<AdministrationViewProps> = ({
                 <button
                   type="button"
                   onClick={() => { setIsAddUserModalOpen(false); setEditingUser(null); }}
-                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-bold transition"
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-bold transition cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -827,6 +988,113 @@ export const AdministrationView: React.FC<AdministrationViewProps> = ({
 
             </form>
 
+          </div>
+        </div>
+      )}
+
+      {/* ── ONE-TIME CREDENTIAL PROVISIONING HANDOVER CARD ── */}
+      {createdCredentials && (
+        <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in">
+          <div className="bg-white rounded-2xl max-w-md w-full overflow-hidden border-2 border-[#00253e] shadow-2xl">
+            {/* Header */}
+            <div className="bg-[#00253e] px-6 py-4 text-white flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-400 flex items-center justify-center">
+                  <LockKeyhole className="w-4 h-4 text-emerald-300" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black tracking-wide">Government Credential Handover Pack</h3>
+                  <p className="text-[10px] text-slate-300">NIC & Gujarat Police Personnel Registry</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setCreatedCredentials(null)}
+                className="p-1 text-slate-300 hover:text-white rounded-lg hover:bg-white/10 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-4">
+              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center space-x-3">
+                <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                <div className="text-xs">
+                  <div className="font-bold text-emerald-950">Official Account Provisioned Successfully</div>
+                  <div className="text-[10px] text-emerald-800">Persisted in AWS RDS PostgreSQL & Registered in Immutable Audit Ledger.</div>
+                </div>
+              </div>
+
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2.5 font-sans">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-slate-500">Official Name:</span>
+                  <span className="font-bold text-slate-900">{createdCredentials.name}</span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-slate-500">Employee / Badge ID:</span>
+                  <span className="font-mono font-black text-[#0052CC] bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                    {createdCredentials.badge}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-slate-500">Assigned Role:</span>
+                  <span className="font-bold text-slate-800">{createdCredentials.role.replace('_', ' ')}</span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-slate-500">Jurisdiction Scope:</span>
+                  <span className="font-bold text-slate-800">{createdCredentials.district}</span>
+                </div>
+                <div className="border-t border-slate-200 pt-2 flex justify-between items-center text-xs">
+                  <span className="text-slate-500">Temporary Passphrase:</span>
+                  <span className="font-mono font-bold text-slate-900 bg-white px-2 py-1 rounded border border-slate-300">
+                    {createdCredentials.passphrase}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-slate-500">Smart Card Reset PIN:</span>
+                  <span className="font-mono font-bold text-blue-900 bg-white px-2 py-1 rounded border border-slate-300">
+                    {createdCredentials.pin}
+                  </span>
+                </div>
+              </div>
+
+              <div className="text-[11px] text-slate-500 leading-relaxed bg-amber-50 p-2.5 rounded-lg border border-amber-200">
+                ⚠️ Hand these credentials securely to the designated officer. The officer can change their passphrase at any time using the Smart Card PIN self-service flow.
+              </div>
+
+              <div className="flex space-x-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const txt = `GUJARAT POLICE Z-TRACS CREDENTIALS\nName: ${createdCredentials.name}\nBadge: ${createdCredentials.badge}\nRole: ${createdCredentials.role}\nDistrict: ${createdCredentials.district}\nTemporary Passphrase: ${createdCredentials.passphrase}\nReset PIN: ${createdCredentials.pin}\nPortal: http://43.204.235.231:8000`;
+                    navigator.clipboard.writeText(txt);
+                    setCopiedCreds(true);
+                    setTimeout(() => setCopiedCreds(false), 2000);
+                  }}
+                  className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl font-bold text-xs flex items-center justify-center space-x-2 transition border border-slate-300 cursor-pointer"
+                >
+                  {copiedCreds ? (
+                    <>
+                      <Check className="w-4 h-4 text-emerald-600" />
+                      <span>Copied to Clipboard!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-4 h-4" />
+                      <span>Copy Credential Pack</span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setCreatedCredentials(null)}
+                  className="px-5 py-2.5 bg-[#0052CC] hover:bg-blue-700 text-white rounded-xl font-bold text-xs transition shadow cursor-pointer"
+                >
+                  Done
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

@@ -1,8 +1,8 @@
 {
   "status": "success",
-  "total_locations": 1,
-  "total_cameras": 36,
-  "export_timestamp": "2026-09-10T18:32:58Z",
+  "total_locations": 5,
+  "total_cameras": 39,
+  "export_timestamp": "2026-09-13T13:58:14Z",
   "locations": [
     {
       "location_id": "LOC-AHMEDABAD",
@@ -14,8 +14,8 @@
           "camera_code": "CAM-GJ-AHM-SNTL-000001",
           "camera_name": "Camera 1 (Chiman Bhai Bridge)",
           "enable": [
-            1,
-            1,
+            0,
+            0,
             0,
             0
           ],
@@ -30,93 +30,93 @@
           "longitude": 72.5804,
           "roi": [
             [
-              310,
-              227
+              348,
+              167
             ],
             [
-              1553,
-              120
+              1500,
+              150
             ],
             [
-              1601,
-              943
+              1600,
+              950
             ],
             [
-              186,
-              929
+              200,
+              950
             ]
           ],
           "rois": [
             [
               [
-                310,
-                227
+                348,
+                167
               ],
               [
-                1553,
-                120
+                1500,
+                150
               ],
               [
-                1601,
-                943
+                1600,
+                950
               ],
               [
-                186,
-                929
+                200,
+                950
               ]
             ],
             [
               [
-                1403,
-                206
+                262,
+                201
               ],
               [
-                1484,
+                700,
+                200
+              ],
+              [
+                700,
                 800
               ],
               [
-                279,
-                901
-              ],
-              [
-                191,
-                217
+                300,
+                800
               ]
             ],
             [
               [
-                453,
-                314
+                192,
+                108
               ],
               [
-                1289,
-                69
+                1728,
+                108
               ],
               [
-                1460,
-                820
+                1728,
+                972
               ],
               [
-                697,
-                801
+                192,
+                972
               ]
             ],
             [
               [
-                319,
-                223
+                180,
+                400
               ],
               [
-                1370,
-                229
+                920,
+                400
               ],
               [
-                983,
-                684
+                920,
+                980
               ],
               [
-                369,
-                727
+                100,
+                980
               ]
             ]
           ]
@@ -125,8 +125,8 @@
           "camera_code": "CAM-GJ-AHM-SNTL-000002",
           "camera_name": "Camera 2 (Janpath Road)",
           "enable": [
-            1,
-            1,
+            0,
+            0,
             0,
             0
           ],
@@ -244,9 +244,9 @@
           "camera_code": "CAM-GJ-AHM-SNTL-000003",
           "camera_name": "Camera 3 (C.G. Road Axis)",
           "enable": [
-            1,
             0,
-            1,
+            0,
+            0,
             0
           ],
           "usecases": [
@@ -466,8 +466,8 @@
           "camera_code": "CAM-GJ-AHM-SNTL-000005",
           "camera_name": "Camera 5 (Narol Circle South)",
           "enable": [
-            1,
-            1,
+            0,
+            0,
             0,
             0
           ],
@@ -523,260 +523,6 @@
               [
                 429,
                 449
-              ]
-            ],
-            [
-              [
-                200,
-                150
-              ],
-              [
-                600,
-                150
-              ],
-              [
-                600,
-                750
-              ],
-              [
-                200,
-                750
-              ]
-            ],
-            [
-              [
-                50,
-                100
-              ],
-              [
-                950,
-                100
-              ],
-              [
-                950,
-                950
-              ],
-              [
-                50,
-                950
-              ]
-            ],
-            [
-              [
-                300,
-                400
-              ],
-              [
-                700,
-                400
-              ],
-              [
-                700,
-                800
-              ],
-              [
-                300,
-                800
-              ]
-            ]
-          ]
-        },
-        {
-          "camera_code": "CAM-GJ-AHM-SNTL-000006",
-          "camera_name": "Camera 6 (Asarwa Civil Corridor)",
-          "enable": [
-            1,
-            0,
-            0,
-            0
-          ],
-          "usecases": [
-            "ANPR",
-            "FACE_RECOGNITION",
-            "PPE",
-            "FOOTFALL"
-          ],
-          "rtsp": "rtsp://admin%40zeexai.com:RCVN-BJ7U-UCA4@103.250.160.189:8554/stream/cam06",
-          "latitude": 23.0489,
-          "longitude": 72.6021,
-          "roi": [
-            [
-              188,
-              202
-            ],
-            [
-              178,
-              890
-            ],
-            [
-              1427,
-              875
-            ],
-            [
-              1603,
-              275
-            ],
-            [
-              1048,
-              69
-            ]
-          ],
-          "rois": [
-            [
-              [
-                188,
-                202
-              ],
-              [
-                178,
-                890
-              ],
-              [
-                1427,
-                875
-              ],
-              [
-                1603,
-                275
-              ],
-              [
-                1048,
-                69
-              ]
-            ],
-            [
-              [
-                200,
-                150
-              ],
-              [
-                600,
-                150
-              ],
-              [
-                600,
-                750
-              ],
-              [
-                200,
-                750
-              ]
-            ],
-            [
-              [
-                50,
-                100
-              ],
-              [
-                950,
-                100
-              ],
-              [
-                950,
-                950
-              ],
-              [
-                50,
-                950
-              ]
-            ],
-            [
-              [
-                300,
-                400
-              ],
-              [
-                700,
-                400
-              ],
-              [
-                700,
-                800
-              ],
-              [
-                300,
-                800
-              ]
-            ]
-          ]
-        },
-        {
-          "camera_code": "CAM-GJ-AHM-SNTL-000007",
-          "camera_name": "Camera 7 (Bapu Nagar Toll Gate)",
-          "enable": [
-            1,
-            0,
-            0,
-            0
-          ],
-          "usecases": [
-            "ANPR",
-            "FACE_RECOGNITION",
-            "PPE",
-            "FOOTFALL"
-          ],
-          "rtsp": "rtsp://admin%40zeexai.com:RCVN-BJ7U-UCA4@103.250.160.189:8554/stream/cam07",
-          "latitude": 23.0341,
-          "longitude": 72.6289,
-          "roi": [
-            [
-              231,
-              230
-            ],
-            [
-              166,
-              742
-            ],
-            [
-              699,
-              860
-            ],
-            [
-              1299,
-              782
-            ],
-            [
-              1583,
-              410
-            ],
-            [
-              1063,
-              197
-            ],
-            [
-              666,
-              192
-            ]
-          ],
-          "rois": [
-            [
-              [
-                231,
-                230
-              ],
-              [
-                166,
-                742
-              ],
-              [
-                699,
-                860
-              ],
-              [
-                1299,
-                782
-              ],
-              [
-                1583,
-                410
-              ],
-              [
-                1063,
-                197
-              ],
-              [
-                666,
-                192
               ]
             ],
             [
@@ -1186,117 +932,6 @@
           "rtsp": "rtsp://admin%40zeexai.com:RCVN-BJ7U-UCA4@103.250.160.189:8554/stream/cam11",
           "latitude": 23.0471,
           "longitude": 72.521,
-          "roi": [
-            [
-              100,
-              200
-            ],
-            [
-              800,
-              200
-            ],
-            [
-              900,
-              900
-            ],
-            [
-              50,
-              900
-            ]
-          ],
-          "rois": [
-            [
-              [
-                100,
-                200
-              ],
-              [
-                800,
-                200
-              ],
-              [
-                900,
-                900
-              ],
-              [
-                50,
-                900
-              ]
-            ],
-            [
-              [
-                200,
-                150
-              ],
-              [
-                600,
-                150
-              ],
-              [
-                600,
-                750
-              ],
-              [
-                200,
-                750
-              ]
-            ],
-            [
-              [
-                50,
-                100
-              ],
-              [
-                950,
-                100
-              ],
-              [
-                950,
-                950
-              ],
-              [
-                50,
-                950
-              ]
-            ],
-            [
-              [
-                300,
-                400
-              ],
-              [
-                700,
-                400
-              ],
-              [
-                700,
-                800
-              ],
-              [
-                300,
-                800
-              ]
-            ]
-          ]
-        },
-        {
-          "camera_code": "CAM-GJ-AHM-SNTL-000012",
-          "camera_name": "Camera 12 (Gota Highway Flyover)",
-          "enable": [
-            1,
-            0,
-            0,
-            0
-          ],
-          "usecases": [
-            "ANPR",
-            "FACE_RECOGNITION",
-            "PPE",
-            "FOOTFALL"
-          ],
-          "rtsp": "rtsp://admin%40zeexai.com:RCVN-BJ7U-UCA4@103.250.160.189:8554/stream/cam12",
-          "latitude": 23.0912,
-          "longitude": 72.531,
           "roi": [
             [
               100,
@@ -2185,117 +1820,6 @@
           "rtsp": "rtsp://admin%40zeexai.com:RCVN-BJ7U-UCA4@103.250.160.189:8554/stream/cam20",
           "latitude": 23.0189,
           "longitude": 72.5432,
-          "roi": [
-            [
-              100,
-              200
-            ],
-            [
-              800,
-              200
-            ],
-            [
-              900,
-              900
-            ],
-            [
-              50,
-              900
-            ]
-          ],
-          "rois": [
-            [
-              [
-                100,
-                200
-              ],
-              [
-                800,
-                200
-              ],
-              [
-                900,
-                900
-              ],
-              [
-                50,
-                900
-              ]
-            ],
-            [
-              [
-                200,
-                150
-              ],
-              [
-                600,
-                150
-              ],
-              [
-                600,
-                750
-              ],
-              [
-                200,
-                750
-              ]
-            ],
-            [
-              [
-                50,
-                100
-              ],
-              [
-                950,
-                100
-              ],
-              [
-                950,
-                950
-              ],
-              [
-                50,
-                950
-              ]
-            ],
-            [
-              [
-                300,
-                400
-              ],
-              [
-                700,
-                400
-              ],
-              [
-                700,
-                800
-              ],
-              [
-                300,
-                800
-              ]
-            ]
-          ]
-        },
-        {
-          "camera_code": "CAM-GJ-AHM-SNTL-000021",
-          "camera_name": "Camera 21 (Law Garden Perimeter)",
-          "enable": [
-            1,
-            0,
-            0,
-            0
-          ],
-          "usecases": [
-            "ANPR",
-            "FACE_RECOGNITION",
-            "PPE",
-            "FOOTFALL"
-          ],
-          "rtsp": "rtsp://admin%40zeexai.com:RCVN-BJ7U-UCA4@103.250.160.189:8554/stream/cam21",
-          "latitude": 23.0212,
-          "longitude": 72.5589,
           "roi": [
             [
               100,
@@ -3725,8 +3249,8 @@
           "camera_code": "CAM-GJ-AHM-TRF-000001",
           "camera_name": "SG Highway - Iscon Junction North",
           "enable": [
-            1,
-            1,
+            0,
+            0,
             0,
             0
           ],
@@ -3741,93 +3265,93 @@
           "longitude": 72.5074,
           "roi": [
             [
-              310,
-              227
+              348,
+              167
             ],
             [
-              1553,
-              120
+              1500,
+              150
             ],
             [
-              1601,
-              943
+              1600,
+              950
             ],
             [
-              186,
-              929
+              200,
+              950
             ]
           ],
           "rois": [
             [
               [
-                310,
-                227
+                348,
+                167
               ],
               [
-                1553,
-                120
+                1500,
+                150
               ],
               [
-                1601,
-                943
+                1600,
+                950
               ],
               [
-                186,
-                929
+                200,
+                950
               ]
             ],
             [
               [
-                1403,
-                206
+                262,
+                201
               ],
               [
-                1484,
+                700,
+                200
+              ],
+              [
+                700,
                 800
               ],
               [
-                279,
-                901
-              ],
-              [
-                191,
-                217
+                300,
+                800
               ]
             ],
             [
               [
-                453,
-                314
+                192,
+                108
               ],
               [
-                1289,
-                69
+                1728,
+                108
               ],
               [
-                1460,
-                820
+                1728,
+                972
               ],
               [
-                697,
-                801
+                192,
+                972
               ]
             ],
             [
               [
-                319,
-                223
+                180,
+                400
               ],
               [
-                1370,
-                229
+                920,
+                400
               ],
               [
-                983,
-                684
+                920,
+                980
               ],
               [
-                369,
-                727
+                100,
+                980
               ]
             ]
           ]
@@ -3944,8 +3468,54 @@
           ]
         },
         {
-          "camera_code": "CAM-FOR-TSK-FOR-43317",
-          "camera_name": "[Forensic Offline Video] VID_20260302_212417_419.mp4 (1).mkv (Case: cdb)",
+          "camera_code": "CAM-FRS-VISHAL_MAURYA",
+          "camera_name": "[FRS Offline Clip] vishal maurya (Case: fgerfger)",
+          "source_type": "OFFLINE_CLIP",
+          "enable": [
+            0,
+            1,
+            0,
+            0
+          ],
+          "usecases": [
+            "ANPR",
+            "FACE_RECOGNITION",
+            "PPE",
+            "FOOTFALL"
+          ],
+          "rtsp": "file://$PWD/clips/vishal_maurya/clip.mp4",
+          "local_path": "clips/vishal_maurya/clip.mp4",
+          "latitude": 23.0612,
+          "longitude": 72.5804,
+          "roi": [],
+          "rois": []
+        },
+        {
+          "camera_code": "CAM-FRS-GEFG",
+          "camera_name": "[FRS Offline Clip] gefg (Case: ergvefdgerf)",
+          "source_type": "OFFLINE_CLIP",
+          "enable": [
+            0,
+            1,
+            0,
+            0
+          ],
+          "usecases": [
+            "ANPR",
+            "FACE_RECOGNITION",
+            "PPE",
+            "FOOTFALL"
+          ],
+          "rtsp": "file://$PWD/clips/gefg/clip.mp4",
+          "local_path": "clips/gefg/clip.mp4",
+          "latitude": 23.0612,
+          "longitude": 72.5804,
+          "roi": [],
+          "rois": []
+        },
+        {
+          "camera_code": "CAM-FOR-TSK-FOR-31415",
+          "camera_name": "[Forensic Offline Video] img_2499_mov.mov (Case: Gaurav test 02)",
           "source_type": "OFFLINE_FORENSIC_VIDEO",
           "enable": [
             1,
@@ -3959,12 +3529,551 @@
             "PPE",
             "FOOTFALL"
           ],
-          "rtsp": "file://$PWD/forensics/TSK-FOR-43317/tsk-for-43317.mp4",
-          "local_path": "forensics/TSK-FOR-43317/tsk-for-43317.mp4",
+          "models_requested": [
+            "ANPR"
+          ],
+          "custom_model": null,
+          "rtsp": "file://$PWD/forensics/TSK-FOR-31415/img_2499_mov.mov",
+          "local_path": "forensics/TSK-FOR-31415/img_2499_mov.mov",
           "latitude": 23.0612,
           "longitude": 72.5804,
           "roi": [],
           "rois": []
+        },
+        {
+          "camera_code": "CAM-FOR-TSK-FOR-31644",
+          "camera_name": "[Forensic Offline Video] IMG_2502.mov (Case: Test ee)",
+          "source_type": "OFFLINE_FORENSIC_VIDEO",
+          "enable": [
+            1,
+            0,
+            0,
+            0
+          ],
+          "usecases": [
+            "ANPR",
+            "FACE_RECOGNITION",
+            "PPE",
+            "FOOTFALL"
+          ],
+          "models_requested": [
+            "ANPR"
+          ],
+          "custom_model": null,
+          "rtsp": "file://$PWD/forensics/TSK-FOR-31644/tsk-for-31644.mp4",
+          "local_path": "forensics/TSK-FOR-31644/tsk-for-31644.mp4",
+          "latitude": 23.0612,
+          "longitude": 72.5804,
+          "roi": [],
+          "rois": []
+        }
+      ]
+    },
+    {
+      "location_id": "LOC-JUNAGADH",
+      "location_name": "Junagadh Junction Grid",
+      "latitude": 23.0489,
+      "longitude": 72.6021,
+      "cameras": [
+        {
+          "camera_code": "CAM-GJ-AHM-SNTL-000006",
+          "camera_name": "Camera 6 (Asarwa Civil Corridor)",
+          "enable": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "usecases": [
+            "ANPR",
+            "FACE_RECOGNITION",
+            "PPE",
+            "FOOTFALL"
+          ],
+          "rtsp": "rtsp://admin%40zeexai.com:RCVN-BJ7U-UCA4@103.250.160.189:8554/stream/cam06",
+          "latitude": 23.0489,
+          "longitude": 72.6021,
+          "roi": [
+            [
+              188,
+              202
+            ],
+            [
+              178,
+              890
+            ],
+            [
+              1427,
+              875
+            ],
+            [
+              1603,
+              275
+            ],
+            [
+              1048,
+              69
+            ]
+          ],
+          "rois": [
+            [
+              [
+                188,
+                202
+              ],
+              [
+                178,
+                890
+              ],
+              [
+                1427,
+                875
+              ],
+              [
+                1603,
+                275
+              ],
+              [
+                1048,
+                69
+              ]
+            ],
+            [
+              [
+                200,
+                150
+              ],
+              [
+                600,
+                150
+              ],
+              [
+                600,
+                750
+              ],
+              [
+                200,
+                750
+              ]
+            ],
+            [
+              [
+                50,
+                100
+              ],
+              [
+                950,
+                100
+              ],
+              [
+                950,
+                950
+              ],
+              [
+                50,
+                950
+              ]
+            ],
+            [
+              [
+                300,
+                400
+              ],
+              [
+                700,
+                400
+              ],
+              [
+                700,
+                800
+              ],
+              [
+                300,
+                800
+              ]
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "location_id": "LOC-GIR-SOMNATH",
+      "location_name": "Gir Somnath Junction Grid",
+      "latitude": 23.0341,
+      "longitude": 72.6289,
+      "cameras": [
+        {
+          "camera_code": "CAM-GJ-AHM-SNTL-000007",
+          "camera_name": "Camera 7 (Bapu Nagar Toll Gate)",
+          "enable": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "usecases": [
+            "ANPR",
+            "FACE_RECOGNITION",
+            "PPE",
+            "FOOTFALL"
+          ],
+          "rtsp": "rtsp://admin%40zeexai.com:RCVN-BJ7U-UCA4@103.250.160.189:8554/stream/cam07",
+          "latitude": 23.0341,
+          "longitude": 72.6289,
+          "roi": [
+            [
+              231,
+              230
+            ],
+            [
+              166,
+              742
+            ],
+            [
+              699,
+              860
+            ],
+            [
+              1299,
+              782
+            ],
+            [
+              1583,
+              410
+            ],
+            [
+              1063,
+              197
+            ],
+            [
+              666,
+              192
+            ]
+          ],
+          "rois": [
+            [
+              [
+                231,
+                230
+              ],
+              [
+                166,
+                742
+              ],
+              [
+                699,
+                860
+              ],
+              [
+                1299,
+                782
+              ],
+              [
+                1583,
+                410
+              ],
+              [
+                1063,
+                197
+              ],
+              [
+                666,
+                192
+              ]
+            ],
+            [
+              [
+                200,
+                150
+              ],
+              [
+                600,
+                150
+              ],
+              [
+                600,
+                750
+              ],
+              [
+                200,
+                750
+              ]
+            ],
+            [
+              [
+                50,
+                100
+              ],
+              [
+                950,
+                100
+              ],
+              [
+                950,
+                950
+              ],
+              [
+                50,
+                950
+              ]
+            ],
+            [
+              [
+                300,
+                400
+              ],
+              [
+                700,
+                400
+              ],
+              [
+                700,
+                800
+              ],
+              [
+                300,
+                800
+              ]
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "location_id": "LOC-GANDHINAGAR",
+      "location_name": "Gandhinagar Junction Grid",
+      "latitude": 23.0912,
+      "longitude": 72.531,
+      "cameras": [
+        {
+          "camera_code": "CAM-GJ-AHM-SNTL-000012",
+          "camera_name": "Camera 12 (Gota Highway Flyover)",
+          "enable": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "usecases": [
+            "ANPR",
+            "FACE_RECOGNITION",
+            "PPE",
+            "FOOTFALL"
+          ],
+          "rtsp": "rtsp://admin%40zeexai.com:RCVN-BJ7U-UCA4@103.250.160.189:8554/stream/cam12",
+          "latitude": 23.0912,
+          "longitude": 72.531,
+          "roi": [
+            [
+              100,
+              200
+            ],
+            [
+              800,
+              200
+            ],
+            [
+              900,
+              900
+            ],
+            [
+              50,
+              900
+            ]
+          ],
+          "rois": [
+            [
+              [
+                100,
+                200
+              ],
+              [
+                800,
+                200
+              ],
+              [
+                900,
+                900
+              ],
+              [
+                50,
+                900
+              ]
+            ],
+            [
+              [
+                200,
+                150
+              ],
+              [
+                600,
+                150
+              ],
+              [
+                600,
+                750
+              ],
+              [
+                200,
+                750
+              ]
+            ],
+            [
+              [
+                50,
+                100
+              ],
+              [
+                950,
+                100
+              ],
+              [
+                950,
+                950
+              ],
+              [
+                50,
+                950
+              ]
+            ],
+            [
+              [
+                300,
+                400
+              ],
+              [
+                700,
+                400
+              ],
+              [
+                700,
+                800
+              ],
+              [
+                300,
+                800
+              ]
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "location_id": "LOC-PATAN",
+      "location_name": "Patan Junction Grid",
+      "latitude": 23.0212,
+      "longitude": 72.5589,
+      "cameras": [
+        {
+          "camera_code": "CAM-GJ-AHM-SNTL-000021",
+          "camera_name": "Camera 21 (Law Garden Perimeter)",
+          "enable": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "usecases": [
+            "ANPR",
+            "FACE_RECOGNITION",
+            "PPE",
+            "FOOTFALL"
+          ],
+          "rtsp": "rtsp://admin%40zeexai.com:RCVN-BJ7U-UCA4@103.250.160.189:8554/stream/cam21",
+          "latitude": 23.0212,
+          "longitude": 72.5589,
+          "roi": [
+            [
+              192,
+              108
+            ],
+            [
+              1728,
+              108
+            ],
+            [
+              1742,
+              1048
+            ],
+            [
+              169,
+              1038
+            ]
+          ],
+          "rois": [
+            [
+              [
+                192,
+                108
+              ],
+              [
+                1728,
+                108
+              ],
+              [
+                1742,
+                1048
+              ],
+              [
+                169,
+                1038
+              ]
+            ],
+            [
+              [
+                550,
+                200
+              ],
+              [
+                1370,
+                200
+              ],
+              [
+                1370,
+                960
+              ],
+              [
+                550,
+                960
+              ]
+            ],
+            [
+              [
+                192,
+                108
+              ],
+              [
+                1728,
+                108
+              ],
+              [
+                1728,
+                972
+              ],
+              [
+                192,
+                972
+              ]
+            ],
+            [
+              [
+                180,
+                400
+              ],
+              [
+                920,
+                400
+              ],
+              [
+                920,
+                980
+              ],
+              [
+                100,
+                980
+              ]
+            ]
+          ]
         }
       ]
     }

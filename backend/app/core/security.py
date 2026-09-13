@@ -1,5 +1,7 @@
 import os
 import jwt
+import hashlib
+import secrets
 from datetime import datetime, timedelta
 from typing import Optional
 from fastapi import Depends, HTTPException, status
@@ -12,6 +14,26 @@ JWT_ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 # 24 Hours
 
 security_bearer = HTTPBearer(auto_error=False)
+
+def hash_password(password: str) -> str:
+    """Standard NIST PBKDF2-HMAC-SHA256 password hasher with random salt"""
+    salt = secrets.token_hex(16)
+    key = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt.encode("utf-8"), 100000)
+    return f"pbkdf2_sha256${salt}${key.hex()}"
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Verifies a plain password against stored PBKDF2-HMAC-SHA256 hash"""
+    try:
+        parts = hashed_password.split("$")
+        if len(parts) != 3 or parts[0] != "pbkdf2_sha256":
+            # Fallback for plain match if legacy demo credentials
+            return secrets.compare_digest(plain_password, hashed_password)
+        salt = parts[1]
+        stored_hash = parts[2]
+        computed_key = hashlib.pbkdf2_hmac("sha256", plain_password.encode("utf-8"), salt.encode("utf-8"), 100000)
+        return secrets.compare_digest(computed_key.hex(), stored_hash)
+    except Exception:
+        return False
 
 class UserTokenPayload(BaseModel):
     id: str
