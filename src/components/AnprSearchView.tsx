@@ -669,34 +669,16 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
           <h1 className="text-xl font-bold text-slate-900 tracking-tight mt-1">Statewide ANPR Search Engine</h1>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={handleExportExcel}
-            className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition shadow-xs flex items-center space-x-1.5 cursor-pointer"
-            title="Export filtered ANPR detection results to CSV / Excel"
-          >
-            <FileSpreadsheet className="w-4 h-4" />
-            <span>Export Excel (CSV)</span>
-          </button>
-
-          <button
-            onClick={handlePrintReport}
-            className="px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-lg transition shadow-xs flex items-center space-x-1.5 cursor-pointer"
-            title="Print clean law enforcement ANPR audit report"
-          >
-            <Printer className="w-4 h-4 text-blue-400" />
-            <span>Print Report</span>
-          </button>
-
-          {searchPlate.trim() && (
+        {searchPlate.trim() && (
+          <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => onSelectPlateForJourney(searchPlate.trim().toUpperCase())}
               className="px-4 py-2 bg-[#0052CC] text-white text-xs font-bold rounded-lg hover:bg-[#0041A8] transition shadow-xs flex items-center space-x-1.5 cursor-pointer"
             >
               <span>Analyze {searchPlate.trim().toUpperCase()} Journey →</span>
             </button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Watchlist Management & Target Plate Search Panel (Type 2 Alert Trigger) */}
@@ -1087,6 +1069,32 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
       ) : (
         /* Grid View */
         <div className="space-y-4">
+          <div className="p-3.5 bg-[#EDF3FA] rounded-xl border border-slate-200 flex flex-wrap items-center justify-between gap-2 text-xs">
+            <span className="font-bold text-slate-800">
+              Found {displayEvents.length} ANPR Detections {filterRepeats30m && filteredEvents.length !== displayEvents.length ? `(30m Window Debounced from ${filteredEvents.length} frames)` : 'Matching Query'}
+            </span>
+
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setIsExportModalOpen(true)}
+                className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] rounded transition flex items-center space-x-1 cursor-pointer shadow-2xs"
+                title="Custom Export CSV / Excel File"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5" />
+                <span>Export CSV</span>
+              </button>
+
+              <button
+                onClick={() => setIsExportModalOpen(true)}
+                className="px-2.5 py-1 bg-slate-800 hover:bg-slate-900 text-white font-bold text-[11px] rounded transition flex items-center space-x-1 cursor-pointer shadow-2xs"
+                title="Print Audit Report"
+              >
+                <Printer className="w-3.5 h-3.5 text-blue-400" />
+                <span>Print Report</span>
+              </button>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {renderedEvents.map(evt => (
             <div key={evt.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs space-y-3">
