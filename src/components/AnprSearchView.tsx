@@ -187,6 +187,9 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
     }
     if (s.startsWith('http://') || s.startsWith('https://')) {
       if (s.includes('unsplash.com')) return undefined; // Filter out mock stock photos
+      if (s.includes('ztracs-evidence-vault-dev.s3') && s.includes('?')) {
+        s = s.split('?')[0];
+      }
       return s;
     }
     if (s.startsWith('data:image')) return s;
@@ -198,6 +201,26 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
       return `data:image/jpeg;base64,${s}`;
     }
     return undefined;
+  };
+
+  const formatToIST = (ts?: string): string => {
+    if (!ts || ts.trim() === '') return 'N/A';
+    try {
+      const d = new Date(ts);
+      if (isNaN(d.getTime())) return ts;
+      return d.toLocaleString('en-IN', {
+        timeZone: 'Asia/Kolkata',
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true,
+      });
+    } catch {
+      return ts;
+    }
   };
 
   // 1. Map system alerts passed from App state (real-time alerts stream)
@@ -360,6 +383,13 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
     // Hide test / debug dummy records from UI display (keeps RDS completely untouched)
     if (isDebugDummyPlate(evt.plateNumber)) return false;
 
+    // Strict 10-Character Indian RTO Format Validation (e.g. GJ70DN2875, MH02GS3126)
+    // Filters out incomplete 9-character OCR reads (e.g. GJ32X2883) to maximize precision
+    const cleanPlate = (evt.plateNumber || '').toUpperCase().replace(/[\s-]+/g, '');
+    if (!/^[A-Z]{2}[0-9]{2}[A-Z]{2}[0-9]{4}$/.test(cleanPlate)) {
+      return false;
+    }
+
     if (searchPlate.trim()) {
       if (!evt.plateNumber.toLowerCase().includes(searchPlate.trim().toLowerCase())) return false;
     }
@@ -438,7 +468,7 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
       `"${evt.cameraName || ''}"`,
       `"${evt.district}"`,
       `"${(evt.locationDescription || '').replace(/"/g, '""')}"`,
-      `"${evt.timestamp}"`,
+      `"${formatToIST(evt.timestamp)}"`,
       `"${evt.vehicleType}"`,
       `"${evt.color}"`,
       evt.speedKmh,
@@ -470,7 +500,7 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
         <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #0052cc;">${evt.cameraCode}</td>
         <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; color: #334155;">${evt.district}</td>
         <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; color: #475569;">${evt.locationDescription}</td>
-        <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; color: #64748b;">${evt.timestamp}</td>
+        <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; color: #64748b;">${formatToIST(evt.timestamp)}</td>
         <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #059669;">${evt.confidence}%</td>
         <td style="padding: 8px; border-bottom: 1px solid #e2e8f0;">
           ${evt.watchlistFlag ? '<span style="color: #dc2626; font-weight: bold;">CRIME BRANCH WATCHLIST</span>' : '<span style="color: #64748b;">STANDARD</span>'}
@@ -865,7 +895,7 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
                               camName: evt.cameraName,
                               district: evt.district,
                               location: evt.locationDescription,
-                              time: evt.timestamp,
+                              time: formatToIST(evt.timestamp),
                               vehicleType: evt.vehicleType,
                               color: evt.color,
                               speed: evt.speedKmh,
@@ -889,7 +919,7 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
                         <div className="font-medium text-slate-900">{evt.district}</div>
                         <div className="text-[11px] text-slate-500 line-clamp-1">{evt.locationDescription}</div>
                       </td>
-                      <td className="p-3 font-mono text-[11px] text-slate-600">{evt.timestamp}</td>
+                      <td className="p-3 font-mono text-[11px] text-slate-600">{formatToIST(evt.timestamp)}</td>
                       <td className="p-3 text-right space-x-1.5 whitespace-nowrap">
                         <button
                           onClick={() => {
@@ -902,7 +932,7 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
                               camName: evt.cameraName,
                               district: evt.district,
                               location: evt.locationDescription,
-                              time: evt.timestamp,
+                              time: formatToIST(evt.timestamp),
                               vehicleType: evt.vehicleType,
                               color: evt.color,
                               speed: evt.speedKmh,
@@ -987,7 +1017,7 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
                     camName: evt.cameraName,
                     district: evt.district,
                     location: evt.locationDescription,
-                    time: evt.timestamp,
+                    time: formatToIST(evt.timestamp),
                     vehicleType: evt.vehicleType,
                     color: evt.color,
                     speed: evt.speedKmh,
@@ -1021,7 +1051,7 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
                 </div>
                 <div className="flex justify-between font-mono text-[11px]">
                   <span className="text-slate-500">Time:</span>
-                  <span>{evt.timestamp}</span>
+                  <span>{formatToIST(evt.timestamp)}</span>
                 </div>
               </div>
 
@@ -1037,7 +1067,7 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
                       camName: evt.cameraName,
                       district: evt.district,
                       location: evt.locationDescription,
-                      time: evt.timestamp,
+                      time: formatToIST(evt.timestamp),
                       vehicleType: evt.vehicleType,
                       color: evt.color,
                       speed: evt.speedKmh,

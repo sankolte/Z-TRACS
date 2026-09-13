@@ -170,7 +170,12 @@ export const VehicleJourneyView: React.FC<VehicleJourneyViewProps> = ({
     if (s.includes('/api/v1/anpr/alerts/')) {
       s = s.substring(s.indexOf('/api/v1/anpr/alerts/'));
     }
-    if (s.startsWith('http://') || s.startsWith('https://')) return s;
+    if (s.startsWith('http://') || s.startsWith('https://')) {
+      if (s.includes('ztracs-evidence-vault-dev.s3') && s.includes('?')) {
+        s = s.split('?')[0];
+      }
+      return s;
+    }
     if (s.startsWith('data:image')) return s;
     if (s.startsWith('/api/')) {
       const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';

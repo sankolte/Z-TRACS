@@ -100,7 +100,12 @@ export const AlertCenterView: React.FC<AlertCenterViewProps> = ({
       s = s.substring(s.indexOf('/api/v1/anpr/alerts/'));
     }
 
-    if (s.startsWith('http://') || s.startsWith('https://')) return s;
+    if (s.startsWith('http://') || s.startsWith('https://')) {
+      if (s.includes('ztracs-evidence-vault-dev.s3') && s.includes('?')) {
+        s = s.split('?')[0];
+      }
+      return s;
+    }
     if (s.startsWith('data:image')) return s;
 
     // FIX: For relative /api/ paths, use window.location.origin
