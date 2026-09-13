@@ -197,11 +197,11 @@ export const VehicleJourneyView: React.FC<VehicleJourneyViewProps> = ({
       return {
         id: String(a.id || `alt-${Math.random()}`),
         plateNumber: (a.plateNumber || a.number_plate || a.plate || cleanPlate).toUpperCase(),
-        vehicleType: a.vehicle_type || 'Car',
-        color: a.color || 'Silver',
-        speedKmh: a.speed_kmh || 52,
-        confidence: a.confidence || 96.5,
-        plateConfidence: a.plate_confidence || 98.0,
+        vehicleType: a.vehicle_type || 'Vehicle',
+        color: a.color || '',
+        speedKmh: a.speed_kmh || undefined,
+        confidence: a.confidence || undefined,
+        plateConfidence: a.plate_confidence || undefined,
         cameraUuid: a.cameraUuid || camCode,
         cameraCode: camCode,
         cameraName: camName,
@@ -212,9 +212,9 @@ export const VehicleJourneyView: React.FC<VehicleJourneyViewProps> = ({
         latitude: coords.lat,
         longitude: coords.lng,
         timestamp: ts,
-        direction: 'Northbound',
+        direction: a.direction || 'Corridor Transit',
         watchlistFlag: isWatchlist,
-        watchlistReason: isWatchlist ? 'CRIME BRANCH WATCHLIST MATCH' : 'Standard Ingest',
+        watchlistReason: isWatchlist ? 'CRIME BRANCH WATCHLIST MATCH' : 'Corridor Surveillance',
         imageCropUrl: snapUrl || '',
         vehicleImageUrl: snapUrl || '',
       };
@@ -223,17 +223,66 @@ export const VehicleJourneyView: React.FC<VehicleJourneyViewProps> = ({
   // Include matching mock events
   const mockSightings = (anprEvents || []).filter(e => e.plateNumber.toUpperCase() === cleanPlate);
 
-  // Deduplicate sightings by ID & cameraCode+timestamp
-  const sightingMap = new Map<string, AnprEvent>();
-  [...mockSightings, ...alertSightings].forEach(s => {
-    const key = `${s.cameraCode}_${s.timestamp}`;
-    if (!sightingMap.has(s.id) && !sightingMap.has(key)) {
-      sightingMap.set(key, s);
+  // Raw sightings sorted chronologically
+  const rawSightings = [...mockSightings, ...alertSightings]
+    .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+  // Camera Sequence Debounce: Cluster repeated camera sightings within a 30-minute window
+  interface JourneyCheckpoint extends AnprEvent {
+    sightingCount: number;
+    firstSeenTime: string;
+    lastSeenTime: string;
+    timeSpanLabel: string;
+  }
+
+  const checkpointClusters: JourneyCheckpoint[] = [];
+  rawSightings.forEach(s => {
+    const sTime = new Date(s.timestamp).getTime();
+    let matchedCluster: JourneyCheckpoint | null = null;
+
+    for (const c of checkpointClusters) {
+      if (c.cameraCode === s.cameraCode) {
+        const lastSeen = new Date(c.lastSeenTime).getTime();
+        if (Math.abs(sTime - lastSeen) <= 30 * 60 * 1000) {
+          matchedCluster = c;
+          break;
+        }
+      }
+    }
+
+    if (matchedCluster) {
+      matchedCluster.sightingCount += 1;
+      if (sTime > new Date(matchedCluster.lastSeenTime).getTime()) {
+        matchedCluster.lastSeenTime = s.timestamp;
+      }
+      if (s.watchlistFlag) {
+        matchedCluster.watchlistFlag = true;
+      }
+      if (!matchedCluster.imageCropUrl && s.imageCropUrl) {
+        matchedCluster.imageCropUrl = s.imageCropUrl;
+      }
+    } else {
+      checkpointClusters.push({
+        ...s,
+        sightingCount: 1,
+        firstSeenTime: s.timestamp,
+        lastSeenTime: s.timestamp,
+        timeSpanLabel: '',
+      });
     }
   });
 
-  const sightings = Array.from(sightingMap.values())
-    .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+  // Calculate clean time spans and sort by chronological order
+  const sightings: JourneyCheckpoint[] = checkpointClusters
+    .sort((a, b) => new Date(a.firstSeenTime).getTime() - new Date(b.firstSeenTime).getTime())
+    .map(c => {
+      const t1 = c.firstSeenTime.slice(11, 19);
+      const t2 = c.lastSeenTime.slice(11, 19);
+      return {
+        ...c,
+        timeSpanLabel: (t1 === t2 || c.sightingCount === 1) ? `${t1} IST` : `${t1} - ${t2} IST (${c.sightingCount} detections)`
+      };
+    });
 
   const firstSighting = sightings[0];
   const lastSighting = sightings[sightings.length - 1];
@@ -330,7 +379,7 @@ export const VehicleJourneyView: React.FC<VehicleJourneyViewProps> = ({
       const marker = L.marker([s.latitude, s.longitude], { icon });
 
       const popupHtml = `
-        <div style="font-family:'Plus Jakarta Sans',Inter,sans-serif;font-size:11px;min-width:220px;padding:4px;">
+        <div style="font-family:'Plus Jakarta Sans',Inter,sans-serif;font-size:11px;min-width:210px;padding:4px;">
           <div style="display:flex;justify-content:space-between;align-items:center;">
             <span style="font-weight:900;color:#0052CC;font-family:monospace;font-size:12px;">CHECKPOINT #${numLabel}</span>
             <span style="background:${s.watchlistFlag ? '#FEE2E2' : '#DCFCE7'};color:${s.watchlistFlag ? '#991B1B' : '#166534'};font-size:9px;font-weight:700;padding:1px 6px;border-radius:9999px;">
@@ -341,19 +390,11 @@ export const VehicleJourneyView: React.FC<VehicleJourneyViewProps> = ({
           <div style="color:#64748B;font-size:10px;margin-top:1px;font-family:monospace;">${s.cameraCode}</div>
           <hr style="border:none;border-top:1px solid #E2E8F0;margin:6px 0;"/>
           <div style="color:#334155;font-size:11px;">
-            <span style="font-weight:600;color:#64748B;">Time:</span> ${s.timestamp.replace('T', ' ').slice(0, 19)} IST
+            <span style="font-weight:600;color:#64748B;">Time Window:</span> ${(s as any).timeSpanLabel || s.timestamp.slice(11, 19) + ' IST'}
           </div>
           <div style="color:#334155;font-size:11px;margin-top:2px;">
             <span style="font-weight:600;color:#64748B;">District:</span> ${s.district} &nbsp;|&nbsp;
-            <span style="font-weight:600;color:#64748B;">Speed:</span> ${s.speedKmh} km/h
-          </div>
-          ${s.imageCropUrl ? `
-            <div style="margin-top:6px;border-radius:6px;overflow:hidden;border:1px solid #CBD5E1;max-height:90px;">
-              <img src="${s.imageCropUrl}" style="width:100%;height:100%;object-fit:cover;" alt="Vehicle Crop" />
-            </div>
-          ` : ''}
-          <div style="margin-top:4px;text-align:right;color:#64748B;font-size:10px;font-family:monospace;">
-            ANPR Confidence: <strong>${s.confidence}%</strong>
+            <span style="font-weight:600;color:#64748B;">Detections:</span> ${(s as any).sightingCount || 1}
           </div>
         </div>
       `;
@@ -659,19 +700,29 @@ export const VehicleJourneyView: React.FC<VehicleJourneyViewProps> = ({
                         <div className="font-bold text-slate-900 text-xs mt-0.5">{sighting.cameraName}</div>
                       </div>
                       <span className="font-mono text-[11px] font-bold text-slate-700 bg-white px-2 py-0.5 rounded border border-slate-200">
-                        {sighting.timestamp.slice(11, 19)} IST
+                        {sighting.timeSpanLabel || sighting.timestamp.slice(11, 19) + ' IST'}
                       </span>
                     </div>
 
                     {sighting.imageCropUrl && (
                       <div className="mt-2 h-16 rounded-lg overflow-hidden border border-slate-200 bg-slate-900">
-                        <img src={sighting.imageCropUrl} alt="Vehicle Crop" className="w-full h-full object-cover" />
+                        <img 
+                          src={sighting.imageCropUrl} 
+                          alt="Vehicle Crop" 
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            const p = (e.target as HTMLElement).parentElement;
+                            if (p) p.style.display = 'none';
+                          }}
+                        />
                       </div>
                     )}
 
                     <div className="mt-2.5 pt-2 border-t border-slate-200/80 flex items-center justify-between text-[11px] text-slate-600 font-mono">
-                      <span>{sighting.district} • Speed: {sighting.speedKmh} km/h</span>
-                      <span className="font-bold text-emerald-600">{sighting.confidence}% Conf</span>
+                      <span>District: <strong className="text-slate-900">{sighting.district}</strong></span>
+                      <span className="font-bold text-[#0052CC]">
+                        {sighting.sightingCount > 1 ? `${sighting.sightingCount} Detections Logged` : 'Single Pass'}
+                      </span>
                     </div>
                   </div>
                 );
