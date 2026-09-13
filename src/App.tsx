@@ -773,11 +773,15 @@ function MainApp() {
         {activeTab === 'districts' && (
           <DistrictsView
             districts={districts}
+            cameras={cameras}
+            healthEvents={healthEvents}
             currentLang={currentLang}
             onSelectDistrict={(dist) => {
               setSelectedDistrictFilter(dist.name);
               setActiveTab('registry');
             }}
+            onSelectCamera={(cam) => setSelectedCameraForDetail(cam)}
+            onNavigateTab={setActiveTab}
           />
         )}
 
