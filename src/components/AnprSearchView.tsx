@@ -21,7 +21,9 @@ import {
   X,
   Maximize2,
   Printer,
-  FileSpreadsheet
+  FileSpreadsheet,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 
 interface AnprSearchViewProps {
@@ -51,6 +53,7 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
   const [filterRepeats30m, setFilterRepeats30m] = useState(true);
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   const [liveDetections, setLiveDetections] = useState<any[]>([]);
+  const [visibleCount, setVisibleCount] = useState<number>(10);
 
   // Snapshot Lightbox Modal State
   const [selectedSnapshot, setSelectedSnapshot] = useState<{
@@ -83,7 +86,13 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
     setSelectedDistrict('ALL');
     setSelectedVehicleType('ALL');
     setWatchlistOnly(false);
+    setVisibleCount(10);
   };
+
+  // Reset pagination when search parameters or filters change
+  React.useEffect(() => {
+    setVisibleCount(10);
+  }, [searchPlate, selectedDept, selectedDistrict, selectedVehicleType, watchlistOnly, filterRepeats30m]);
 
   // Fetch live detections & active watchlist from backend
   React.useEffect(() => {
@@ -393,6 +402,11 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
 
     return debounced;
   }, [filteredEvents, filterRepeats30m]);
+
+  // Paginated / sliced events for compact UI viewing
+  const renderedEvents = React.useMemo(() => {
+    return displayEvents.slice(0, visibleCount);
+  }, [displayEvents, visibleCount]);
 
   // Unique list of active districts from props & events
   const activeDistrictNames = Array.from(
@@ -800,7 +814,7 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
                     </td>
                   </tr>
                 ) : (
-                  displayEvents.map(evt => (
+                  renderedEvents.map(evt => (
                     <tr key={evt.id} className="hover:bg-blue-50/40 transition">
                       <td className="p-3">
                         {evt.imageCropUrl ? (
@@ -916,11 +930,51 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
               </tbody>
             </table>
           </div>
+
+          {/* Pagination / Show More Controls */}
+          {displayEvents.length > 0 && (
+            <div className="p-3 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2 text-xs">
+              <span className="text-slate-600 font-medium">
+                Showing <span className="font-bold text-slate-800">{renderedEvents.length}</span> of <span className="font-bold text-slate-800">{displayEvents.length}</span> detections
+              </span>
+
+              <div className="flex items-center space-x-2">
+                {visibleCount < displayEvents.length && (
+                  <>
+                    <button
+                      onClick={() => setVisibleCount(prev => Math.min(prev + 10, displayEvents.length))}
+                      className="px-3 py-1.5 bg-[#0052CC] hover:bg-[#0041A8] text-white font-bold text-[11px] rounded transition flex items-center space-x-1 cursor-pointer shadow-2xs"
+                    >
+                      <span>Show More (+10)</span>
+                      <ChevronDown className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => setVisibleCount(displayEvents.length)}
+                      className="px-2.5 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-[11px] rounded transition cursor-pointer"
+                    >
+                      Show All ({displayEvents.length})
+                    </button>
+                  </>
+                )}
+
+                {visibleCount > 10 && (
+                  <button
+                    onClick={() => setVisibleCount(10)}
+                    className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium text-[11px] rounded transition flex items-center space-x-1 cursor-pointer"
+                  >
+                    <span>Collapse to 10</span>
+                    <ChevronUp className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         /* Grid View */
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {displayEvents.map(evt => (
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {renderedEvents.map(evt => (
             <div key={evt.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs space-y-3">
               <div 
                 onClick={() => {
@@ -1005,6 +1059,46 @@ export const AnprSearchView: React.FC<AnprSearchViewProps> = ({
               </div>
             </div>
           ))}
+        </div>
+
+          {/* Grid View Show More Controls */}
+          {displayEvents.length > 0 && (
+            <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex flex-wrap items-center justify-between gap-2 text-xs">
+              <span className="text-slate-600 font-medium">
+                Showing <span className="font-bold text-slate-800">{renderedEvents.length}</span> of <span className="font-bold text-slate-800">{displayEvents.length}</span> detections
+              </span>
+
+              <div className="flex items-center space-x-2">
+                {visibleCount < displayEvents.length && (
+                  <>
+                    <button
+                      onClick={() => setVisibleCount(prev => Math.min(prev + 10, displayEvents.length))}
+                      className="px-3 py-1.5 bg-[#0052CC] hover:bg-[#0041A8] text-white font-bold text-[11px] rounded transition flex items-center space-x-1 cursor-pointer shadow-2xs"
+                    >
+                      <span>Show More (+10)</span>
+                      <ChevronDown className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => setVisibleCount(displayEvents.length)}
+                      className="px-2.5 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-[11px] rounded transition cursor-pointer"
+                    >
+                      Show All ({displayEvents.length})
+                    </button>
+                  </>
+                )}
+
+                {visibleCount > 10 && (
+                  <button
+                    onClick={() => setVisibleCount(10)}
+                    className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium text-[11px] rounded transition flex items-center space-x-1 cursor-pointer"
+                  >
+                    <span>Collapse to 10</span>
+                    <ChevronUp className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
