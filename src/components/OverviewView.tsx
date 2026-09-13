@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Camera, Department, District, HealthEvent, AuditLog } from '../types';
+import { ApiClient } from '../services/apiClient';
 import { 
   Video, 
   CheckCircle2, 
@@ -20,7 +21,11 @@ import {
   Search,
   Filter,
   Eye,
-  SlidersHorizontal
+  SlidersHorizontal,
+  ChevronDown,
+  ChevronUp,
+  RefreshCw,
+  Cpu
 } from 'lucide-react';
 
 interface OverviewViewProps {
@@ -46,30 +51,82 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersGroupRef = useRef<L.LayerGroup | null>(null);
-  const markerMapRef = useRef<Map<string, L.Marker>>(new Map());
+
+  // Live AI Configuration state from backend / edge engine
+  const [aiConfigs, setAiConfigs] = useState<Record<string, any>>({});
+  const [isLoadingConfigs, setIsLoadingConfigs] = useState<boolean>(false);
 
   // Filter for Camera Health & AI Model Deployment Matrix
-  const [modelFilter, setModelFilter] = useState<'ALL' | 'ONLINE' | 'OFFLINE' | 'ANPR' | 'FRS'>('ALL');
+  const [modelFilter, setModelFilter] = useState<'ALL' | 'ONLINE' | 'OFFLINE' | 'ANPR' | 'FRS' | 'NO_AI'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCamCode, setSelectedCamCode] = useState<string | null>(null);
+  const [visibleCount, setVisibleCount] = useState<number>(10);
 
-  // Helper to determine active AI models for a camera (strictly ANPR and FRS only)
-  const getCameraModels = (cam: Camera) => {
+  // Fetch real-time AI model configs from EC2 / FastAPI backend
+  const fetchAllConfigs = async () => {
+    try {
+      setIsLoadingConfigs(true);
+      const data = await ApiClient.getAllAiConfigs();
+      if (data && typeof data === 'object') {
+        setAiConfigs(data);
+      }
+    } catch (err) {
+      console.warn('[OverviewView] Live AI Config fetch notice:', err);
+    } finally {
+      setIsLoadingConfigs(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAllConfigs();
+    // Live poll every 8 seconds to seamlessly reflect changes made in "AI Inference Model" view
+    const interval = setInterval(fetchAllConfigs, 8000);
+    const handleFocus = () => fetchAllConfigs();
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, []);
+
+  // Helper to normalize any camera code alias to standard format (e.g. CAM001 -> CAM-001)
+  const toCanonicalCode = (raw: string): string => {
+    if (!raw) return 'CAM-001';
+    const clean = raw.trim().toUpperCase();
+    const match = clean.match(/(\d+)$/);
+    if (match) {
+      const num = parseInt(match[1], 10);
+      if (!isNaN(num) && num >= 1 && num <= 35) {
+        return `CAM-${num.toString().padStart(3, '0')}`;
+      }
+    }
+    return clean;
+  };
+
+  // Helper to determine ACTUAL live AI models applied to a camera (strictly ANPR and FRS only)
+  // 100% genuine: Returns models ONLY if explicitly enabled in backend AI config
+  const getCameraModels = (cam: Camera): Array<{ id: 'anpr' | 'frs'; name: string; tag: string }> => {
+    const canonical = toCanonicalCode(cam.cameraCode);
+    const cfg = aiConfigs[canonical] || aiConfigs[cam.cameraCode];
+    if (!cfg) return [];
+
+    let hasAnpr = false;
+    let hasFrs = false;
+
+    if (cfg.models && typeof cfg.models === 'object') {
+      hasAnpr = Boolean(cfg.models.anpr);
+      hasFrs = Boolean(cfg.models.frs);
+    } else if (Array.isArray(cfg.ai_models) || Array.isArray(cfg.usecases)) {
+      const list: string[] = (cfg.ai_models || cfg.usecases).map((m: any) => String(m).toUpperCase());
+      hasAnpr = list.some(m => m.includes('ANPR') || m.includes('VEHICLE') || m.includes('PLATE'));
+      hasFrs = list.some(m => m.includes('FACE') || m.includes('FRS') || m.includes('BIOMETRIC'));
+    } else if (Array.isArray(cfg.enable)) {
+      hasAnpr = Boolean(cfg.enable[0]);
+      hasFrs = Boolean(cfg.enable[1]);
+    }
+
     const models: Array<{ id: 'anpr' | 'frs'; name: string; tag: string }> = [];
-
-    const hasAnpr = Boolean(
-      cam.capabilities?.anpr || 
-      cam.type === 'ANPR' ||
-      (cam.name && (cam.name.toLowerCase().includes('bridge') || cam.name.toLowerCase().includes('road') || cam.name.toLowerCase().includes('junction') || cam.name.toLowerCase().includes('highway') || cam.name.toLowerCase().includes('toll') || cam.name.toLowerCase().includes('circle'))) ||
-      (cam.cameraCode && ['CAM-001', 'CAM-002', 'CAM-003', 'CAM-004', 'CAM-005', 'CAM-008', 'CAM-010', 'CAM-012', 'CAM-014', 'CAM-016', 'CAM-021', 'CAM-026', 'CAM-033', 'CAM-19717', 'CAM-20182'].includes(cam.cameraCode))
-    );
-
-    const hasFrs = Boolean(
-      cam.capabilities?.personDetection ||
-      (cam.name && (cam.name.toLowerCase().includes('campus') || cam.name.toLowerCase().includes('gate') || cam.name.toLowerCase().includes('plaza') || cam.name.toLowerCase().includes('chowk') || cam.name.toLowerCase().includes('terminal') || cam.name.toLowerCase().includes('complex') || cam.name.toLowerCase().includes('square') || cam.name.toLowerCase().includes('garden') || cam.name.toLowerCase().includes('walkway'))) ||
-      (cam.cameraCode && ['CAM-001', 'CAM-002', 'CAM-006', 'CAM-007', 'CAM-009', 'CAM-011', 'CAM-013', 'CAM-015', 'CAM-017', 'CAM-018', 'CAM-019', 'CAM-020', 'CAM-022', 'CAM-023', 'CAM-024', 'CAM-025', 'CAM-027', 'CAM-030', 'CAM-031'].includes(cam.cameraCode))
-    );
-
     if (hasAnpr) {
       models.push({ id: 'anpr', name: 'ANPR', tag: 'Vehicle Surveillance' });
     }
@@ -80,6 +137,11 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
     return models;
   };
 
+  // Reset pagination to 10 when filters or search term change
+  useEffect(() => {
+    setVisibleCount(10);
+  }, [modelFilter, searchQuery]);
+
   // Derive real-time health counts
   const totalRegistered = cameras.length || 35;
   const criticalEventCamCodes = new Set(
@@ -89,20 +151,22 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
     healthEvents.filter(e => !e.resolved && e.severity === 'warning').map(e => e.cameraCode)
   );
 
-  // Compute camera statuses dynamically
-  const camerasWithResolvedStatus = cameras.map(cam => {
-    let status: 'ONLINE' | 'DEGRADED' | 'OFFLINE' = cam.healthStatus || 'ONLINE';
-    if (criticalEventCamCodes.has(cam.cameraCode)) {
-      status = 'OFFLINE';
-    } else if (warningEventCamCodes.has(cam.cameraCode)) {
-      status = 'DEGRADED';
-    }
-    return {
-      ...cam,
-      resolvedStatus: status,
-      models: getCameraModels(cam)
-    };
-  });
+  // Compute camera statuses dynamically with real attached AI models
+  const camerasWithResolvedStatus = useMemo(() => {
+    return cameras.map(cam => {
+      let status: 'ONLINE' | 'DEGRADED' | 'OFFLINE' = cam.healthStatus || 'ONLINE';
+      if (criticalEventCamCodes.has(cam.cameraCode)) {
+        status = 'OFFLINE';
+      } else if (warningEventCamCodes.has(cam.cameraCode)) {
+        status = 'DEGRADED';
+      }
+      return {
+        ...cam,
+        resolvedStatus: status,
+        models: getCameraModels(cam)
+      };
+    });
+  }, [cameras, criticalEventCamCodes, warningEventCamCodes, aiConfigs]);
 
   const onlineCount = camerasWithResolvedStatus.filter(c => c.resolvedStatus === 'ONLINE').length;
   const degradedCount = camerasWithResolvedStatus.filter(c => c.resolvedStatus === 'DEGRADED').length;
@@ -111,6 +175,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
 
   const anprDeployCount = camerasWithResolvedStatus.filter(c => c.models.some(m => m.id === 'anpr')).length;
   const frsDeployCount = camerasWithResolvedStatus.filter(c => c.models.some(m => m.id === 'frs')).length;
+  const activeAiDeployCount = camerasWithResolvedStatus.filter(c => c.models.length > 0).length;
   const uniqueDistricts = Array.from(new Set(cameras.map(c => c.district).filter(Boolean)));
 
   // District distribution calculation
@@ -154,175 +219,185 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
     };
   }, []);
 
-  // Update map markers when cameras change
+  // Update map markers when cameras or AI configurations change
   useEffect(() => {
     if (!mapInstanceRef.current || !markersGroupRef.current) return;
 
-    markersGroupRef.current.clearLayers();
-    markerMapRef.current.clear();
+    const markersGroup = markersGroupRef.current;
+    markersGroup.clearLayers();
 
     camerasWithResolvedStatus.forEach(cam => {
-      if (!cam.latitude || !cam.longitude) return;
+      const lat = cam.latitude || 23.0225;
+      const lng = cam.longitude || 72.5714;
 
-      let colorHex = '#22C55E'; // Online
-      if (cam.resolvedStatus === 'DEGRADED') colorHex = '#F59E0B';
-      if (cam.resolvedStatus === 'OFFLINE') colorHex = '#EF4444';
+      // Real status dot styling
+      let statusBg = '#10b981'; // Green (Online)
+      let statusBorder = '#047857';
+      let ringColor = 'rgba(16, 185, 129, 0.4)';
 
-      const isSelected = selectedCamCode === cam.cameraCode;
+      if (cam.resolvedStatus === 'DEGRADED') {
+        statusBg = '#f59e0b'; // Amber
+        statusBorder = '#b45309';
+        ringColor = 'rgba(245, 158, 11, 0.4)';
+      } else if (cam.resolvedStatus === 'OFFLINE') {
+        statusBg = '#ef4444'; // Red
+        statusBorder = '#b91c1c';
+        ringColor = 'rgba(239, 68, 68, 0.4)';
+      }
 
-      const iconHtml = `
-        <div style="
-          position: relative;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: ${isSelected ? '32px' : '24px'};
-          height: ${isSelected ? '32px' : '24px'};
-        ">
-          <div style="
-            position: absolute;
-            width: ${isSelected ? '28px' : '22px'};
-            height: ${isSelected ? '28px' : '22px'};
-            border-radius: 50%;
-            background-color: ${colorHex}40;
-            animation: pulse 2s infinite;
-          "></div>
-          <div style="
-            width: ${isSelected ? '15px' : '12px'};
-            height: ${isSelected ? '15px' : '12px'};
-            border-radius: 50%;
-            background-color: ${colorHex};
-            border: 2px solid #FFFFFF;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.4);
-            z-index: 10;
-          "></div>
-        </div>
-      `;
-
+      const activeModels = cam.models;
       const customIcon = L.divIcon({
-        html: iconHtml,
-        className: 'custom-overview-camera-marker',
-        iconSize: [24, 24],
-        iconAnchor: [12, 12],
+        className: 'custom-leaflet-camera-pin',
+        html: `
+          <div style="
+            position: relative;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background-color: ${statusBg};
+            border: 2px solid #ffffff;
+            box-shadow: 0 0 0 3px ${ringColor}, 0 2px 6px rgba(0,0,0,0.3);
+            cursor: pointer;
+            transition: transform 0.2s ease;
+          " title="${cam.name} (${cam.resolvedStatus})">
+          </div>
+        `,
+        iconSize: [18, 18],
+        iconAnchor: [9, 9],
       });
 
-      const marker = L.marker([cam.latitude, cam.longitude], { icon: customIcon });
+      const marker = L.marker([lat, lng], { icon: customIcon });
 
-      const statusBg = cam.resolvedStatus === 'ONLINE' ? '#DCFCE7' : cam.resolvedStatus === 'DEGRADED' ? '#FEF3C7' : '#FEE2E2';
-      const statusColor = cam.resolvedStatus === 'ONLINE' ? '#166534' : cam.resolvedStatus === 'DEGRADED' ? '#92400E' : '#991B1B';
-
-      const modelsHtml = cam.models.length > 0 
-        ? cam.models.map(m => `
-            <span style="background:${m.id === 'anpr' ? '#DCFCE7' : '#E0F2FE'};color:${m.id === 'anpr' ? '#15803D' : '#0369A1'};font-size:9.5px;font-weight:700;padding:1px 6px;border-radius:4px;border:1px solid ${m.id === 'anpr' ? '#86EFAC' : '#BAE6FD'};">
-              ${m.id === 'anpr' ? '🚗 ANPR' : '👤 FRS'}
-            </span>
-          `).join(' ')
-        : '<span style="color:#94A3B8;font-size:10px;">No Active AI Model</span>';
-
-      const popupContent = `
-        <div style="font-family:'Plus Jakarta Sans',Inter,sans-serif;font-size:12px;padding:4px 2px;min-width:230px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-            <div>
-              <span style="font-mono;font-weight:800;color:#0052CC;font-size:11px;">${cam.cameraCode}</span>
-              <div style="font-weight:800;color:#0F172A;font-size:12px;margin-top:1px;">${cam.name}</div>
-            </div>
-            <span style="background:${statusBg};color:${statusColor};font-weight:800;font-size:9.5px;padding:2px 7px;border-radius:9999px;border:1px solid ${statusColor}40;">
-              ● ${cam.resolvedStatus}
+      // Clean interactive popup with camera info and active AI models
+      const popupHtml = `
+        <div style="font-family: inherit; font-size: 12px; color: #1e293b; min-width: 200px; padding: 2px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+            <strong style="font-size: 13px; color: #0052cc;">${cam.cameraCode}</strong>
+            <span style="
+              font-size: 9px;
+              font-weight: 700;
+              padding: 2px 6px;
+              border-radius: 9999px;
+              background-color: ${cam.resolvedStatus === 'ONLINE' ? '#dcfce7' : cam.resolvedStatus === 'DEGRADED' ? '#fef3c7' : '#fee2e2'};
+              color: ${cam.resolvedStatus === 'ONLINE' ? '#166534' : cam.resolvedStatus === 'DEGRADED' ? '#92400e' : '#991b1b'};
+            ">
+              ${cam.resolvedStatus}
             </span>
           </div>
-          <hr style="border:none;border-top:1px solid #E2E8F0;margin:6px 0;"/>
-          <div style="display:flex;flex-direction:column;gap:3px;font-size:11px;color:#334155;">
-            <div style="display:flex;justify-content:space-between;">
-              <span style="color:#64748B;">District:</span>
-              <strong style="color:#0F172A;">${cam.district || 'Gujarat'}</strong>
-            </div>
-            <div style="display:flex;justify-content:space-between;">
-              <span style="color:#64748B;">Department:</span>
-              <span style="color:#475569;font-weight:600;">${cam.departmentName || 'Gujarat Police'}</span>
-            </div>
-            <div style="margin-top:5px;padding-top:5px;border-top:1px solid #F1F5F9;">
-              <span style="color:#64748B;font-size:10px;display:block;margin-bottom:3px;font-weight:700;">ACTIVE AI MODELS:</span>
-              <div style="display:flex;gap:4px;flex-wrap:wrap;">
-                ${modelsHtml}
-              </div>
-            </div>
+          <div style="font-weight: 600; color: #334155; margin-bottom: 3px;">${cam.name}</div>
+          <div style="color: #64748b; font-size: 11px;">📍 ${cam.district || 'Gujarat'} | ${cam.address || ''}</div>
+          <div style="font-size: 11px; margin-top: 6px; padding-top: 6px; border-top: 1px solid #e2e8f0;">
+            <strong style="color: #475569;">Active AI Models: </strong>
+            ${
+              activeModels.length === 0 
+                ? '<span style="color: #94a3b8; font-style: italic;">⚪ Idle (No AI Model)</span>'
+                : activeModels.map(m => `
+                  <span style="display:inline-block; margin-right:4px; margin-top:2px; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 10px; background: ${m.id === 'anpr' ? '#ecfdf5' : '#f0f9ff'}; color: ${m.id === 'anpr' ? '#065f46' : '#0369a1'}; border: 1px solid ${m.id === 'anpr' ? '#a7f3d0' : '#bae6fd'};">
+                    ${m.id === 'anpr' ? '🚗 ANPR' : '👤 FRS'}
+                  </span>
+                `).join('')
+            }
           </div>
         </div>
       `;
 
-      const popup = L.popup({ closeButton: false, offset: [0, -10], className: 'ztrac-hover-popup' }).setContent(popupContent);
-      marker.bindPopup(popup);
-
-      marker.on('mouseover', () => marker.openPopup());
+      marker.bindPopup(popupHtml);
       marker.on('click', () => {
         setSelectedCamCode(cam.cameraCode);
-        marker.openPopup();
+        if (onSelectCamera) onSelectCamera(cam);
       });
 
-      markersGroupRef.current?.addLayer(marker);
-      markerMapRef.current.set(cam.cameraCode, marker);
+      markersGroup.addLayer(marker);
     });
-  }, [camerasWithResolvedStatus, selectedCamCode]);
+  }, [camerasWithResolvedStatus, onSelectCamera]);
 
-  // Handle clicking a camera from the matrix table to fly map to it
+  // Handle locating a camera directly on the statewide map
   const handleFlyToCamera = (cam: Camera) => {
     setSelectedCamCode(cam.cameraCode);
-    if (mapInstanceRef.current && cam.latitude && cam.longitude) {
-      mapInstanceRef.current.flyTo([cam.latitude, cam.longitude], 13, { duration: 1.2 });
-      const marker = markerMapRef.current.get(cam.cameraCode);
-      if (marker) {
-        setTimeout(() => marker.openPopup(), 400);
-      }
+    if (mapInstanceRef.current) {
+      const lat = cam.latitude || 23.0225;
+      const lng = cam.longitude || 72.5714;
+      mapInstanceRef.current.flyTo([lat, lng], 14, { duration: 1.2 });
+    }
+    const mapElement = mapContainerRef.current;
+    if (mapElement) {
+      mapElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   };
 
-  // Filter cameras in the AI Model Matrix
-  const filteredMatrixCameras = camerasWithResolvedStatus.filter(c => {
-    const matchSearch = c.cameraCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                        c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                        (c.district && c.district.toLowerCase().includes(searchQuery.toLowerCase()));
+  // Filtered cameras for the Health & AI Model Matrix
+  const filteredMatrixCameras = useMemo(() => {
+    return camerasWithResolvedStatus.filter(cam => {
+      if (modelFilter === 'ONLINE' && cam.resolvedStatus !== 'ONLINE') return false;
+      if (modelFilter === 'OFFLINE' && cam.resolvedStatus === 'ONLINE') return false;
+      if (modelFilter === 'ANPR' && !cam.models.some(m => m.id === 'anpr')) return false;
+      if (modelFilter === 'FRS' && !cam.models.some(m => m.id === 'frs')) return false;
+      if (modelFilter === 'NO_AI' && cam.models.length > 0) return false;
 
-    if (!matchSearch) return false;
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const matchCode = cam.cameraCode.toLowerCase().includes(q);
+        const matchName = cam.name.toLowerCase().includes(q);
+        const matchDist = (cam.district || '').toLowerCase().includes(q);
+        const matchAddr = (cam.address || '').toLowerCase().includes(q);
+        if (!matchCode && !matchName && !matchDist && !matchAddr) return false;
+      }
+      return true;
+    });
+  }, [camerasWithResolvedStatus, modelFilter, searchQuery]);
 
-    if (modelFilter === 'ONLINE') return c.resolvedStatus === 'ONLINE';
-    if (modelFilter === 'OFFLINE') return c.resolvedStatus === 'OFFLINE' || c.resolvedStatus === 'DEGRADED';
-    if (modelFilter === 'ANPR') return c.models.some(m => m.id === 'anpr');
-    if (modelFilter === 'FRS') return c.models.some(m => m.id === 'frs');
-    return true;
-  });
+  // Progressive disclosure: Show top 10 first, then expand on demand
+  const displayedCameras = filteredMatrixCameras.slice(0, visibleCount);
+  const hasMore = filteredMatrixCameras.length > visibleCount;
+  const canCollapse = visibleCount > 10;
 
   return (
-    <div className="w-full space-y-5 animate-in fade-in duration-300">
-      
-      {/* 1. Breadcrumb & Page Heading */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+    <div className="space-y-6">
+
+      {/* 1. Dashboard Header */}
+      <div className="bg-white border-b border-slate-200 -mt-6 -mx-6 px-8 py-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="text-xs text-slate-500 font-medium">
-            <span>Gujarat Police Command</span>
-            <span className="mx-1.5 text-slate-400">/</span>
-            <span className="text-slate-600">Z-TRACS Unified Surveillance</span>
+          <div className="flex items-center space-x-2">
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#EDF3FA] text-[#0052CC] border border-blue-200">
+              Statewide Command & Control
+            </span>
+            <span className="text-xs text-slate-500 font-medium">Gujarat Police & Municipal Surveillance GIS</span>
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight mt-1">
-            Central Management Suite
+          <h1 className="text-xl font-black text-slate-900 tracking-tight mt-1 flex items-center space-x-2">
+            <span>Central Management Suite</span>
+            <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300">
+              LIVE REAL-TIME
+            </span>
           </h1>
         </div>
 
-        <div className="flex items-center space-x-2">
+        {/* Global Action Buttons */}
+        <div className="flex items-center space-x-3">
           <button
-            onClick={() => onNavigateTab && onNavigateTab('sentinel-live-wall')}
-            className="px-3.5 py-1.5 bg-slate-900 text-white rounded-lg text-xs font-bold hover:bg-slate-800 transition flex items-center space-x-1.5 shadow-2xs cursor-pointer"
+            onClick={fetchAllConfigs}
+            disabled={isLoadingConfigs}
+            className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg transition flex items-center space-x-1.5 cursor-pointer shadow-2xs"
+            title="Sync live AI configs from edge daemon"
           >
-            <Radio className="w-3.5 h-3.5 text-rose-500 animate-pulse" />
-            <span>Open 31 Live Feeds Grid</span>
+            <RefreshCw className={`w-3.5 h-3.5 ${isLoadingConfigs ? 'animate-spin text-[#0052CC]' : ''}`} />
+            <span>{isLoadingConfigs ? 'Syncing...' : 'Sync Edge Models'}</span>
+          </button>
+
+          <button
+            onClick={() => onNavigateTab ? onNavigateTab('districts') : null}
+            className="px-4 py-2 bg-[#0052CC] hover:bg-[#0043a8] text-white text-xs font-bold rounded-lg shadow-sm flex items-center space-x-1.5 transition cursor-pointer"
+          >
+            <span>View All 33 Districts</span>
+            <ArrowUpRight className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
 
-      {/* 2. Top 5 Real-Time KPI Cards Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+      {/* 2. Dynamic Real-Time KPI Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3.5">
         
         {/* TOTAL REGISTERED */}
-        <div className="bg-[#EBF3FE] border border-[#D5E5FA] rounded-xl p-4 flex flex-col justify-between shadow-2xs">
+        <div className="bg-[#EDF3FA] border border-[#D5E3F5] rounded-xl p-4 flex flex-col justify-between shadow-2xs">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold text-slate-600 tracking-wider uppercase">
               TOTAL REGISTERED
@@ -337,7 +412,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             </div>
             <div className="text-[11px] font-semibold text-[#0052CC] mt-1 flex items-center">
               <TrendingUp className="w-3 h-3 mr-1" />
-              <span>31 Live HLS Streams Active</span>
+              <span>31 Live Sentinel Feeds</span>
             </div>
           </div>
         </div>
@@ -443,85 +518,92 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
 
         <div className="px-4 py-1.5 bg-white border border-slate-200/90 rounded-full text-xs text-slate-600 shadow-2xs flex items-center">
           <MapPin className="w-3.5 h-3.5 text-[#0052CC] mr-1.5" />
-          <span>Districts with Feeds: </span>
+          <span>Districts Covered: </span>
           <strong className="text-slate-900 font-bold ml-1">{uniqueDistricts.length || 9} Live Districts</strong>
         </div>
 
         <div className="px-4 py-1.5 bg-white border border-slate-200/90 rounded-full text-xs text-slate-600 shadow-2xs flex items-center">
           <Server className="w-3.5 h-3.5 text-[#0052CC] mr-1.5" />
-          <span>VMS Systems: </span>
-          <strong className="text-slate-900 font-bold ml-1">3 Multi-Vendor Clusters</strong>
+          <span>VMS Clusters Linked: </span>
+          <strong className="text-slate-900 font-bold ml-1">3 Live Clusters</strong>
         </div>
 
         <div className="px-4 py-1.5 bg-white border border-slate-200/90 rounded-full text-xs text-slate-600 shadow-2xs flex items-center">
-          <Zap className="w-3.5 h-3.5 text-[#0052CC] mr-1.5" />
-          <span>AI Deployed Cameras: </span>
-          <strong className="text-slate-900 font-bold ml-1">{anprDeployCount + frsDeployCount} Model Instances</strong>
+          <Cpu className="w-3.5 h-3.5 text-[#0052CC] mr-1.5" />
+          <span>Cameras with AI Applied: </span>
+          <strong className="text-slate-900 font-bold ml-1">{activeAiDeployCount} Deployed</strong>
         </div>
       </div>
 
-      {/* 4. Middle Section: Leaflet Statewide Map & District Distribution */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        
-        {/* Left: Statewide Gujarat CCTV Spatial Map (Col-8) */}
-        <div className="lg:col-span-8 relative h-[400px] sm:h-[450px] rounded-2xl overflow-hidden border border-slate-200/90 shadow-2xs group">
-          
-          <div ref={mapContainerRef} className="w-full h-full z-0" />
+      {/* 4. Statewide Map & District Distribution */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-          {/* Floating Legend Box (Top Left) */}
-          <div className="absolute top-4 left-4 z-[1000] bg-white/95 backdrop-blur-md rounded-xl p-3 border border-slate-200/90 shadow-md">
-            <div className="text-xs font-bold text-slate-900 mb-1.5">
-              Gujarat Statewide Coverage
+        {/* Statewide Gujarat Map */}
+        <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-5 shadow-2xs flex flex-col">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <h2 className="text-base font-bold text-slate-900">Gujarat Statewide CCTV Surveillance GIS</h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Displaying {cameras.length} registered CCTV nodes across Gujarat state districts
+              </p>
             </div>
-            <div className="text-[10px] text-slate-500 font-mono mb-2">
-              {totalRegistered} Registered CCTV Nodes
-            </div>
-            <div className="space-y-1.5 text-[11px] font-medium text-slate-700">
-              <div className="flex items-center space-x-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#22C55E]"></span>
-                <span>Online ({onlineCount})</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#EF4444]"></span>
-                <span>Offline ({offlineCount})</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#F59E0B]"></span>
-                <span>Degraded ({degradedCount})</span>
-              </div>
+            
+            {/* Map Legend */}
+            <div className="flex items-center space-x-3 text-[11px] font-semibold text-slate-600 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200">
+              <span className="flex items-center">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 mr-1 animate-pulse" />
+                Online ({onlineCount})
+              </span>
+              {degradedCount > 0 && (
+                <span className="flex items-center">
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-500 mr-1" />
+                  Degraded ({degradedCount})
+                </span>
+              )}
+              {offlineCount > 0 && (
+                <span className="flex items-center">
+                  <span className="w-2.5 h-2.5 rounded-full bg-rose-500 mr-1" />
+                  Offline ({offlineCount})
+                </span>
+              )}
             </div>
           </div>
 
-          <div className="absolute bottom-3 right-3 z-[1000] bg-white/90 backdrop-blur-xs px-2.5 py-1 rounded text-[10px] text-slate-600 font-mono border border-slate-200">
-            Click any camera node to inspect AI models
+          {/* Interactive Leaflet Map Container */}
+          <div 
+            ref={mapContainerRef} 
+            className="w-full h-[400px] rounded-xl overflow-hidden border border-slate-200 shadow-inner z-0" 
+          />
+
+          <div className="mt-3 flex items-center justify-between text-xs text-slate-400">
+            <span>Click any node on map to view camera details, status & deployed AI models</span>
+            <span className="font-mono">Sentinel GIS Gateway v2.4</span>
           </div>
         </div>
 
-        {/* Right: District Distribution Card (Col-4) */}
-        <div className="lg:col-span-4 bg-[#EDF3F9] border border-slate-200/80 rounded-2xl p-5 flex flex-col justify-between shadow-2xs">
+        {/* District Distribution Card */}
+        <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-2xs flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between border-b border-slate-200/70 pb-3">
+            <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
-                  DISTRICT DISTRIBUTION
-                </h3>
-                <p className="text-[11px] text-slate-500 font-medium mt-0.5">Surveillance Camera Deployment</p>
+                <h3 className="text-base font-bold text-slate-900">District Distribution</h3>
+                <p className="text-xs text-slate-500 mt-0.5">Live video streams mapped by administrative district</p>
               </div>
-              <span className="text-[10px] font-bold text-[#0052CC] bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
-                {uniqueDistricts.length} Live Sectors
+              <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-blue-50 text-[#0052CC] border border-blue-200">
+                {uniqueDistricts.length} Districts
               </span>
             </div>
 
-            <div className="mt-4 space-y-3 max-h-[290px] overflow-y-auto pr-1">
+            <div className="space-y-3.5 max-h-[350px] overflow-y-auto pr-1">
               {districtDistribution.map((item) => (
                 <div key={item.district} className="space-y-1">
-                  <div className="flex justify-between text-xs font-semibold">
-                    <span className="text-slate-800">{item.district}</span>
-                    <span className="text-slate-900 font-bold">{item.count} Cameras</span>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-semibold text-slate-700">{item.district}</span>
+                    <span className="font-mono text-slate-500 font-bold">{item.count} Feeds</span>
                   </div>
-                  <div className="w-full bg-slate-200/90 h-2 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full rounded-full transition-all duration-500 bg-[#0052CC]" 
+                  <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                    <div
+                      className="bg-[#0052CC] h-full rounded-full transition-all duration-300"
                       style={{ width: `${item.pct}%` }}
                     />
                   </div>
@@ -530,22 +612,21 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             </div>
           </div>
 
-          <div className="pt-4 border-t border-slate-200/70 mt-4 flex items-center justify-between">
-            <span className="text-xs text-slate-500 font-medium">Gujarat Police Jurisdiction</span>
-            <button 
-              onClick={() => onNavigateTab && onNavigateTab('districts')}
-              className="text-xs font-bold text-[#0052CC] hover:underline flex items-center cursor-pointer"
+          <div className="pt-4 border-t border-slate-100 mt-4">
+            <button
+              onClick={() => onNavigateTab ? onNavigateTab('districts') : null}
+              className="w-full py-2 bg-slate-50 hover:bg-[#EDF3FA] hover:text-[#0052CC] text-slate-700 text-xs font-bold rounded-lg border border-slate-200 transition cursor-pointer flex items-center justify-center space-x-1"
             >
-              <span>View All 33 Districts</span>
-              <ArrowUpRight className="w-3.5 h-3.5 ml-1" />
+              <span>Explore District Surveillance Matrix</span>
+              <ArrowUpRight className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
 
       </div>
 
-      {/* 5. NEW MANAGER SECTION: Real-Time Camera Health & AI Model Deployment Matrix */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden">
+      {/* 5. Live Camera Health & AI Model Deployment Matrix */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden">
         
         {/* Matrix Header */}
         <div className="p-5 border-b border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-50/50">
@@ -561,7 +642,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             </h2>
           </div>
 
-          {/* Quick Model Badges Summary */}
+          {/* Quick Model Badges Summary (Strictly ANPR & FRS only) */}
           <div className="flex items-center space-x-3 text-xs font-mono">
             <div className="px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-center space-x-1.5 font-bold">
               <Car className="w-3.5 h-3.5 text-emerald-600" />
@@ -583,8 +664,9 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
               { id: 'ALL', label: `All Cameras (${totalRegistered})` },
               { id: 'ONLINE', label: `Online (${onlineCount})` },
               { id: 'OFFLINE', label: `Offline / Degraded (${offlineCount + degradedCount})` },
-              { id: 'ANPR', label: `🚗 ANPR Deployed (${anprDeployCount})` },
-              { id: 'FRS', label: `👤 FRS Deployed (${frsDeployCount})` },
+              { id: 'ANPR', label: `🚗 ANPR (${anprDeployCount})` },
+              { id: 'FRS', label: `👤 FRS (${frsDeployCount})` },
+              { id: 'NO_AI', label: `⚪ No AI (${totalRegistered - activeAiDeployCount})` },
             ].map(tab => (
               <button
                 key={tab.id}
@@ -614,9 +696,9 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
         </div>
 
         {/* Matrix Table */}
-        <div className="overflow-x-auto max-h-[460px]">
+        <div className="overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
-            <thead className="bg-slate-50 text-slate-600 font-bold uppercase text-[10.5px] tracking-wider sticky top-0 z-10 border-b border-slate-200">
+            <thead className="bg-slate-50 text-slate-600 font-bold uppercase text-[10.5px] tracking-wider border-b border-slate-200">
               <tr>
                 <th className="py-3 px-4">Camera Identifier</th>
                 <th className="py-3 px-4">District & Sector</th>
@@ -626,14 +708,14 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 font-medium">
-              {filteredMatrixCameras.length === 0 ? (
+              {displayedCameras.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="py-12 text-center text-slate-400">
                     No cameras matching current filter "{modelFilter}".
                   </td>
                 </tr>
               ) : (
-                filteredMatrixCameras.map((cam) => {
+                displayedCameras.map((cam) => {
                   const isSelected = selectedCamCode === cam.cameraCode;
                   return (
                     <tr 
@@ -674,11 +756,14 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                         )}
                       </td>
 
-                      {/* Active AI Models (Strictly ANPR & FRS only) */}
+                      {/* Active AI Models (Real: Strictly ANPR & FRS only, or Idle if none) */}
                       <td className="py-3 px-4">
                         <div className="flex flex-wrap items-center gap-1.5">
                           {cam.models.length === 0 ? (
-                            <span className="text-slate-400 text-[11px] italic">No AI Model</span>
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10.5px] font-medium text-slate-400 bg-slate-100 border border-slate-200">
+                              <span className="w-1.5 h-1.5 rounded-full bg-slate-300 mr-1.5" />
+                              ⚪ Idle (No AI Model)
+                            </span>
                           ) : (
                             cam.models.map(m => (
                               <span
@@ -726,12 +811,41 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
           </table>
         </div>
 
-        {/* Matrix Footer */}
-        <div className="p-3 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between text-[11px] text-slate-500">
-          <span>Displaying {filteredMatrixCameras.length} of {totalRegistered} Gujarat CCTV nodes</span>
-          <div className="flex items-center space-x-4 mt-2 sm:mt-0 font-medium">
-            <span className="flex items-center"><span className="w-2 h-2 rounded-full bg-emerald-500 mr-1.5" /> 🚗 ANPR (Automatic Number Plate Recognition)</span>
-            <span className="flex items-center"><span className="w-2 h-2 rounded-full bg-sky-500 mr-1.5" /> 👤 FRS (Facial Recognition System)</span>
+        {/* Progressive Disclosure Pagination Bar (Top 10 -> Show More) */}
+        <div className="p-3 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+          <span className="text-slate-500 font-medium">
+            Showing <strong className="text-slate-900">{displayedCameras.length}</strong> of <strong className="text-slate-900">{filteredMatrixCameras.length}</strong> cameras ({totalRegistered} total registered)
+          </span>
+
+          <div className="flex items-center space-x-2">
+            {hasMore && (
+              <button
+                onClick={() => setVisibleCount(prev => prev + 10)}
+                className="px-3.5 py-1.5 bg-[#0052CC] hover:bg-[#0043a8] text-white font-bold rounded-lg transition shadow-2xs cursor-pointer flex items-center space-x-1"
+              >
+                <span>Show More (+10)</span>
+                <ChevronDown className="w-3.5 h-3.5" />
+              </button>
+            )}
+            
+            {hasMore && (
+              <button
+                onClick={() => setVisibleCount(filteredMatrixCameras.length)}
+                className="px-3 py-1.5 bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 font-semibold rounded-lg transition cursor-pointer"
+              >
+                Show All ({filteredMatrixCameras.length})
+              </button>
+            )}
+
+            {canCollapse && (
+              <button
+                onClick={() => setVisibleCount(10)}
+                className="px-3 py-1.5 bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 font-semibold rounded-lg transition cursor-pointer flex items-center space-x-1"
+              >
+                <span>Show Top 10</span>
+                <ChevronUp className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
         </div>
 
