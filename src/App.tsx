@@ -159,6 +159,7 @@ function MainApp() {
   const [anprEvents, setAnprEvents] = useState<AnprEvent[]>([]);
   const [alerts, setAlerts] = useState<SystemAlert[]>([]);
   const [cases, setCases] = useState<InvestigationCase[]>(INITIAL_INVESTIGATIONS);
+  const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
 
   // Model 3 Federation State
   const [vmsList, setVmsList] = useState<CanonicalVms[]>(INITIAL_VMS_LIST);
@@ -474,6 +475,12 @@ function MainApp() {
     }
   };
 
+  const handleCreateInvestigationCase = (newCase: InvestigationCase) => {
+    setCases(prev => [newCase, ...prev]);
+    setSelectedCaseId(newCase.id);
+    setActiveTab('investigations');
+  };
+
   if (appScreen === 'landing') {
     return (
       <LandingPage
@@ -580,9 +587,7 @@ function MainApp() {
             anprEvents={anprEvents}
             alerts={alerts}
             cameras={cameras}
-            onCreateInvestigationCase={(plate) => {
-              setActiveTab('investigations');
-            }}
+            onCreateInvestigationCase={handleCreateInvestigationCase}
           />
         )}
 
@@ -604,6 +609,9 @@ function MainApp() {
         {activeTab === 'investigations' && (
           <InvestigationView
             cases={cases}
+            selectedCaseId={selectedCaseId || undefined}
+            onSelectCaseId={setSelectedCaseId}
+            onCreateCase={handleCreateInvestigationCase}
             onNavigateToJourney={(plate) => {
               setSelectedPlateForJourney(plate);
               setActiveTab('vehicle-journey');
