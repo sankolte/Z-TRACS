@@ -497,19 +497,9 @@ export const VehicleJourneyView: React.FC<VehicleJourneyViewProps> = ({
     setIsCaseModalOpen(false);
   };
 
-  // Extract real detected plates from database detections
-  const detectedPlatesSet = new Set<string>();
-  (liveAlerts || []).forEach(a => {
-    const p = (a.plateNumber || a.number_plate || a.plate || '').trim().toUpperCase();
-    if (p && p.length >= 6) {
-      detectedPlatesSet.add(p);
-    }
-  });
-  // Top real pipeline detected plates from RDS S3 evidence vault
+  // Fixed top real pipeline detected plates from RDS S3 evidence vault (no conveyor queue)
   const topPipelinePlates = ['GJ24K7897', 'GJ02BD8938', 'GJ02ER9727', 'GJ38B8178', 'GJ27DB7349', 'MH47BL2632'];
-  const quickPlates = Array.from(new Set([...topPipelinePlates, ...Array.from(detectedPlatesSet)]))
-    .filter(p => !dismissedPlates.includes(p))
-    .slice(0, 8);
+  const quickPlates = topPipelinePlates.filter(p => !dismissedPlates.includes(p));
 
   return (
     <div className="space-y-4 animate-in fade-in duration-200 select-none">
