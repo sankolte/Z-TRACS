@@ -63,6 +63,7 @@ export const VehicleJourneyView: React.FC<VehicleJourneyViewProps> = ({
   const [selectedSightingId, setSelectedSightingId] = useState<string | null>(null);
   const [liveAlerts, setLiveAlerts] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [dismissedPlates, setDismissedPlates] = useState<string[]>([]);
 
   // Modal State for Creating Case File
   const [isCaseModalOpen, setIsCaseModalOpen] = useState(false);
@@ -505,8 +506,10 @@ export const VehicleJourneyView: React.FC<VehicleJourneyViewProps> = ({
     }
   });
   // Top real pipeline detected plates from RDS S3 evidence vault
-  const topPipelinePlates = ['GJ24K7897', 'GJ02BD8938', 'GJ02ER9727', 'GJ38B8178', 'GJ27DB7349', 'MH47BL2632', 'GJ01AB1234'];
-  const quickPlates = Array.from(new Set([...topPipelinePlates, ...Array.from(detectedPlatesSet)])).slice(0, 8);
+  const topPipelinePlates = ['GJ24K7897', 'GJ02BD8938', 'GJ02ER9727', 'GJ38B8178', 'GJ27DB7349', 'MH47BL2632'];
+  const quickPlates = Array.from(new Set([...topPipelinePlates, ...Array.from(detectedPlatesSet)]))
+    .filter(p => !dismissedPlates.includes(p))
+    .slice(0, 8);
 
   return (
     <div className="space-y-4 animate-in fade-in duration-200 select-none">
@@ -534,12 +537,28 @@ export const VehicleJourneyView: React.FC<VehicleJourneyViewProps> = ({
               type="text"
               value={searchPlate}
               onChange={(e) => setSearchPlate(e.target.value.toUpperCase())}
-              placeholder="Search plate (e.g. GJ01AB1234)..."
-              className="w-full pl-9 pr-20 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-mono font-bold text-slate-900 focus:ring-2 focus:ring-[#0052CC] focus:outline-none"
+              placeholder="Search plate (e.g. GJ24K7897)..."
+              className="w-full pl-9 pr-24 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-mono font-bold text-slate-900 focus:ring-2 focus:ring-[#0052CC] focus:outline-none"
             />
+            {searchPlate && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchPlate('');
+                  setActivePlate('');
+                  if (mapInstanceRef.current) {
+                    mapInstanceRef.current.setView([22.45, 72.2], 8);
+                  }
+                }}
+                className="absolute right-14 top-2.5 text-slate-400 hover:text-slate-700 transition p-0.5 cursor-pointer"
+                title="Clear input and reset map"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
             <button
               type="submit"
-              className="absolute right-1.5 top-1 px-2.5 py-1 bg-[#0052CC] text-white text-[11px] font-bold rounded hover:bg-[#0041A8] transition"
+              className="absolute right-1.5 top-1 px-2.5 py-1 bg-[#0052CC] text-white text-[11px] font-bold rounded hover:bg-[#0041A8] transition cursor-pointer"
             >
               Track
             </button>
@@ -557,26 +576,66 @@ export const VehicleJourneyView: React.FC<VehicleJourneyViewProps> = ({
         </div>
       </div>
 
-      {/* Quick Plate Selection Chips */}
-      <div className="flex items-center space-x-2 text-xs overflow-x-auto pb-1">
-        <span className="text-slate-500 font-bold whitespace-nowrap text-[11px]">Quick Track Targets:</span>
-        {quickPlates.map((qp) => (
-          <button
-            key={qp}
-            onClick={() => {
-              setSearchPlate(qp);
-              setActivePlate(qp);
-            }}
-            className={`px-2.5 py-1 rounded-md font-mono text-[11px] font-bold transition cursor-pointer border ${
-              cleanPlate === qp 
-                ? 'bg-[#0052CC] text-white border-[#0052CC] shadow-xs' 
-                : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
-            }`}
-          >
-            {qp}
-          </button>
-        ))}
-      </div>
+      {/* Quick Plate Selection Chips with Dismiss (X) */}
+      {quickPlates.length > 0 && (
+        <div className="flex items-center space-x-2 text-xs overflow-x-auto pb-1">
+          <span className="text-slate-500 font-bold whitespace-nowrap text-[11px]">Quick Track Targets:</span>
+          {quickPlates.map((qp) => (
+            <div
+              key={qp}
+              className={`inline-flex items-center rounded-md font-mono text-[11px] font-bold border transition overflow-hidden shadow-2xs ${
+                cleanPlate === qp 
+                  ? 'bg-[#0052CC] text-white border-[#0052CC]' 
+                  : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
+              }`}
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchPlate(qp);
+                  setActivePlate(qp);
+                }}
+                className="px-2 py-1 cursor-pointer hover:underline"
+                title={`Track ${qp}`}
+              >
+                {qp}
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setDismissedPlates(prev => [...prev, qp]);
+                  if (activePlate === qp) {
+                    setActivePlate('');
+                    setSearchPlate('');
+                    if (mapInstanceRef.current) {
+                      mapInstanceRef.current.setView([22.45, 72.2], 8);
+                    }
+                  }
+                }}
+                className={`px-1.5 py-1 border-l transition cursor-pointer ${
+                  cleanPlate === qp 
+                    ? 'border-blue-400/60 text-blue-200 hover:bg-blue-800 hover:text-white' 
+                    : 'border-slate-200 text-slate-400 hover:bg-rose-50 hover:text-rose-600'
+                }`}
+                title={`Remove ${qp} from targets`}
+              >
+                <X className="w-2.5 h-2.5" />
+              </button>
+            </div>
+          ))}
+
+          {dismissedPlates.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setDismissedPlates([])}
+              className="text-[10px] text-slate-500 hover:text-[#0052CC] underline ml-1 whitespace-nowrap cursor-pointer"
+            >
+              Restore All ({dismissedPlates.length})
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Vehicle Profile Summary Strip */}
       {firstSighting ? (
