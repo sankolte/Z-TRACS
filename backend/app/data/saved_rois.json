@@ -130,5 +130,747 @@
       ]
     ],
     "saved_to_rds": false
+  },
+  "CAM-GJ-AHM-SNTL-000001": {
+    "camera_code": "CAM-001",
+    "camera_name": "Camera CAM-001",
+    "resolution": "1920x1080",
+    "zone_name": "Test Entry Checkpoint Corridor",
+    "points": [
+      {
+        "x": 100,
+        "y": 150
+      },
+      {
+        "x": 800,
+        "y": 150
+      },
+      {
+        "x": 800,
+        "y": 900
+      },
+      {
+        "x": 100,
+        "y": 900
+      }
+    ],
+    "coordinates": [
+      [
+        100,
+        150
+      ],
+      [
+        800,
+        150
+      ],
+      [
+        800,
+        900
+      ],
+      [
+        100,
+        900
+      ]
+    ],
+    "zones": [],
+    "usecase_rois": {},
+    "anpr": null,
+    "frs": null,
+    "ppe": null,
+    "footfall": null,
+    "saved_to_rds": false
+  },
+  "cam-gj-ahm-sntl-000001": {
+    "camera_code": "CAM-GJ-AHM-SNTL-000001",
+    "camera_name": "Camera 1 (Chiman Bhai Bridge)",
+    "resolution": "1920x1080",
+    "zone_name": "4 Usecase Zones Configured",
+    "updated_at": "2026-09-09T20:28:07.406120+00:00",
+    "points": [
+      {
+        "x": 434,
+        "y": 206,
+        "label": "ANPR_P1",
+        "zone_id": "zone-anpr",
+        "zone_name": "ANPR Lane Polygon",
+        "usecase": "ANPR"
+      },
+      {
+        "x": 1553,
+        "y": 120,
+        "label": "ANPR_P2",
+        "zone_id": "zone-anpr",
+        "zone_name": "ANPR Lane Polygon",
+        "usecase": "ANPR"
+      },
+      {
+        "x": 1601,
+        "y": 943,
+        "label": "ANPR_P3",
+        "zone_id": "zone-anpr",
+        "zone_name": "ANPR Lane Polygon",
+        "usecase": "ANPR"
+      },
+      {
+        "x": 186,
+        "y": 929,
+        "label": "ANPR_P4",
+        "zone_id": "zone-anpr",
+        "zone_name": "ANPR Lane Polygon",
+        "usecase": "ANPR"
+      },
+      {
+        "x": 1403,
+        "y": 206,
+        "label": "FACE_RECOGNITION_P1",
+        "zone_id": "zone-frs",
+        "zone_name": "Face Recognition Gate",
+        "usecase": "FACE_RECOGNITION"
+      },
+      {
+        "x": 1484,
+        "y": 800,
+        "label": "FACE_RECOGNITION_P2",
+        "zone_id": "zone-frs",
+        "zone_name": "Face Recognition Gate",
+        "usecase": "FACE_RECOGNITION"
+      },
+      {
+        "x": 279,
+        "y": 901,
+        "label": "FACE_RECOGNITION_P3",
+        "zone_id": "zone-frs",
+        "zone_name": "Face Recognition Gate",
+        "usecase": "FACE_RECOGNITION"
+      },
+      {
+        "x": 191,
+        "y": 217,
+        "label": "FACE_RECOGNITION_P4",
+        "zone_id": "zone-frs",
+        "zone_name": "Face Recognition Gate",
+        "usecase": "FACE_RECOGNITION"
+      },
+      {
+        "x": 453,
+        "y": 314,
+        "label": "PPE_P1",
+        "zone_id": "zone-ppe",
+        "zone_name": "PPE Safety Compliance Zone",
+        "usecase": "PPE"
+      },
+      {
+        "x": 1289,
+        "y": 69,
+        "label": "PPE_P2",
+        "zone_id": "zone-ppe",
+        "zone_name": "PPE Safety Compliance Zone",
+        "usecase": "PPE"
+      },
+      {
+        "x": 1460,
+        "y": 820,
+        "label": "PPE_P3",
+        "zone_id": "zone-ppe",
+        "zone_name": "PPE Safety Compliance Zone",
+        "usecase": "PPE"
+      },
+      {
+        "x": 697,
+        "y": 801,
+        "label": "PPE_P4",
+        "zone_id": "zone-ppe",
+        "zone_name": "PPE Safety Compliance Zone",
+        "usecase": "PPE"
+      },
+      {
+        "x": 319,
+        "y": 223,
+        "label": "FOOTFALL_P1",
+        "zone_id": "zone-footfall",
+        "zone_name": "Footfall Counting Corridor",
+        "usecase": "FOOTFALL"
+      },
+      {
+        "x": 1370,
+        "y": 229,
+        "label": "FOOTFALL_P2",
+        "zone_id": "zone-footfall",
+        "zone_name": "Footfall Counting Corridor",
+        "usecase": "FOOTFALL"
+      },
+      {
+        "x": 983,
+        "y": 684,
+        "label": "FOOTFALL_P3",
+        "zone_id": "zone-footfall",
+        "zone_name": "Footfall Counting Corridor",
+        "usecase": "FOOTFALL"
+      },
+      {
+        "x": 369,
+        "y": 727,
+        "label": "FOOTFALL_P4",
+        "zone_id": "zone-footfall",
+        "zone_name": "Footfall Counting Corridor",
+        "usecase": "FOOTFALL"
+      }
+    ],
+    "coordinates": [
+      [
+        434,
+        206
+      ],
+      [
+        1553,
+        120
+      ],
+      [
+        1601,
+        943
+      ],
+      [
+        186,
+        929
+      ],
+      [
+        1403,
+        206
+      ],
+      [
+        1484,
+        800
+      ],
+      [
+        279,
+        901
+      ],
+      [
+        191,
+        217
+      ],
+      [
+        453,
+        314
+      ],
+      [
+        1289,
+        69
+      ],
+      [
+        1460,
+        820
+      ],
+      [
+        697,
+        801
+      ],
+      [
+        319,
+        223
+      ],
+      [
+        1370,
+        229
+      ],
+      [
+        983,
+        684
+      ],
+      [
+        369,
+        727
+      ]
+    ]
+  },
+  "CAM-001": {
+    "camera_code": "CAM-001",
+    "camera_name": "Camera CAM-001",
+    "resolution": "1920x1080",
+    "zone_name": "Test Entry Checkpoint Corridor",
+    "points": [
+      {
+        "x": 100,
+        "y": 150
+      },
+      {
+        "x": 800,
+        "y": 150
+      },
+      {
+        "x": 800,
+        "y": 900
+      },
+      {
+        "x": 100,
+        "y": 900
+      }
+    ],
+    "coordinates": [
+      [
+        100,
+        150
+      ],
+      [
+        800,
+        150
+      ],
+      [
+        800,
+        900
+      ],
+      [
+        100,
+        900
+      ]
+    ],
+    "zones": [],
+    "usecase_rois": {},
+    "anpr": null,
+    "frs": null,
+    "ppe": null,
+    "footfall": null,
+    "saved_to_rds": false
+  },
+  "CAM-1": {
+    "camera_code": "CAM-001",
+    "camera_name": "Camera CAM-001",
+    "resolution": "1920x1080",
+    "zone_name": "Test Entry Checkpoint Corridor",
+    "points": [
+      {
+        "x": 100,
+        "y": 150
+      },
+      {
+        "x": 800,
+        "y": 150
+      },
+      {
+        "x": 800,
+        "y": 900
+      },
+      {
+        "x": 100,
+        "y": 900
+      }
+    ],
+    "coordinates": [
+      [
+        100,
+        150
+      ],
+      [
+        800,
+        150
+      ],
+      [
+        800,
+        900
+      ],
+      [
+        100,
+        900
+      ]
+    ],
+    "zones": [],
+    "usecase_rois": {},
+    "anpr": null,
+    "frs": null,
+    "ppe": null,
+    "footfall": null,
+    "saved_to_rds": false
+  },
+  "CAM001": {
+    "camera_code": "CAM-001",
+    "camera_name": "Camera CAM-001",
+    "resolution": "1920x1080",
+    "zone_name": "Test Entry Checkpoint Corridor",
+    "points": [
+      {
+        "x": 100,
+        "y": 150
+      },
+      {
+        "x": 800,
+        "y": 150
+      },
+      {
+        "x": 800,
+        "y": 900
+      },
+      {
+        "x": 100,
+        "y": 900
+      }
+    ],
+    "coordinates": [
+      [
+        100,
+        150
+      ],
+      [
+        800,
+        150
+      ],
+      [
+        800,
+        900
+      ],
+      [
+        100,
+        900
+      ]
+    ],
+    "zones": [],
+    "usecase_rois": {},
+    "anpr": null,
+    "frs": null,
+    "ppe": null,
+    "footfall": null,
+    "saved_to_rds": false
+  },
+  "CAM1": {
+    "camera_code": "CAM-001",
+    "camera_name": "Camera CAM-001",
+    "resolution": "1920x1080",
+    "zone_name": "Test Entry Checkpoint Corridor",
+    "points": [
+      {
+        "x": 100,
+        "y": 150
+      },
+      {
+        "x": 800,
+        "y": 150
+      },
+      {
+        "x": 800,
+        "y": 900
+      },
+      {
+        "x": 100,
+        "y": 900
+      }
+    ],
+    "coordinates": [
+      [
+        100,
+        150
+      ],
+      [
+        800,
+        150
+      ],
+      [
+        800,
+        900
+      ],
+      [
+        100,
+        900
+      ]
+    ],
+    "zones": [],
+    "usecase_rois": {},
+    "anpr": null,
+    "frs": null,
+    "ppe": null,
+    "footfall": null,
+    "saved_to_rds": false
+  },
+  "cam01": {
+    "camera_code": "CAM-001",
+    "camera_name": "Camera CAM-001",
+    "resolution": "1920x1080",
+    "zone_name": "Test Entry Checkpoint Corridor",
+    "points": [
+      {
+        "x": 100,
+        "y": 150
+      },
+      {
+        "x": 800,
+        "y": 150
+      },
+      {
+        "x": 800,
+        "y": 900
+      },
+      {
+        "x": 100,
+        "y": 900
+      }
+    ],
+    "coordinates": [
+      [
+        100,
+        150
+      ],
+      [
+        800,
+        150
+      ],
+      [
+        800,
+        900
+      ],
+      [
+        100,
+        900
+      ]
+    ],
+    "zones": [],
+    "usecase_rois": {},
+    "anpr": null,
+    "frs": null,
+    "ppe": null,
+    "footfall": null,
+    "saved_to_rds": false
+  },
+  "cam1": {
+    "camera_code": "CAM-001",
+    "camera_name": "Camera CAM-001",
+    "resolution": "1920x1080",
+    "zone_name": "Test Entry Checkpoint Corridor",
+    "points": [
+      {
+        "x": 100,
+        "y": 150
+      },
+      {
+        "x": 800,
+        "y": 150
+      },
+      {
+        "x": 800,
+        "y": 900
+      },
+      {
+        "x": 100,
+        "y": 900
+      }
+    ],
+    "coordinates": [
+      [
+        100,
+        150
+      ],
+      [
+        800,
+        150
+      ],
+      [
+        800,
+        900
+      ],
+      [
+        100,
+        900
+      ]
+    ],
+    "zones": [],
+    "usecase_rois": {},
+    "anpr": null,
+    "frs": null,
+    "ppe": null,
+    "footfall": null,
+    "saved_to_rds": false
+  },
+  "CAM-GJ-AHM-SNTL-00001": {
+    "camera_code": "CAM-001",
+    "camera_name": "Camera CAM-001",
+    "resolution": "1920x1080",
+    "zone_name": "Test Entry Checkpoint Corridor",
+    "points": [
+      {
+        "x": 100,
+        "y": 150
+      },
+      {
+        "x": 800,
+        "y": 150
+      },
+      {
+        "x": 800,
+        "y": 900
+      },
+      {
+        "x": 100,
+        "y": 900
+      }
+    ],
+    "coordinates": [
+      [
+        100,
+        150
+      ],
+      [
+        800,
+        150
+      ],
+      [
+        800,
+        900
+      ],
+      [
+        100,
+        900
+      ]
+    ],
+    "zones": [],
+    "usecase_rois": {},
+    "anpr": null,
+    "frs": null,
+    "ppe": null,
+    "footfall": null,
+    "saved_to_rds": false
+  },
+  "CAM-GJ-AHM-SNTL-0001": {
+    "camera_code": "CAM-001",
+    "camera_name": "Camera CAM-001",
+    "resolution": "1920x1080",
+    "zone_name": "Test Entry Checkpoint Corridor",
+    "points": [
+      {
+        "x": 100,
+        "y": 150
+      },
+      {
+        "x": 800,
+        "y": 150
+      },
+      {
+        "x": 800,
+        "y": 900
+      },
+      {
+        "x": 100,
+        "y": 900
+      }
+    ],
+    "coordinates": [
+      [
+        100,
+        150
+      ],
+      [
+        800,
+        150
+      ],
+      [
+        800,
+        900
+      ],
+      [
+        100,
+        900
+      ]
+    ],
+    "zones": [],
+    "usecase_rois": {},
+    "anpr": null,
+    "frs": null,
+    "ppe": null,
+    "footfall": null,
+    "saved_to_rds": false
+  },
+  "1": {
+    "camera_code": "CAM-001",
+    "camera_name": "Camera CAM-001",
+    "resolution": "1920x1080",
+    "zone_name": "Test Entry Checkpoint Corridor",
+    "points": [
+      {
+        "x": 100,
+        "y": 150
+      },
+      {
+        "x": 800,
+        "y": 150
+      },
+      {
+        "x": 800,
+        "y": 900
+      },
+      {
+        "x": 100,
+        "y": 900
+      }
+    ],
+    "coordinates": [
+      [
+        100,
+        150
+      ],
+      [
+        800,
+        150
+      ],
+      [
+        800,
+        900
+      ],
+      [
+        100,
+        900
+      ]
+    ],
+    "zones": [],
+    "usecase_rois": {},
+    "anpr": null,
+    "frs": null,
+    "ppe": null,
+    "footfall": null,
+    "saved_to_rds": false
+  },
+  "cam-001": {
+    "camera_code": "CAM-001",
+    "camera_name": "Camera CAM-001",
+    "resolution": "1920x1080",
+    "zone_name": "Test Entry Checkpoint Corridor",
+    "points": [
+      {
+        "x": 100,
+        "y": 150
+      },
+      {
+        "x": 800,
+        "y": 150
+      },
+      {
+        "x": 800,
+        "y": 900
+      },
+      {
+        "x": 100,
+        "y": 900
+      }
+    ],
+    "coordinates": [
+      [
+        100,
+        150
+      ],
+      [
+        800,
+        150
+      ],
+      [
+        800,
+        900
+      ],
+      [
+        100,
+        900
+      ]
+    ],
+    "zones": [],
+    "usecase_rois": {},
+    "anpr": null,
+    "frs": null,
+    "ppe": null,
+    "footfall": null,
+    "saved_to_rds": false
   }
 }

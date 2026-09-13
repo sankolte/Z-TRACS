@@ -1,1 +1,6066 @@
-{}
+{
+  "CAM-004": {
+    "camera_code": "CAM-004",
+    "camera_name": "Camera 4 (Paldi Junction)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.511252+00:00"
+  },
+  "cam-004": {
+    "camera_code": "CAM-004",
+    "camera_name": "Camera 4 (Paldi Junction)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.511252+00:00"
+  },
+  "CAM-4": {
+    "camera_code": "CAM-004",
+    "camera_name": "Camera 4 (Paldi Junction)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.511252+00:00"
+  },
+  "CAM004": {
+    "camera_code": "CAM-004",
+    "camera_name": "Camera 4 (Paldi Junction)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.511252+00:00"
+  },
+  "CAM4": {
+    "camera_code": "CAM-004",
+    "camera_name": "Camera 4 (Paldi Junction)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.511252+00:00"
+  },
+  "cam04": {
+    "camera_code": "CAM-004",
+    "camera_name": "Camera 4 (Paldi Junction)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.511252+00:00"
+  },
+  "cam4": {
+    "camera_code": "CAM-004",
+    "camera_name": "Camera 4 (Paldi Junction)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.511252+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-000004": {
+    "camera_code": "CAM-004",
+    "camera_name": "Camera 4 (Paldi Junction)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.511252+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-00004": {
+    "camera_code": "CAM-004",
+    "camera_name": "Camera 4 (Paldi Junction)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.511252+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-0004": {
+    "camera_code": "CAM-004",
+    "camera_name": "Camera 4 (Paldi Junction)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.511252+00:00"
+  },
+  "4": {
+    "camera_code": "CAM-004",
+    "camera_name": "Camera 4 (Paldi Junction)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.511252+00:00"
+  },
+  "CAM-008": {
+    "camera_code": "CAM-008",
+    "camera_name": "Camera 8 (Memnagar Bus Shelter)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.564377+00:00"
+  },
+  "cam-008": {
+    "camera_code": "CAM-008",
+    "camera_name": "Camera 8 (Memnagar Bus Shelter)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.564377+00:00"
+  },
+  "CAM-8": {
+    "camera_code": "CAM-008",
+    "camera_name": "Camera 8 (Memnagar Bus Shelter)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.564377+00:00"
+  },
+  "CAM008": {
+    "camera_code": "CAM-008",
+    "camera_name": "Camera 8 (Memnagar Bus Shelter)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.564377+00:00"
+  },
+  "CAM8": {
+    "camera_code": "CAM-008",
+    "camera_name": "Camera 8 (Memnagar Bus Shelter)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.564377+00:00"
+  },
+  "cam08": {
+    "camera_code": "CAM-008",
+    "camera_name": "Camera 8 (Memnagar Bus Shelter)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.564377+00:00"
+  },
+  "cam8": {
+    "camera_code": "CAM-008",
+    "camera_name": "Camera 8 (Memnagar Bus Shelter)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.564377+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-000008": {
+    "camera_code": "CAM-008",
+    "camera_name": "Camera 8 (Memnagar Bus Shelter)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.564377+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-00008": {
+    "camera_code": "CAM-008",
+    "camera_name": "Camera 8 (Memnagar Bus Shelter)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.564377+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-0008": {
+    "camera_code": "CAM-008",
+    "camera_name": "Camera 8 (Memnagar Bus Shelter)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.564377+00:00"
+  },
+  "8": {
+    "camera_code": "CAM-008",
+    "camera_name": "Camera 8 (Memnagar Bus Shelter)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.564377+00:00"
+  },
+  "CAM-009": {
+    "camera_code": "CAM-009",
+    "camera_name": "Camera 9 (Maninagar Station Square)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.571212+00:00"
+  },
+  "cam-009": {
+    "camera_code": "CAM-009",
+    "camera_name": "Camera 9 (Maninagar Station Square)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.571212+00:00"
+  },
+  "CAM-9": {
+    "camera_code": "CAM-009",
+    "camera_name": "Camera 9 (Maninagar Station Square)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.571212+00:00"
+  },
+  "CAM009": {
+    "camera_code": "CAM-009",
+    "camera_name": "Camera 9 (Maninagar Station Square)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.571212+00:00"
+  },
+  "CAM9": {
+    "camera_code": "CAM-009",
+    "camera_name": "Camera 9 (Maninagar Station Square)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.571212+00:00"
+  },
+  "cam09": {
+    "camera_code": "CAM-009",
+    "camera_name": "Camera 9 (Maninagar Station Square)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.571212+00:00"
+  },
+  "cam9": {
+    "camera_code": "CAM-009",
+    "camera_name": "Camera 9 (Maninagar Station Square)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.571212+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-000009": {
+    "camera_code": "CAM-009",
+    "camera_name": "Camera 9 (Maninagar Station Square)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.571212+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-00009": {
+    "camera_code": "CAM-009",
+    "camera_name": "Camera 9 (Maninagar Station Square)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.571212+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-0009": {
+    "camera_code": "CAM-009",
+    "camera_name": "Camera 9 (Maninagar Station Square)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.571212+00:00"
+  },
+  "9": {
+    "camera_code": "CAM-009",
+    "camera_name": "Camera 9 (Maninagar Station Square)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.571212+00:00"
+  },
+  "CAM-010": {
+    "camera_code": "CAM-010",
+    "camera_name": "Camera 10 (Vastrapur Lake East)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.578209+00:00"
+  },
+  "cam-010": {
+    "camera_code": "CAM-010",
+    "camera_name": "Camera 10 (Vastrapur Lake East)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.578209+00:00"
+  },
+  "CAM-10": {
+    "camera_code": "CAM-010",
+    "camera_name": "Camera 10 (Vastrapur Lake East)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.578209+00:00"
+  },
+  "CAM010": {
+    "camera_code": "CAM-010",
+    "camera_name": "Camera 10 (Vastrapur Lake East)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.578209+00:00"
+  },
+  "CAM10": {
+    "camera_code": "CAM-010",
+    "camera_name": "Camera 10 (Vastrapur Lake East)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.578209+00:00"
+  },
+  "cam10": {
+    "camera_code": "CAM-010",
+    "camera_name": "Camera 10 (Vastrapur Lake East)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.578209+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-000010": {
+    "camera_code": "CAM-010",
+    "camera_name": "Camera 10 (Vastrapur Lake East)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.578209+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-00010": {
+    "camera_code": "CAM-010",
+    "camera_name": "Camera 10 (Vastrapur Lake East)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.578209+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-0010": {
+    "camera_code": "CAM-010",
+    "camera_name": "Camera 10 (Vastrapur Lake East)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.578209+00:00"
+  },
+  "10": {
+    "camera_code": "CAM-010",
+    "camera_name": "Camera 10 (Vastrapur Lake East)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.578209+00:00"
+  },
+  "CAM-011": {
+    "camera_code": "CAM-011",
+    "camera_name": "Camera 11 (Drive-In Cinema Cross)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.585208+00:00"
+  },
+  "cam-011": {
+    "camera_code": "CAM-011",
+    "camera_name": "Camera 11 (Drive-In Cinema Cross)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.585208+00:00"
+  },
+  "CAM-11": {
+    "camera_code": "CAM-011",
+    "camera_name": "Camera 11 (Drive-In Cinema Cross)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.585208+00:00"
+  },
+  "CAM011": {
+    "camera_code": "CAM-011",
+    "camera_name": "Camera 11 (Drive-In Cinema Cross)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.585208+00:00"
+  },
+  "CAM11": {
+    "camera_code": "CAM-011",
+    "camera_name": "Camera 11 (Drive-In Cinema Cross)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.585208+00:00"
+  },
+  "cam11": {
+    "camera_code": "CAM-011",
+    "camera_name": "Camera 11 (Drive-In Cinema Cross)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.585208+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-000011": {
+    "camera_code": "CAM-011",
+    "camera_name": "Camera 11 (Drive-In Cinema Cross)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.585208+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-00011": {
+    "camera_code": "CAM-011",
+    "camera_name": "Camera 11 (Drive-In Cinema Cross)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.585208+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-0011": {
+    "camera_code": "CAM-011",
+    "camera_name": "Camera 11 (Drive-In Cinema Cross)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.585208+00:00"
+  },
+  "11": {
+    "camera_code": "CAM-011",
+    "camera_name": "Camera 11 (Drive-In Cinema Cross)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.585208+00:00"
+  },
+  "CAM-013": {
+    "camera_code": "CAM-013",
+    "camera_name": "Camera 13 (Sarkhej Rotary Junction)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.602225+00:00"
+  },
+  "cam-013": {
+    "camera_code": "CAM-013",
+    "camera_name": "Camera 13 (Sarkhej Rotary Junction)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.602225+00:00"
+  },
+  "CAM-13": {
+    "camera_code": "CAM-013",
+    "camera_name": "Camera 13 (Sarkhej Rotary Junction)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.602225+00:00"
+  },
+  "CAM013": {
+    "camera_code": "CAM-013",
+    "camera_name": "Camera 13 (Sarkhej Rotary Junction)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.602225+00:00"
+  },
+  "CAM13": {
+    "camera_code": "CAM-013",
+    "camera_name": "Camera 13 (Sarkhej Rotary Junction)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.602225+00:00"
+  },
+  "cam13": {
+    "camera_code": "CAM-013",
+    "camera_name": "Camera 13 (Sarkhej Rotary Junction)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.602225+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-000013": {
+    "camera_code": "CAM-013",
+    "camera_name": "Camera 13 (Sarkhej Rotary Junction)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.602225+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-00013": {
+    "camera_code": "CAM-013",
+    "camera_name": "Camera 13 (Sarkhej Rotary Junction)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.602225+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-0013": {
+    "camera_code": "CAM-013",
+    "camera_name": "Camera 13 (Sarkhej Rotary Junction)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.602225+00:00"
+  },
+  "13": {
+    "camera_code": "CAM-013",
+    "camera_name": "Camera 13 (Sarkhej Rotary Junction)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.602225+00:00"
+  },
+  "CAM-014": {
+    "camera_code": "CAM-014",
+    "camera_name": "Camera 14 (Iscon Cross Road)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.680403+00:00"
+  },
+  "cam-014": {
+    "camera_code": "CAM-014",
+    "camera_name": "Camera 14 (Iscon Cross Road)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.680403+00:00"
+  },
+  "CAM-14": {
+    "camera_code": "CAM-014",
+    "camera_name": "Camera 14 (Iscon Cross Road)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.680403+00:00"
+  },
+  "CAM014": {
+    "camera_code": "CAM-014",
+    "camera_name": "Camera 14 (Iscon Cross Road)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.680403+00:00"
+  },
+  "CAM14": {
+    "camera_code": "CAM-014",
+    "camera_name": "Camera 14 (Iscon Cross Road)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.680403+00:00"
+  },
+  "cam14": {
+    "camera_code": "CAM-014",
+    "camera_name": "Camera 14 (Iscon Cross Road)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.680403+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-000014": {
+    "camera_code": "CAM-014",
+    "camera_name": "Camera 14 (Iscon Cross Road)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.680403+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-00014": {
+    "camera_code": "CAM-014",
+    "camera_name": "Camera 14 (Iscon Cross Road)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.680403+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-0014": {
+    "camera_code": "CAM-014",
+    "camera_name": "Camera 14 (Iscon Cross Road)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.680403+00:00"
+  },
+  "14": {
+    "camera_code": "CAM-014",
+    "camera_name": "Camera 14 (Iscon Cross Road)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.680403+00:00"
+  },
+  "CAM-015": {
+    "camera_code": "CAM-015",
+    "camera_name": "Camera 15 (Pakwan Junction West)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.687882+00:00"
+  },
+  "cam-015": {
+    "camera_code": "CAM-015",
+    "camera_name": "Camera 15 (Pakwan Junction West)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.687882+00:00"
+  },
+  "CAM-15": {
+    "camera_code": "CAM-015",
+    "camera_name": "Camera 15 (Pakwan Junction West)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.687882+00:00"
+  },
+  "CAM015": {
+    "camera_code": "CAM-015",
+    "camera_name": "Camera 15 (Pakwan Junction West)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.687882+00:00"
+  },
+  "CAM15": {
+    "camera_code": "CAM-015",
+    "camera_name": "Camera 15 (Pakwan Junction West)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.687882+00:00"
+  },
+  "cam15": {
+    "camera_code": "CAM-015",
+    "camera_name": "Camera 15 (Pakwan Junction West)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.687882+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-000015": {
+    "camera_code": "CAM-015",
+    "camera_name": "Camera 15 (Pakwan Junction West)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.687882+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-00015": {
+    "camera_code": "CAM-015",
+    "camera_name": "Camera 15 (Pakwan Junction West)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.687882+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-0015": {
+    "camera_code": "CAM-015",
+    "camera_name": "Camera 15 (Pakwan Junction West)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.687882+00:00"
+  },
+  "15": {
+    "camera_code": "CAM-015",
+    "camera_name": "Camera 15 (Pakwan Junction West)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.687882+00:00"
+  },
+  "CAM-016": {
+    "camera_code": "CAM-016",
+    "camera_name": "Camera 16 (Thaltej Underpass)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.695302+00:00"
+  },
+  "cam-016": {
+    "camera_code": "CAM-016",
+    "camera_name": "Camera 16 (Thaltej Underpass)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.695302+00:00"
+  },
+  "CAM-16": {
+    "camera_code": "CAM-016",
+    "camera_name": "Camera 16 (Thaltej Underpass)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.695302+00:00"
+  },
+  "CAM016": {
+    "camera_code": "CAM-016",
+    "camera_name": "Camera 16 (Thaltej Underpass)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.695302+00:00"
+  },
+  "CAM16": {
+    "camera_code": "CAM-016",
+    "camera_name": "Camera 16 (Thaltej Underpass)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.695302+00:00"
+  },
+  "cam16": {
+    "camera_code": "CAM-016",
+    "camera_name": "Camera 16 (Thaltej Underpass)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.695302+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-000016": {
+    "camera_code": "CAM-016",
+    "camera_name": "Camera 16 (Thaltej Underpass)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.695302+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-00016": {
+    "camera_code": "CAM-016",
+    "camera_name": "Camera 16 (Thaltej Underpass)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.695302+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-0016": {
+    "camera_code": "CAM-016",
+    "camera_name": "Camera 16 (Thaltej Underpass)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.695302+00:00"
+  },
+  "16": {
+    "camera_code": "CAM-016",
+    "camera_name": "Camera 16 (Thaltej Underpass)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.695302+00:00"
+  },
+  "CAM-017": {
+    "camera_code": "CAM-017",
+    "camera_name": "Camera 17 (Science City Boulevard)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.703216+00:00"
+  },
+  "cam-017": {
+    "camera_code": "CAM-017",
+    "camera_name": "Camera 17 (Science City Boulevard)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.703216+00:00"
+  },
+  "CAM-17": {
+    "camera_code": "CAM-017",
+    "camera_name": "Camera 17 (Science City Boulevard)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.703216+00:00"
+  },
+  "CAM017": {
+    "camera_code": "CAM-017",
+    "camera_name": "Camera 17 (Science City Boulevard)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.703216+00:00"
+  },
+  "CAM17": {
+    "camera_code": "CAM-017",
+    "camera_name": "Camera 17 (Science City Boulevard)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.703216+00:00"
+  },
+  "cam17": {
+    "camera_code": "CAM-017",
+    "camera_name": "Camera 17 (Science City Boulevard)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.703216+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-000017": {
+    "camera_code": "CAM-017",
+    "camera_name": "Camera 17 (Science City Boulevard)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.703216+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-00017": {
+    "camera_code": "CAM-017",
+    "camera_name": "Camera 17 (Science City Boulevard)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.703216+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-0017": {
+    "camera_code": "CAM-017",
+    "camera_name": "Camera 17 (Science City Boulevard)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.703216+00:00"
+  },
+  "17": {
+    "camera_code": "CAM-017",
+    "camera_name": "Camera 17 (Science City Boulevard)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.703216+00:00"
+  },
+  "CAM-018": {
+    "camera_code": "CAM-018",
+    "camera_name": "Camera 18 (Bhadra Plaza Heritage Zone)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.710212+00:00"
+  },
+  "cam-018": {
+    "camera_code": "CAM-018",
+    "camera_name": "Camera 18 (Bhadra Plaza Heritage Zone)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.710212+00:00"
+  },
+  "CAM-18": {
+    "camera_code": "CAM-018",
+    "camera_name": "Camera 18 (Bhadra Plaza Heritage Zone)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.710212+00:00"
+  },
+  "CAM018": {
+    "camera_code": "CAM-018",
+    "camera_name": "Camera 18 (Bhadra Plaza Heritage Zone)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.710212+00:00"
+  },
+  "CAM18": {
+    "camera_code": "CAM-018",
+    "camera_name": "Camera 18 (Bhadra Plaza Heritage Zone)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.710212+00:00"
+  },
+  "cam18": {
+    "camera_code": "CAM-018",
+    "camera_name": "Camera 18 (Bhadra Plaza Heritage Zone)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.710212+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-000018": {
+    "camera_code": "CAM-018",
+    "camera_name": "Camera 18 (Bhadra Plaza Heritage Zone)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.710212+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-00018": {
+    "camera_code": "CAM-018",
+    "camera_name": "Camera 18 (Bhadra Plaza Heritage Zone)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.710212+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-0018": {
+    "camera_code": "CAM-018",
+    "camera_name": "Camera 18 (Bhadra Plaza Heritage Zone)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.710212+00:00"
+  },
+  "18": {
+    "camera_code": "CAM-018",
+    "camera_name": "Camera 18 (Bhadra Plaza Heritage Zone)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.710212+00:00"
+  },
+  "CAM-019": {
+    "camera_code": "CAM-019",
+    "camera_name": "Camera 19 (Ellis Bridge West End)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.727228+00:00"
+  },
+  "cam-019": {
+    "camera_code": "CAM-019",
+    "camera_name": "Camera 19 (Ellis Bridge West End)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.727228+00:00"
+  },
+  "CAM-19": {
+    "camera_code": "CAM-019",
+    "camera_name": "Camera 19 (Ellis Bridge West End)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.727228+00:00"
+  },
+  "CAM019": {
+    "camera_code": "CAM-019",
+    "camera_name": "Camera 19 (Ellis Bridge West End)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.727228+00:00"
+  },
+  "CAM19": {
+    "camera_code": "CAM-019",
+    "camera_name": "Camera 19 (Ellis Bridge West End)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.727228+00:00"
+  },
+  "cam19": {
+    "camera_code": "CAM-019",
+    "camera_name": "Camera 19 (Ellis Bridge West End)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.727228+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-000019": {
+    "camera_code": "CAM-019",
+    "camera_name": "Camera 19 (Ellis Bridge West End)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.727228+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-00019": {
+    "camera_code": "CAM-019",
+    "camera_name": "Camera 19 (Ellis Bridge West End)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.727228+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-0019": {
+    "camera_code": "CAM-019",
+    "camera_name": "Camera 19 (Ellis Bridge West End)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.727228+00:00"
+  },
+  "19": {
+    "camera_code": "CAM-019",
+    "camera_name": "Camera 19 (Ellis Bridge West End)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.727228+00:00"
+  },
+  "CAM-020": {
+    "camera_code": "CAM-020",
+    "camera_name": "Camera 20 (Nehrunagar Circle)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.743210+00:00"
+  },
+  "cam-020": {
+    "camera_code": "CAM-020",
+    "camera_name": "Camera 20 (Nehrunagar Circle)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.743210+00:00"
+  },
+  "CAM-20": {
+    "camera_code": "CAM-020",
+    "camera_name": "Camera 20 (Nehrunagar Circle)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.743210+00:00"
+  },
+  "CAM020": {
+    "camera_code": "CAM-020",
+    "camera_name": "Camera 20 (Nehrunagar Circle)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.743210+00:00"
+  },
+  "CAM20": {
+    "camera_code": "CAM-020",
+    "camera_name": "Camera 20 (Nehrunagar Circle)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.743210+00:00"
+  },
+  "cam20": {
+    "camera_code": "CAM-020",
+    "camera_name": "Camera 20 (Nehrunagar Circle)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.743210+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-000020": {
+    "camera_code": "CAM-020",
+    "camera_name": "Camera 20 (Nehrunagar Circle)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.743210+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-00020": {
+    "camera_code": "CAM-020",
+    "camera_name": "Camera 20 (Nehrunagar Circle)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.743210+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-0020": {
+    "camera_code": "CAM-020",
+    "camera_name": "Camera 20 (Nehrunagar Circle)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.743210+00:00"
+  },
+  "20": {
+    "camera_code": "CAM-020",
+    "camera_name": "Camera 20 (Nehrunagar Circle)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.743210+00:00"
+  },
+  "CAM-022": {
+    "camera_code": "CAM-022",
+    "camera_name": "Camera 22 (S.P. Ring Road Boman)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.772271+00:00"
+  },
+  "cam-022": {
+    "camera_code": "CAM-022",
+    "camera_name": "Camera 22 (S.P. Ring Road Boman)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.772271+00:00"
+  },
+  "CAM-22": {
+    "camera_code": "CAM-022",
+    "camera_name": "Camera 22 (S.P. Ring Road Boman)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.772271+00:00"
+  },
+  "CAM022": {
+    "camera_code": "CAM-022",
+    "camera_name": "Camera 22 (S.P. Ring Road Boman)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.772271+00:00"
+  },
+  "CAM22": {
+    "camera_code": "CAM-022",
+    "camera_name": "Camera 22 (S.P. Ring Road Boman)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.772271+00:00"
+  },
+  "cam22": {
+    "camera_code": "CAM-022",
+    "camera_name": "Camera 22 (S.P. Ring Road Boman)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.772271+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-000022": {
+    "camera_code": "CAM-022",
+    "camera_name": "Camera 22 (S.P. Ring Road Boman)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.772271+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-00022": {
+    "camera_code": "CAM-022",
+    "camera_name": "Camera 22 (S.P. Ring Road Boman)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.772271+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-0022": {
+    "camera_code": "CAM-022",
+    "camera_name": "Camera 22 (S.P. Ring Road Boman)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.772271+00:00"
+  },
+  "22": {
+    "camera_code": "CAM-022",
+    "camera_name": "Camera 22 (S.P. Ring Road Boman)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.772271+00:00"
+  },
+  "CAM-023": {
+    "camera_code": "CAM-023",
+    "camera_name": "Camera 23 (Kalupur Railway Terminal)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.778355+00:00"
+  },
+  "cam-023": {
+    "camera_code": "CAM-023",
+    "camera_name": "Camera 23 (Kalupur Railway Terminal)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.778355+00:00"
+  },
+  "CAM-23": {
+    "camera_code": "CAM-023",
+    "camera_name": "Camera 23 (Kalupur Railway Terminal)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.778355+00:00"
+  },
+  "CAM023": {
+    "camera_code": "CAM-023",
+    "camera_name": "Camera 23 (Kalupur Railway Terminal)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.778355+00:00"
+  },
+  "CAM23": {
+    "camera_code": "CAM-023",
+    "camera_name": "Camera 23 (Kalupur Railway Terminal)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.778355+00:00"
+  },
+  "cam23": {
+    "camera_code": "CAM-023",
+    "camera_name": "Camera 23 (Kalupur Railway Terminal)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.778355+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-000023": {
+    "camera_code": "CAM-023",
+    "camera_name": "Camera 23 (Kalupur Railway Terminal)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.778355+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-00023": {
+    "camera_code": "CAM-023",
+    "camera_name": "Camera 23 (Kalupur Railway Terminal)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.778355+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-0023": {
+    "camera_code": "CAM-023",
+    "camera_name": "Camera 23 (Kalupur Railway Terminal)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.778355+00:00"
+  },
+  "23": {
+    "camera_code": "CAM-023",
+    "camera_name": "Camera 23 (Kalupur Railway Terminal)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.778355+00:00"
+  },
+  "CAM-024": {
+    "camera_code": "CAM-024",
+    "camera_name": "Camera 24 (Geeta Mandir Bus Hub)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.784773+00:00"
+  },
+  "cam-024": {
+    "camera_code": "CAM-024",
+    "camera_name": "Camera 24 (Geeta Mandir Bus Hub)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.784773+00:00"
+  },
+  "CAM-24": {
+    "camera_code": "CAM-024",
+    "camera_name": "Camera 24 (Geeta Mandir Bus Hub)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.784773+00:00"
+  },
+  "CAM024": {
+    "camera_code": "CAM-024",
+    "camera_name": "Camera 24 (Geeta Mandir Bus Hub)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.784773+00:00"
+  },
+  "CAM24": {
+    "camera_code": "CAM-024",
+    "camera_name": "Camera 24 (Geeta Mandir Bus Hub)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.784773+00:00"
+  },
+  "cam24": {
+    "camera_code": "CAM-024",
+    "camera_name": "Camera 24 (Geeta Mandir Bus Hub)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.784773+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-000024": {
+    "camera_code": "CAM-024",
+    "camera_name": "Camera 24 (Geeta Mandir Bus Hub)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.784773+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-00024": {
+    "camera_code": "CAM-024",
+    "camera_name": "Camera 24 (Geeta Mandir Bus Hub)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.784773+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-0024": {
+    "camera_code": "CAM-024",
+    "camera_name": "Camera 24 (Geeta Mandir Bus Hub)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.784773+00:00"
+  },
+  "24": {
+    "camera_code": "CAM-024",
+    "camera_name": "Camera 24 (Geeta Mandir Bus Hub)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.784773+00:00"
+  },
+  "CAM-025": {
+    "camera_code": "CAM-025",
+    "camera_name": "Camera 25 (Subhash Bridge North)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.791386+00:00"
+  },
+  "cam-025": {
+    "camera_code": "CAM-025",
+    "camera_name": "Camera 25 (Subhash Bridge North)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.791386+00:00"
+  },
+  "CAM-25": {
+    "camera_code": "CAM-025",
+    "camera_name": "Camera 25 (Subhash Bridge North)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.791386+00:00"
+  },
+  "CAM025": {
+    "camera_code": "CAM-025",
+    "camera_name": "Camera 25 (Subhash Bridge North)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.791386+00:00"
+  },
+  "CAM25": {
+    "camera_code": "CAM-025",
+    "camera_name": "Camera 25 (Subhash Bridge North)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.791386+00:00"
+  },
+  "cam25": {
+    "camera_code": "CAM-025",
+    "camera_name": "Camera 25 (Subhash Bridge North)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.791386+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-000025": {
+    "camera_code": "CAM-025",
+    "camera_name": "Camera 25 (Subhash Bridge North)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.791386+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-00025": {
+    "camera_code": "CAM-025",
+    "camera_name": "Camera 25 (Subhash Bridge North)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.791386+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-0025": {
+    "camera_code": "CAM-025",
+    "camera_name": "Camera 25 (Subhash Bridge North)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.791386+00:00"
+  },
+  "25": {
+    "camera_code": "CAM-025",
+    "camera_name": "Camera 25 (Subhash Bridge North)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.791386+00:00"
+  },
+  "CAM-026": {
+    "camera_code": "CAM-026",
+    "camera_name": "Camera 26 (Sabarmati Ashram Gate)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.798198+00:00"
+  },
+  "cam-026": {
+    "camera_code": "CAM-026",
+    "camera_name": "Camera 26 (Sabarmati Ashram Gate)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.798198+00:00"
+  },
+  "CAM-26": {
+    "camera_code": "CAM-026",
+    "camera_name": "Camera 26 (Sabarmati Ashram Gate)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.798198+00:00"
+  },
+  "CAM026": {
+    "camera_code": "CAM-026",
+    "camera_name": "Camera 26 (Sabarmati Ashram Gate)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.798198+00:00"
+  },
+  "CAM26": {
+    "camera_code": "CAM-026",
+    "camera_name": "Camera 26 (Sabarmati Ashram Gate)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.798198+00:00"
+  },
+  "cam26": {
+    "camera_code": "CAM-026",
+    "camera_name": "Camera 26 (Sabarmati Ashram Gate)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.798198+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-000026": {
+    "camera_code": "CAM-026",
+    "camera_name": "Camera 26 (Sabarmati Ashram Gate)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.798198+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-00026": {
+    "camera_code": "CAM-026",
+    "camera_name": "Camera 26 (Sabarmati Ashram Gate)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.798198+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-0026": {
+    "camera_code": "CAM-026",
+    "camera_name": "Camera 26 (Sabarmati Ashram Gate)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.798198+00:00"
+  },
+  "26": {
+    "camera_code": "CAM-026",
+    "camera_name": "Camera 26 (Sabarmati Ashram Gate)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.798198+00:00"
+  },
+  "CAM-027": {
+    "camera_code": "CAM-027",
+    "camera_name": "Camera 27 (Ranip Cross Road)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.806035+00:00"
+  },
+  "cam-027": {
+    "camera_code": "CAM-027",
+    "camera_name": "Camera 27 (Ranip Cross Road)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.806035+00:00"
+  },
+  "CAM-27": {
+    "camera_code": "CAM-027",
+    "camera_name": "Camera 27 (Ranip Cross Road)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.806035+00:00"
+  },
+  "CAM027": {
+    "camera_code": "CAM-027",
+    "camera_name": "Camera 27 (Ranip Cross Road)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.806035+00:00"
+  },
+  "CAM27": {
+    "camera_code": "CAM-027",
+    "camera_name": "Camera 27 (Ranip Cross Road)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.806035+00:00"
+  },
+  "cam27": {
+    "camera_code": "CAM-027",
+    "camera_name": "Camera 27 (Ranip Cross Road)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.806035+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-000027": {
+    "camera_code": "CAM-027",
+    "camera_name": "Camera 27 (Ranip Cross Road)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.806035+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-00027": {
+    "camera_code": "CAM-027",
+    "camera_name": "Camera 27 (Ranip Cross Road)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.806035+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-0027": {
+    "camera_code": "CAM-027",
+    "camera_name": "Camera 27 (Ranip Cross Road)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.806035+00:00"
+  },
+  "27": {
+    "camera_code": "CAM-027",
+    "camera_name": "Camera 27 (Ranip Cross Road)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.806035+00:00"
+  },
+  "CAM-028": {
+    "camera_code": "CAM-028",
+    "camera_name": "Camera 28 (Chandkheda Highway Corner)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.849535+00:00"
+  },
+  "cam-028": {
+    "camera_code": "CAM-028",
+    "camera_name": "Camera 28 (Chandkheda Highway Corner)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.849535+00:00"
+  },
+  "CAM-28": {
+    "camera_code": "CAM-028",
+    "camera_name": "Camera 28 (Chandkheda Highway Corner)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.849535+00:00"
+  },
+  "CAM028": {
+    "camera_code": "CAM-028",
+    "camera_name": "Camera 28 (Chandkheda Highway Corner)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.849535+00:00"
+  },
+  "CAM28": {
+    "camera_code": "CAM-028",
+    "camera_name": "Camera 28 (Chandkheda Highway Corner)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.849535+00:00"
+  },
+  "cam28": {
+    "camera_code": "CAM-028",
+    "camera_name": "Camera 28 (Chandkheda Highway Corner)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.849535+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-000028": {
+    "camera_code": "CAM-028",
+    "camera_name": "Camera 28 (Chandkheda Highway Corner)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.849535+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-00028": {
+    "camera_code": "CAM-028",
+    "camera_name": "Camera 28 (Chandkheda Highway Corner)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.849535+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-0028": {
+    "camera_code": "CAM-028",
+    "camera_name": "Camera 28 (Chandkheda Highway Corner)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.849535+00:00"
+  },
+  "28": {
+    "camera_code": "CAM-028",
+    "camera_name": "Camera 28 (Chandkheda Highway Corner)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.849535+00:00"
+  },
+  "CAM-029": {
+    "camera_code": "CAM-029",
+    "camera_name": "Camera 29 (Sola Civil Hospital Front)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.857224+00:00"
+  },
+  "cam-029": {
+    "camera_code": "CAM-029",
+    "camera_name": "Camera 29 (Sola Civil Hospital Front)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.857224+00:00"
+  },
+  "CAM-29": {
+    "camera_code": "CAM-029",
+    "camera_name": "Camera 29 (Sola Civil Hospital Front)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.857224+00:00"
+  },
+  "CAM029": {
+    "camera_code": "CAM-029",
+    "camera_name": "Camera 29 (Sola Civil Hospital Front)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.857224+00:00"
+  },
+  "CAM29": {
+    "camera_code": "CAM-029",
+    "camera_name": "Camera 29 (Sola Civil Hospital Front)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.857224+00:00"
+  },
+  "cam29": {
+    "camera_code": "CAM-029",
+    "camera_name": "Camera 29 (Sola Civil Hospital Front)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.857224+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-000029": {
+    "camera_code": "CAM-029",
+    "camera_name": "Camera 29 (Sola Civil Hospital Front)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.857224+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-00029": {
+    "camera_code": "CAM-029",
+    "camera_name": "Camera 29 (Sola Civil Hospital Front)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.857224+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-0029": {
+    "camera_code": "CAM-029",
+    "camera_name": "Camera 29 (Sola Civil Hospital Front)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.857224+00:00"
+  },
+  "29": {
+    "camera_code": "CAM-029",
+    "camera_name": "Camera 29 (Sola Civil Hospital Front)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.857224+00:00"
+  },
+  "CAM-030": {
+    "camera_code": "CAM-030",
+    "camera_name": "Camera 30 (Bodakdev High Street)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.866241+00:00"
+  },
+  "cam-030": {
+    "camera_code": "CAM-030",
+    "camera_name": "Camera 30 (Bodakdev High Street)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.866241+00:00"
+  },
+  "CAM-30": {
+    "camera_code": "CAM-030",
+    "camera_name": "Camera 30 (Bodakdev High Street)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.866241+00:00"
+  },
+  "CAM030": {
+    "camera_code": "CAM-030",
+    "camera_name": "Camera 30 (Bodakdev High Street)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.866241+00:00"
+  },
+  "CAM30": {
+    "camera_code": "CAM-030",
+    "camera_name": "Camera 30 (Bodakdev High Street)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.866241+00:00"
+  },
+  "cam30": {
+    "camera_code": "CAM-030",
+    "camera_name": "Camera 30 (Bodakdev High Street)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.866241+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-000030": {
+    "camera_code": "CAM-030",
+    "camera_name": "Camera 30 (Bodakdev High Street)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.866241+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-00030": {
+    "camera_code": "CAM-030",
+    "camera_name": "Camera 30 (Bodakdev High Street)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.866241+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-0030": {
+    "camera_code": "CAM-030",
+    "camera_name": "Camera 30 (Bodakdev High Street)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.866241+00:00"
+  },
+  "30": {
+    "camera_code": "CAM-030",
+    "camera_name": "Camera 30 (Bodakdev High Street)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.866241+00:00"
+  },
+  "CAM-031": {
+    "camera_code": "CAM-031",
+    "camera_name": "Camera 31 (Prahladnagar Corporate Corridor)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.873228+00:00"
+  },
+  "cam-031": {
+    "camera_code": "CAM-031",
+    "camera_name": "Camera 31 (Prahladnagar Corporate Corridor)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.873228+00:00"
+  },
+  "CAM-31": {
+    "camera_code": "CAM-031",
+    "camera_name": "Camera 31 (Prahladnagar Corporate Corridor)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.873228+00:00"
+  },
+  "CAM031": {
+    "camera_code": "CAM-031",
+    "camera_name": "Camera 31 (Prahladnagar Corporate Corridor)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.873228+00:00"
+  },
+  "CAM31": {
+    "camera_code": "CAM-031",
+    "camera_name": "Camera 31 (Prahladnagar Corporate Corridor)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.873228+00:00"
+  },
+  "cam31": {
+    "camera_code": "CAM-031",
+    "camera_name": "Camera 31 (Prahladnagar Corporate Corridor)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.873228+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-000031": {
+    "camera_code": "CAM-031",
+    "camera_name": "Camera 31 (Prahladnagar Corporate Corridor)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.873228+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-00031": {
+    "camera_code": "CAM-031",
+    "camera_name": "Camera 31 (Prahladnagar Corporate Corridor)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.873228+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-0031": {
+    "camera_code": "CAM-031",
+    "camera_name": "Camera 31 (Prahladnagar Corporate Corridor)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.873228+00:00"
+  },
+  "31": {
+    "camera_code": "CAM-031",
+    "camera_name": "Camera 31 (Prahladnagar Corporate Corridor)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.873228+00:00"
+  },
+  "CAM-032": {
+    "camera_code": "CAM-032",
+    "camera_name": "Camera 32 (SG Highway - Iskcon Flyover South)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.879219+00:00"
+  },
+  "cam-032": {
+    "camera_code": "CAM-032",
+    "camera_name": "Camera 32 (SG Highway - Iskcon Flyover South)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.879219+00:00"
+  },
+  "CAM-32": {
+    "camera_code": "CAM-032",
+    "camera_name": "Camera 32 (SG Highway - Iskcon Flyover South)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.879219+00:00"
+  },
+  "CAM032": {
+    "camera_code": "CAM-032",
+    "camera_name": "Camera 32 (SG Highway - Iskcon Flyover South)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.879219+00:00"
+  },
+  "CAM32": {
+    "camera_code": "CAM-032",
+    "camera_name": "Camera 32 (SG Highway - Iskcon Flyover South)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.879219+00:00"
+  },
+  "cam32": {
+    "camera_code": "CAM-032",
+    "camera_name": "Camera 32 (SG Highway - Iskcon Flyover South)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.879219+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-000032": {
+    "camera_code": "CAM-032",
+    "camera_name": "Camera 32 (SG Highway - Iskcon Flyover South)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.879219+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-00032": {
+    "camera_code": "CAM-032",
+    "camera_name": "Camera 32 (SG Highway - Iskcon Flyover South)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.879219+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-0032": {
+    "camera_code": "CAM-032",
+    "camera_name": "Camera 32 (SG Highway - Iskcon Flyover South)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.879219+00:00"
+  },
+  "32": {
+    "camera_code": "CAM-032",
+    "camera_name": "Camera 32 (SG Highway - Iskcon Flyover South)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.879219+00:00"
+  },
+  "CAM-033": {
+    "camera_code": "CAM-033",
+    "camera_name": "Camera 33 (SG Highway - Vaishnodevi Circle)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.885193+00:00"
+  },
+  "cam-033": {
+    "camera_code": "CAM-033",
+    "camera_name": "Camera 33 (SG Highway - Vaishnodevi Circle)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.885193+00:00"
+  },
+  "CAM-33": {
+    "camera_code": "CAM-033",
+    "camera_name": "Camera 33 (SG Highway - Vaishnodevi Circle)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.885193+00:00"
+  },
+  "CAM033": {
+    "camera_code": "CAM-033",
+    "camera_name": "Camera 33 (SG Highway - Vaishnodevi Circle)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.885193+00:00"
+  },
+  "CAM33": {
+    "camera_code": "CAM-033",
+    "camera_name": "Camera 33 (SG Highway - Vaishnodevi Circle)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.885193+00:00"
+  },
+  "cam33": {
+    "camera_code": "CAM-033",
+    "camera_name": "Camera 33 (SG Highway - Vaishnodevi Circle)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.885193+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-000033": {
+    "camera_code": "CAM-033",
+    "camera_name": "Camera 33 (SG Highway - Vaishnodevi Circle)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.885193+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-00033": {
+    "camera_code": "CAM-033",
+    "camera_name": "Camera 33 (SG Highway - Vaishnodevi Circle)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.885193+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-0033": {
+    "camera_code": "CAM-033",
+    "camera_name": "Camera 33 (SG Highway - Vaishnodevi Circle)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.885193+00:00"
+  },
+  "33": {
+    "camera_code": "CAM-033",
+    "camera_name": "Camera 33 (SG Highway - Vaishnodevi Circle)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.885193+00:00"
+  },
+  "CAM-042": {
+    "camera_code": "CAM-042",
+    "camera_name": "Sabarmati Riverfront Walkway West",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.898229+00:00"
+  },
+  "cam-042": {
+    "camera_code": "CAM-042",
+    "camera_name": "Sabarmati Riverfront Walkway West",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.898229+00:00"
+  },
+  "CAM-42": {
+    "camera_code": "CAM-042",
+    "camera_name": "Sabarmati Riverfront Walkway West",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.898229+00:00"
+  },
+  "CAM042": {
+    "camera_code": "CAM-042",
+    "camera_name": "Sabarmati Riverfront Walkway West",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.898229+00:00"
+  },
+  "CAM42": {
+    "camera_code": "CAM-042",
+    "camera_name": "Sabarmati Riverfront Walkway West",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.898229+00:00"
+  },
+  "cam42": {
+    "camera_code": "CAM-042",
+    "camera_name": "Sabarmati Riverfront Walkway West",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.898229+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-000042": {
+    "camera_code": "CAM-042",
+    "camera_name": "Sabarmati Riverfront Walkway West",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.898229+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-00042": {
+    "camera_code": "CAM-042",
+    "camera_name": "Sabarmati Riverfront Walkway West",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.898229+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-0042": {
+    "camera_code": "CAM-042",
+    "camera_name": "Sabarmati Riverfront Walkway West",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.898229+00:00"
+  },
+  "42": {
+    "camera_code": "CAM-042",
+    "camera_name": "Sabarmati Riverfront Walkway West",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "usecases": [],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": false,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.898229+00:00"
+  },
+  "CAM-43317": {
+    "camera_code": "CAM-43317",
+    "camera_name": "[Forensic Offline Video] VID_20260302_212417_419.mp4 (1).mkv (Case: cdb)",
+    "enable": [
+      1,
+      0,
+      0,
+      0
+    ],
+    "usecases": [
+      "ANPR"
+    ],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": true,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.904367+00:00"
+  },
+  "cam-43317": {
+    "camera_code": "CAM-43317",
+    "camera_name": "[Forensic Offline Video] VID_20260302_212417_419.mp4 (1).mkv (Case: cdb)",
+    "enable": [
+      1,
+      0,
+      0,
+      0
+    ],
+    "usecases": [
+      "ANPR"
+    ],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": true,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.904367+00:00"
+  },
+  "CAM43317": {
+    "camera_code": "CAM-43317",
+    "camera_name": "[Forensic Offline Video] VID_20260302_212417_419.mp4 (1).mkv (Case: cdb)",
+    "enable": [
+      1,
+      0,
+      0,
+      0
+    ],
+    "usecases": [
+      "ANPR"
+    ],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": true,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.904367+00:00"
+  },
+  "cam43317": {
+    "camera_code": "CAM-43317",
+    "camera_name": "[Forensic Offline Video] VID_20260302_212417_419.mp4 (1).mkv (Case: cdb)",
+    "enable": [
+      1,
+      0,
+      0,
+      0
+    ],
+    "usecases": [
+      "ANPR"
+    ],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": true,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.904367+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-043317": {
+    "camera_code": "CAM-43317",
+    "camera_name": "[Forensic Offline Video] VID_20260302_212417_419.mp4 (1).mkv (Case: cdb)",
+    "enable": [
+      1,
+      0,
+      0,
+      0
+    ],
+    "usecases": [
+      "ANPR"
+    ],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": true,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.904367+00:00"
+  },
+  "CAM-GJ-AHM-SNTL-43317": {
+    "camera_code": "CAM-43317",
+    "camera_name": "[Forensic Offline Video] VID_20260302_212417_419.mp4 (1).mkv (Case: cdb)",
+    "enable": [
+      1,
+      0,
+      0,
+      0
+    ],
+    "usecases": [
+      "ANPR"
+    ],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": true,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.904367+00:00"
+  },
+  "43317": {
+    "camera_code": "CAM-43317",
+    "camera_name": "[Forensic Offline Video] VID_20260302_212417_419.mp4 (1).mkv (Case: cdb)",
+    "enable": [
+      1,
+      0,
+      0,
+      0
+    ],
+    "usecases": [
+      "ANPR"
+    ],
+    "models": {
+      "frs": false,
+      "ppe": false,
+      "anpr": true,
+      "crowd": false,
+      "footfall": false,
+      "perimeter": false
+    },
+    "confidence_threshold": 0.85,
+    "target_fps": 15,
+    "updated_at": "2026-09-11T17:25:22.904367+00:00"
+  },
+  "CAM-001": {
+    "camera_code": "CAM-001",
+    "camera_name": "Camera 1 (Chiman Bhai Bridge)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "cam-001": {
+    "camera_code": "CAM-001",
+    "camera_name": "Camera 1 (Chiman Bhai Bridge)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "CAM-1": {
+    "camera_code": "CAM-001",
+    "camera_name": "Camera 1 (Chiman Bhai Bridge)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "CAM001": {
+    "camera_code": "CAM-001",
+    "camera_name": "Camera 1 (Chiman Bhai Bridge)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "CAM1": {
+    "camera_code": "CAM-001",
+    "camera_name": "Camera 1 (Chiman Bhai Bridge)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "cam01": {
+    "camera_code": "CAM-001",
+    "camera_name": "Camera 1 (Chiman Bhai Bridge)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "cam1": {
+    "camera_code": "CAM-001",
+    "camera_name": "Camera 1 (Chiman Bhai Bridge)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "CAM-GJ-AHM-SNTL-000001": {
+    "camera_code": "CAM-001",
+    "camera_name": "Camera 1 (Chiman Bhai Bridge)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "CAM-GJ-AHM-SNTL-00001": {
+    "camera_code": "CAM-001",
+    "camera_name": "Camera 1 (Chiman Bhai Bridge)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "CAM-GJ-AHM-SNTL-0001": {
+    "camera_code": "CAM-001",
+    "camera_name": "Camera 1 (Chiman Bhai Bridge)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "1": {
+    "camera_code": "CAM-001",
+    "camera_name": "Camera 1 (Chiman Bhai Bridge)",
+    "enable": [
+      0,
+      0,
+      0,
+      0
+    ]
+  }
+}

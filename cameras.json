@@ -1,8 +1,8 @@
 {
   "status": "success",
   "total_locations": 5,
-  "total_cameras": 39,
-  "export_timestamp": "2026-09-13T13:58:14Z",
+  "total_cameras": 37,
+  "export_timestamp": "2026-09-13T19:18:21Z",
   "locations": [
     {
       "location_id": "LOC-AHMEDABAD",
@@ -30,49 +30,85 @@
           "longitude": 72.5804,
           "roi": [
             [
-              348,
-              167
-            ],
-            [
-              1500,
+              100,
               150
             ],
             [
-              1600,
-              950
+              800,
+              150
             ],
             [
-              200,
-              950
+              800,
+              900
+            ],
+            [
+              100,
+              900
             ]
           ],
           "rois": [
             [
               [
-                348,
-                167
-              ],
-              [
-                1500,
+                100,
                 150
               ],
               [
-                1600,
-                950
+                800,
+                150
+              ],
+              [
+                800,
+                900
+              ],
+              [
+                100,
+                900
+              ]
+            ],
+            [
+              [
+                200,
+                150
+              ],
+              [
+                600,
+                150
+              ],
+              [
+                600,
+                750
               ],
               [
                 200,
+                750
+              ]
+            ],
+            [
+              [
+                50,
+                100
+              ],
+              [
+                950,
+                100
+              ],
+              [
+                950,
+                950
+              ],
+              [
+                50,
                 950
               ]
             ],
             [
               [
-                262,
-                201
+                300,
+                400
               ],
               [
                 700,
-                200
+                400
               ],
               [
                 700,
@@ -81,42 +117,6 @@
               [
                 300,
                 800
-              ]
-            ],
-            [
-              [
-                192,
-                108
-              ],
-              [
-                1728,
-                108
-              ],
-              [
-                1728,
-                972
-              ],
-              [
-                192,
-                972
-              ]
-            ],
-            [
-              [
-                180,
-                400
-              ],
-              [
-                920,
-                400
-              ],
-              [
-                920,
-                980
-              ],
-              [
-                100,
-                980
               ]
             ]
           ]
@@ -3265,49 +3265,85 @@
           "longitude": 72.5074,
           "roi": [
             [
-              348,
-              167
-            ],
-            [
-              1500,
+              100,
               150
             ],
             [
-              1600,
-              950
+              800,
+              150
             ],
             [
-              200,
-              950
+              800,
+              900
+            ],
+            [
+              100,
+              900
             ]
           ],
           "rois": [
             [
               [
-                348,
-                167
-              ],
-              [
-                1500,
+                100,
                 150
               ],
               [
-                1600,
-                950
+                800,
+                150
+              ],
+              [
+                800,
+                900
+              ],
+              [
+                100,
+                900
+              ]
+            ],
+            [
+              [
+                200,
+                150
+              ],
+              [
+                600,
+                150
+              ],
+              [
+                600,
+                750
               ],
               [
                 200,
+                750
+              ]
+            ],
+            [
+              [
+                50,
+                100
+              ],
+              [
+                950,
+                100
+              ],
+              [
+                950,
+                950
+              ],
+              [
+                50,
                 950
               ]
             ],
             [
               [
-                262,
-                201
+                300,
+                400
               ],
               [
                 700,
-                200
+                400
               ],
               [
                 700,
@@ -3316,42 +3352,6 @@
               [
                 300,
                 800
-              ]
-            ],
-            [
-              [
-                192,
-                108
-              ],
-              [
-                1728,
-                108
-              ],
-              [
-                1728,
-                972
-              ],
-              [
-                192,
-                972
-              ]
-            ],
-            [
-              [
-                180,
-                400
-              ],
-              [
-                920,
-                400
-              ],
-              [
-                920,
-                980
-              ],
-              [
-                100,
-                980
               ]
             ]
           ]
@@ -3508,60 +3508,6 @@
           ],
           "rtsp": "file://$PWD/clips/gefg/clip.mp4",
           "local_path": "clips/gefg/clip.mp4",
-          "latitude": 23.0612,
-          "longitude": 72.5804,
-          "roi": [],
-          "rois": []
-        },
-        {
-          "camera_code": "CAM-FOR-TSK-FOR-31415",
-          "camera_name": "[Forensic Offline Video] img_2499_mov.mov (Case: Gaurav test 02)",
-          "source_type": "OFFLINE_FORENSIC_VIDEO",
-          "enable": [
-            1,
-            0,
-            0,
-            0
-          ],
-          "usecases": [
-            "ANPR",
-            "FACE_RECOGNITION",
-            "PPE",
-            "FOOTFALL"
-          ],
-          "models_requested": [
-            "ANPR"
-          ],
-          "custom_model": null,
-          "rtsp": "file://$PWD/forensics/TSK-FOR-31415/img_2499_mov.mov",
-          "local_path": "forensics/TSK-FOR-31415/img_2499_mov.mov",
-          "latitude": 23.0612,
-          "longitude": 72.5804,
-          "roi": [],
-          "rois": []
-        },
-        {
-          "camera_code": "CAM-FOR-TSK-FOR-31644",
-          "camera_name": "[Forensic Offline Video] IMG_2502.mov (Case: Test ee)",
-          "source_type": "OFFLINE_FORENSIC_VIDEO",
-          "enable": [
-            1,
-            0,
-            0,
-            0
-          ],
-          "usecases": [
-            "ANPR",
-            "FACE_RECOGNITION",
-            "PPE",
-            "FOOTFALL"
-          ],
-          "models_requested": [
-            "ANPR"
-          ],
-          "custom_model": null,
-          "rtsp": "file://$PWD/forensics/TSK-FOR-31644/tsk-for-31644.mp4",
-          "local_path": "forensics/TSK-FOR-31644/tsk-for-31644.mp4",
           "latitude": 23.0612,
           "longitude": 72.5804,
           "roi": [],
